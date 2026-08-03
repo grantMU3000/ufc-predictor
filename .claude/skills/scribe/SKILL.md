@@ -6,7 +6,7 @@ allowed-tools: Bash(git log *) Bash(git diff *)
 ---
 
 ## Today's commits
-!`git log --oneline --since="9am"`
+!`git log --oneline --since="7am"`
 
 ## Uncommitted changes
 !`git diff --stat`
