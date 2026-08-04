@@ -7,7 +7,11 @@ authors = [
     { name = "Grant", email = "robinsonjg64@gmail.com" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "duckdb>=1.5.5",
+    "pandas>=3.0.5",
+    "python-dotenv>=1.2.2",
+]
 
 [project.scripts]
 ufc-predictor = "ufc_predictor:main"
