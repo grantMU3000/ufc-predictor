@@ -76,6 +76,7 @@ def fetch(url: str) -> str:
             response.raise_for_status()
 
         except requests.exceptions.HTTPError as e:
+            assert e.response is not None  # always set: raised from response.raise_for_status()
             status = e.response.status_code
             if 400 <= status < 500 and status not in RETRYABLE_STATUS_CODES:
                 raise  # genuinely invalid request. Not wasting retries
@@ -100,4 +101,5 @@ def fetch(url: str) -> str:
             wait = BACKOFF_BASE_SECONDS ** attempt
             time.sleep(wait)
 
+    assert last_exception is not None  # loop only exits here after an exception was recorded
     raise last_exception
