@@ -35,6 +35,113 @@ What this makes easier, what this makes harder, what it forecloses or defers.
 ```
 
 ---
+## [ADR-006] Primary data source: Greco1899 CSVs over a self-built ufcstats.com scraper
+
+**Date:** 2026-08-05
+**Status:** Accepted
+
+### Context
+Week 1 Tuesday's original task (per the execution plan) was to build a first-party
+scraper against ufcstats.com: events index → event page → bout page → fighter
+page, with raw HTML cached locally, rate-limited and resumable. `Greco1899/scrape_ufc_stats`
+CSVs were meant to be a Day-1 bootstrap dataset, scraped in parallel with — not
+instead of — an owned scraper, specifically so the project wouldn't be solely
+dependent on a third party's pipeline.
+
+While building `fetch.py` (cache-first, rate-limited, retry-with-backoff), test
+requests against `ufcstats.com/statistics/events/completed` consistently returned
+a JavaScript proof-of-work challenge page (SHA-256-based, similar to Anubis-style
+bot gates) instead of the real page content. This was diagnosed methodically:
+- The page loads normally in a real browser.
+- A bare `curl` request with no custom headers, from the same IP as the browser,
+  still receives the challenge page.
+- A `curl` request spoofing a full Chrome `User-Agent` string, same IP, still
+  receives the challenge page.
+
+This rules out IP reputation and User-Agent heuristics as the cause. The gate is
+unconditional for any client that doesn't execute JavaScript — i.e., any client
+that doesn't run and answer the proof-of-work challenge, regardless of how
+"normal" the rest of the request looks.
+
+### Options considered
+1. **Build a JS-challenge solver and continue with a first-party scraper** —
+   would technically unblock data collection and preserve the original Week 1
+   plan as written. Rejected outright: replicating the proof-of-work check and
+   submitting the answer is circumventing an access control the site has
+   deliberately and actively put in place for non-browser clients. This isn't
+   ambiguous like a missing `robots.txt` — it's an enforced technical barrier,
+   which is a clear signal of intent from the site owner. Not something to
+   engineer around regardless of the reasonableness of the end goal.
+2. **Headless-browser automation (e.g. Playwright/Selenium) to execute the
+   challenge like a real browser would** — would likely work technically, but
+   is functionally the same as option 1: deliberately automating past a check
+   whose entire purpose is to distinguish browsers from automated clients.
+   Rejected for the same reason.
+3. **Rely on Greco1899 CSVs as the primary and, for now, sole ingestion
+   source** — pre-scraped, regularly updated by a third party, already cloned
+   and loaded into DuckDB from Week 0. Con: introduces a hard dependency on
+   someone else's pipeline, including its reliability and update cadence,
+   which the original plan explicitly tried to avoid by building an owned
+   scraper in parallel.
+4. **ESPN's public API as a supplementary source** — already preferred in the
+   plan for rankings/schedules due to being less bot-protected than UFC.com.
+   Doesn't cover the full historical bout-level stats Greco provides, so
+   viable as a supplement, not a replacement.
+
+### Decision
+Use Greco1899 CSVs as the primary and current sole source for historical
+events/bouts/fighter-stats ingestion. Do not build or attempt to bypass
+ufcstats.com's bot-detection gate. ESPN's public API remains in use as a
+supplementary source for schedules/rankings, per prior decisions. A first-party
+ufcstats.com scraper is off the table unless the site's posture changes.
+
+### Why
+The diagnostic process (browser vs. bare curl vs. spoofed-UA curl, same IP for
+all three) isolated the cause precisely: this is not an IP flag, not a header
+heuristic, not intermittent load-based gating — it's a deliberate, consistently
+enforced barrier against non-browser clients. That's a materially different
+situation from the "ufcstats HTML changes mid-project" risk the original risk
+register anticipated (parser breakage from a markup change), which is why this
+decision supersedes that mitigation rather than simply exercising it.
+
+The tradeoff accepted here is real: this project no longer owns its primary
+data-acquisition layer end-to-end, which was one of the explicit learning and
+resilience goals of building a first-party scraper. What's kept is everything
+downstream of acquisition — parsing, fuzzy fighter-name resolution, the
+`fighter_aliases` table, loading into the Postgres schema, idempotent/resumable
+ingestion — all of which is unaffected by this change and remains the owned,
+defensible engineering surface for this part of the project.
+
+Verified before accepting this dependency: Greco1899 has updated within a day
+of nearly every UFC event over the past year, with one notable gap (May 21 –
+July 19, 2026, spanning 6 events, later backfilled). All data currently appears
+up to date as of this decision.
+
+### Consequences
+**Easier:** Today's ingestion work simplifies from "fetch + parse HTML" to
+"parse CSV," letting Tuesday's remaining time go toward the loader, fuzzy name
+matching, and schema population rather than a blocked network layer. Removes
+an entire class of scraping-etiquette and access-control concerns.
+
+**Harder / deferred:** Week 4's event-driven results/odds automation (originally
+designed around hitting ufcstats.com directly, ~3hrs post-event with a ~12hr
+fallback retry) now depends on Greco's own update cadence instead, which is not
+guaranteed to match that timeline — the May–July gap is proof this can happen.
+Mitigations planned for Week 4: (1) the settlement job checks data freshness
+against the known UFC event schedule and surfaces a warning rather than
+silently settling against stale data; (2) the loader is built idempotent and
+safely re-runnable from the start, so a delayed Greco update can be picked up
+later without manual cleanup.
+
+**Foreclosed, for now:** A first-party historical scraper against ufcstats.com.
+Revisit only if the site's access posture changes, or if Greco1899 stops being
+reliably maintained.
+
+**`fetch.py`'s caching/rate-limiting/retry infrastructure is not wasted** — it
+remains the right tool for Friday's upcoming-events scraper against ESPN and
+Wikipedia, neither of which exhibited this gating behavior.
+
+---
 ## [ADR-005] Bouts table design — corner FKs, unified status, winner tracking
 
 **Date:** 2026-08-04
