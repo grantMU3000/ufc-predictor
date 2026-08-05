@@ -111,9 +111,9 @@ def read_fighter_tott() -> pd.DataFrame:
     df["stance"] = df["STANCE"].apply(_parse_stance)
     df["dob"] = pd.to_datetime(df["DOB"], format="%b %d, %Y", errors="coerce").dt.date
 
-    df = df.rename(columns={"URL": "fighter_url"})
+    df = df.rename(columns={"URL": "source_url"})
 
-    return df[["sourceurl", "height_cm", "reach_cm", "stance", "dob"]]
+    return df[["source_url", "height_cm", "reach_cm", "stance", "dob"]]
 
 
 def read_fighters() -> pd.DataFrame:
@@ -320,11 +320,12 @@ def read_fight_results() -> pd.DataFrame:
           f"scheduled_rounds outside {VALID_SCHEDULED_ROUNDS} "
           f"({before_count} -> {len(df)})")
 
+    df["bout_matchup"] = df["BOUT"]
     keep_cols = [
         "event_name", "fighter_red_name", "fighter_blue_name", "winner_side",
         "weight_class", "is_title_fight", "method", "method_detail",
         "ending_round", "ending_time_seconds", "scheduled_rounds",
-        "source_url", "status",
+        "source_url", "status", "bout_matchup"
     ]
 
     return df[keep_cols]
