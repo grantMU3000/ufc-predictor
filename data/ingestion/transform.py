@@ -1,12 +1,13 @@
 # data/ingestion/transform.py
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 
 from data.ingestion.parsers import (
     read_events,
-    read_fighters,
     read_fight_results,
     read_fight_stats,
+    read_fighters,
 )
 
 LOG_DIR = Path("data/ingestion/logs")
