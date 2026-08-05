@@ -36,7 +36,6 @@ def _cache_path(url: str) -> Path:
 
 def _respect_rate_limit() -> None:
     """Sleep, if needed, so we never request more than once per second."""
-    global _last_request_time
     elapsed = time.monotonic() - _last_request_time
     if elapsed < MIN_DELAY_SECONDS:
         time.sleep(MIN_DELAY_SECONDS - elapsed)
