@@ -6,7 +6,7 @@ import os
 
 import pandas as pd
 from dotenv import load_dotenv
-from sqlalchemy import MetaData, Table, create_engine
+from sqlalchemy import MetaData, Table, create_engine, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 load_dotenv()
@@ -24,18 +24,29 @@ def _clean_for_insert(df: pd.DataFrame, cols: list[str]) -> list[dict]:
     clean = df[cols].astype(object).where(pd.notnull(df[cols]), None)
     return clean.to_dict(orient="records")
 
-def _upsert_by_source_url(engine, table: Table, df: pd.DataFrame, insert_cols: list[str]) -> dict[str, int]:
+def _upsert_by_source_url(
+        engine, table: Table, df: pd.DataFrame, insert_cols: list[str], 
+        preserve_on_conflict: list[str] | None = None,
+    ) -> dict[str, int]:
     """
     Upsert rows keyed on source_url. Returns {source_url: db_id} for
     every row — whether newly inserted or already present — which is
     exactly what's needed to translate other tables' FK references.
+
+    preserve_on_conflict: columns to set on INSERT but never overwrite
+    on conflict — for values populated by a separate process after the
+    initial load (e.g. ufc_debut_date, backfilled from bout data).
     """
+    preserve_on_conflict = preserve_on_conflict or []
     records = _clean_for_insert(df, insert_cols)
     if not records:
         return {}
 
     stmt = pg_insert(table).values(records)
-    update_cols = {c: stmt.excluded[c] for c in insert_cols if c != "source_url"}
+    update_cols = {
+        c: stmt.excluded[c] for c in insert_cols 
+        if c != "source_url" and c not in preserve_on_conflict
+    }
     stmt = stmt.on_conflict_do_update(
         index_elements=["source_url"], set_=update_cols
     ).returning(table.c.id, table.c.source_url)
@@ -49,19 +60,51 @@ def _remap_ids(series: pd.Series, pandas_id_to_url: dict, url_to_db_id: dict) ->
     each id's source_url. NaN/unmapped ids stay NaN."""
     return series.map(pandas_id_to_url).map(url_to_db_id)
 
+from sqlalchemy import text
+
+def backfill_ufc_debut_dates(engine) -> int:
+    """
+    Sets fighters.ufc_debut_date to the earliest event_date among all
+    bouts that fighter appears in (either corner). Recomputes fresh every
+    run — safe to call repeatedly, and correctly updates fighters whose
+    known bout history has grown since the last run.
+    """
+    stmt = text("""
+        UPDATE fighters f
+        SET ufc_debut_date = sub.min_date
+        FROM (
+            SELECT fighter_id, MIN(event_date) AS min_date
+            FROM (
+                SELECT b.fighter_red_id AS fighter_id, e.event_date
+                FROM bouts b JOIN events e ON b.event_id = e.id
+                UNION ALL
+                SELECT b.fighter_blue_id AS fighter_id, e.event_date
+                FROM bouts b JOIN events e ON b.event_id = e.id
+            ) all_appearances
+            GROUP BY fighter_id
+        ) sub
+        WHERE f.id = sub.fighter_id
+    """)
+    with engine.begin() as conn:
+        result = conn.execute(stmt)
+        return result.rowcount
+
 def load_fighters(engine, fighters_df: pd.DataFrame) -> dict[str, int]:
     metadata = MetaData()
     fighters_tbl = Table("fighters", metadata, autoload_with=engine)
 
     df = fighters_df.copy()
     df["nationality"] = None    
-    df["ufc_debut_date"] = None     # TODO: backfill from MIN(bout event_date) per fighter
+    df["ufc_debut_date"] = None     # correct default for a brand-new fighter
 
     insert_cols = [
         "real_name", "dob", "height_cm", "reach_cm", "stance",
         "nationality", "ufc_debut_date", "source_url",
     ]
-    return _upsert_by_source_url(engine, fighters_tbl, df, insert_cols)
+    return _upsert_by_source_url(
+        engine, fighters_tbl, df, insert_cols,
+        preserve_on_conflict=["nationality", "ufc_debut_date"],
+    )
 
 def load_events(engine, events_df: pd.DataFrame) -> dict[str, int]:
     metadata = MetaData()
@@ -161,6 +204,10 @@ def load_all(fighters_df, events_df, bouts_df, bout_stats_df) -> None:
         event_pandas_id_to_url, event_url_to_db_id,
     )
     print(f"  {len(bout_url_to_db_id)} bouts upserted")
+
+    print("Backfilling ufc_debut_date...")
+    debut_count = backfill_ufc_debut_dates(engine)
+    print(f"  {debut_count} fighters updated")
 
     print("Loading bout_stats...")
     stats_count = load_bout_stats(
