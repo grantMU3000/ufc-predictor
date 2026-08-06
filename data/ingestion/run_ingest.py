@@ -14,6 +14,7 @@ from data.ingestion.transform import (
     build_bouts_table,
     build_bout_stats_table,
 )
+from data.ingestion.loaders import load_all
 
 
 def run() -> tuple:
@@ -40,10 +41,7 @@ def run() -> tuple:
     print(f"bout_stats: {len(bout_stats)} rows")
 
     print("\n=== Step 5: load into Postgres ===")
-    print("loaders.py not yet built — stopping here.")
-    # Once loaders.py exists:
-    # from data.ingestion.loaders import load_all
-    # load_all(fighters, events, bouts, bout_stats)
+    load_all(fighters, events, bouts, bout_stats)
 
     return fighters, events, bouts, bout_stats
 
