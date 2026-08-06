@@ -131,7 +131,7 @@ def read_fighters() -> pd.DataFrame:
     details = read_fighter_details()
     tott = read_fighter_tott()
 
-    fighters = details.merge(tott, on="fighter_url", how="left")
+    fighters = details.merge(tott, on="source_url", how="left")
 
     return fighters
 
@@ -320,6 +320,18 @@ def read_fight_results() -> pd.DataFrame:
     print(f"read_fight_results: dropped {dropped_count} rows with "
           f"scheduled_rounds outside {VALID_SCHEDULED_ROUNDS} "
           f"({before_count} -> {len(df)})")
+
+    # Filter out non-roster contract/prospect shows (e.g. "Road to UFC") —
+    # these are eliminatory fights for a UFC contract, not fights involving
+    # fighters already on the roster, so they're out of scope for this
+    # dataset regardless of round-format validity. Deliberate exclusion,
+    # not a data-quality issue — logged the same way as the round-format
+    # filter for the same reason: visible, not silent.
+    before_count = len(df)
+    df = df[~df["event_name"].str.contains("Road to UFC", case=False, na=False)]
+    dropped_count = before_count - len(df)
+    print(f"read_fight_results: dropped {dropped_count} non-roster "
+          f"('Road to UFC') rows ({before_count} -> {len(df)})")
 
     df["bout_matchup"] = df["BOUT"]
     keep_cols = [
