@@ -1,4 +1,3 @@
-# data/ingestion/transform.py
 from pathlib import Path
 
 import pandas as pd
@@ -34,7 +33,7 @@ def _build_fighter_lookup(fighters_df: pd.DataFrame) -> dict[str, int | None]:
 
 
 def build_fighters_table() -> pd.DataFrame:
-    """Explicit, deterministic fighter_id — see design note above."""
+    """Explicit, deterministic fighter_id"""
     fighters = read_fighters().sort_values("source_url").reset_index(drop=True)
     fighters["fighter_id"] = fighters.index + 1
     return fighters
@@ -46,7 +45,7 @@ def build_events_table() -> pd.DataFrame:
     return events
 
 
-def build_bouts_table(fighters: pd.DataFrame, events: pd.DataFrame) -> pd.DataFrame:
+def build_bouts_table(events: pd.DataFrame, fighter_lookup) -> pd.DataFrame:
     """
     Resolve fight_results.csv's free-text names into real FKs. Rows with
     an ambiguous or unmatched fighter/event name are logged to
@@ -54,7 +53,6 @@ def build_bouts_table(fighters: pd.DataFrame, events: pd.DataFrame) -> pd.DataFr
     """
     bouts = read_fight_results()
 
-    fighter_lookup = _build_fighter_lookup(fighters)
     event_lookup = dict(zip(events["name"], events["event_id"]))
 
     bouts["fighter_red_id"] = bouts["fighter_red_name"].map(fighter_lookup)
@@ -98,7 +96,7 @@ def build_bouts_table(fighters: pd.DataFrame, events: pd.DataFrame) -> pd.DataFr
     return bouts[keep_cols]
 
 
-def build_bout_stats_table(bouts: pd.DataFrame, fighters: pd.DataFrame) -> pd.DataFrame:
+def build_bout_stats_table(bouts: pd.DataFrame, fighter_lookup) -> pd.DataFrame:
     """
     Resolve fight_stats.csv rows to real bout_id/fighter_id FKs. INNER
     join to bouts on (event_name, bout_matchup) — required, not a left
@@ -106,7 +104,6 @@ def build_bout_stats_table(bouts: pd.DataFrame, fighters: pd.DataFrame) -> pd.Da
     unresolved-name rows, so orphaned stats rows must drop too.
     """
     stats = read_fight_stats()
-    fighter_lookup = _build_fighter_lookup(fighters)
 
     stats["fighter_id"] = stats["fighter_name"].map(fighter_lookup)
 
