@@ -35,6 +35,100 @@ What this makes easier, what this makes harder, what it forecloses or defers.
 ```
 
 ---
+## [ADR-008] Revise odds-coverage exit criterion — The Odds API's June 2020 floor
+
+**Date:** 2026-08-07
+**Status:** Accepted
+
+### Context
+The original exit criterion (`docs/PLAN.md` §6) targets "≥4,000 bouts with odds attached."
+The Odds API's historical MMA data begins June 2020 — a hard coverage floor on any paid tier,
+not a budget constraint. Querying the loaded dataset directly (Postgres, not the raw CSVs)
+confirmed 3,209 bouts fall on or after June 2020, out of 8,593 total loaded bouts. This is the
+maximum possible population that could ever have real odds attached, before any name-matching
+loss is applied (the plan already budgets ~10% match failure on top of this).
+
+### Options considered
+1. **Keep the ≥4,000 target and treat it as at-risk** — no change to the stated goal, revisit
+   only if the shortfall becomes a problem later. Rejected: the ceiling is structural (a fixed
+   API limitation), not a matching-quality or effort problem, so "trying harder" cannot close
+   this gap. Leaving the number as-is risks an unexplained shortfall in the final README.
+2. **Pay for a different/additional odds provider with deeper historical coverage** — could
+   theoretically raise the ceiling. Rejected for now: adds cost and integration complexity
+   disproportionate to the benefit, given odds are explicitly excluded from model features
+   (ADR-002) and used only for baseline/backtest/calibration purposes.
+3. **Revise the exit criterion to reflect the real achievable population, reframed around
+   where odds are actually used** — the criterion becomes honest and defensible rather than
+   quietly missed.
+
+### Decision
+Option 3 — revise the exit criterion to ~2,800–2,900 bouts with odds attached (accounting for
+expected match-failure loss on top of the 3,209 ceiling), and explicitly note that coverage
+concentrates in the 2023+ validation/test window, where odds are actually consumed
+(baseline comparison, ROI backtest, calibration — never as a model feature).
+
+### Why
+Odds are evaluation-stage tooling, not training input (ADR-002), and evaluation only touches
+the validation (2023–24) and test (2025+) windows. Year-by-year bout counts confirm those
+years alone (~1,871 bouts) already provide a strong sample for the metrics that actually get
+reported. The pre-2023 portion of the 3,209-bout ceiling is a bonus for context, not a
+requirement — so the original 4,000 target was measuring the wrong thing: total odds-tagged
+rows, rather than odds coverage where it's actually consumed. Revising the number is more
+honest than either quietly missing it or spending disproportionately to chase it.
+
+### Consequences
+**Easier:** The odds-ingestion scope stays bounded to a single, affordable API tier and a
+single historical backfill pass — no need to justify a second data source or an expanded
+budget purely to hit an arbitrary total.
+
+**Forecloses:** Bouts before June 2020 (5,384 of 8,593 loaded bouts) will permanently have no
+real odds data from this source. The favorite-baseline and ROI backtest, by design, only ever
+needed the post-2023 window anyway, so this forecloses nothing that was actually load-bearing.
+
+**Requires a follow-up edit:** `docs/PLAN_ADDENDUM.md` §6 (exit checklist) needs its odds
+line item updated to reference this ADR and the revised number, once that section is written.
+
+---
+## [ADR-007] Exclude "Road to UFC" rows from bout dataset
+
+**Date:** 2026-08-06
+**Status:** Accepted
+
+### Context
+2 rows in `ufc_fight_results.csv` belong to "UFC - Road to UFC 4.6," a contract/prospect
+elimination show, not an event involving fighters already on the UFC roster. These rows also
+had no matching entry in `ufc_events.csv`, surfacing as unresolved `event_id` rows during
+ingestion.
+
+### Options considered
+1. **Keep the rows, add the missing event to `events`** — technically possible, but the
+   fighters/bouts don't represent roster-level UFC competition, which is what this dataset
+   models.
+2. **Exclude "Road to UFC" rows at ingestion**, matched by event-name pattern — deliberate,
+   documented scope boundary rather than an incidental drop.
+3. **Leave exclusion implicit** (rely on the existing unresolved-name/event log) — works
+   today, but conflates a deliberate scope decision with genuine data-quality bugs, risking
+   confusion if more such rows appear in future Greco refreshes.
+
+### Decision
+Option 2 — explicit filter in `read_fight_results()`, matching on `event_name` containing
+"Road to UFC," logged with a row count on every run.
+
+### Why
+Only 2 rows / 1 event affected today, but the exclusion is about what the dataset should
+represent (roster-level UFC bouts), not about these specific rows — an explicit, named filter
+makes that reasoning visible and durable if similar shows (e.g. Contender Series) appear later,
+rather than relying on an incidental side effect of FK resolution.
+
+### Consequences
+**Easier:** `unresolved_bout_fighters.csv` stays reserved for genuine data-quality issues,
+not conflated with intentional scope exclusions. Future Road to UFC rows are caught and
+logged automatically rather than silently piling into the unresolved log.
+
+**Forecloses:** Prospect/contract-show fights (Road to UFC, and similar if found later) are
+permanently out of scope for this dataset, independent of any modeling-stage decisions.
+
+---
 ## [ADR-006] Primary data source: Greco1899 CSVs over a self-built ufcstats.com scraper
 
 **Date:** 2026-08-05
