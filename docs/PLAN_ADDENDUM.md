@@ -37,7 +37,7 @@ Replace the original table with:
 |---|---|---|
 | **Greco1899 CSVs** | Every event, bout, round-by-round stats, fighter bios | **Primary and current sole source**, until further notice. Pre-scraped from ufcstats.com by a third-party pipeline (their own daily GCP Cloud Run job), refreshed regularly. See §4 for the reliability caveat. |
 | **ufcstats.com (direct)** | — | **Not used.** Blocks all non-browser access via an enforced JS proof-of-work challenge (ADR-005). Not a `robots.txt` restriction — an active technical barrier. Revisit only if the site's posture changes. |
-| **Wikipedia** | UFC event schedule, official divisional rankings | **Primary** for both upcoming-events schedule and rankings (promoted from "schedule fallback"). Human-maintained, sourced from official UFC.com, not bot-gated. |
+| **Wikipedia** | UFC event schedule, official divisional rankings | **Primary** for both upcoming-events schedule and rankings, accessed via the MediaWiki API (ADR-009). Human-maintained, sourced from official UFC.com, not bot-gated. |
 | **ESPN public MMA API** | Event schedule, rankings, fighter bios | **Fallback only.** Observed to return stale rankings data (a since-departed fighter still listed) as of 2026-08-05 — do not treat as current without spot-checking against a known-correct value first. |
 | **The Odds API** | Live + historical MMA moneylines | Unchanged. |
 
@@ -91,9 +91,14 @@ explicit IDs — see note below), resolve the 8 name collisions, `run_ingest.py`
 
 **Replace with:**
 
-> Upcoming-events and rankings scraper: **Wikipedia primary**, **ESPN fallback only** (verify
+>> Upcoming-events and rankings client: **Wikipedia primary**, accessed via the **MediaWiki
+> Action API** rather than HTML scraping (see ADR-009). **ESPN fallback only** (verify
 > against a known-current value before trusting, per §2). ufcstats.com excluded entirely.
-> Reuses `fetch.py` from Tuesday unmodified.
+> Extends `fetch.py` from Tuesday — added query-param support, a `use_cache` bypass for
+> lookups that must always be live, and a Wikimedia-compliant `User-Agent`. New module
+> `data/scraping/wiki_api.py` wraps the API calls; new dependency `mwparserfromhell` parses
+> the `{{MMAevent bout}}`/`{{MMAevent card}}` templates on event pages and the wikitable on
+> the list page. Upcoming events/bouts keyed by Wikipedia `pageid`, not `source_url`.
 
 ### Saturday (data-quality suite) — additions
 
@@ -139,8 +144,9 @@ via their own daily automated job, decoupled from your event timing.
   idempotent by construction (via `source_url` uniqueness), so "new data arrived" can simply
   mean "rerun the pipeline," not a specially-built incremental path.
 - Upcoming-events + rankings refresh: same fight-week-aware cadence reasoning as originally
-  planned (every 3 days normally, every 12 hours during fight week) — just pointed at
-  Wikipedia/ESPN instead of ufcstats.com/ESPN/Wikipedia.
+  planned (every 3 days normally, every 12 hours during fight week) — just pointed at the
+  Wikipedia API (ADR-009) / ESPN instead of ufcstats.com/ESPN/Wikipedia. Each refresh call
+  passes `use_cache=False` since these lookups need to reflect live state.
 - Odds refresh (6x/day, Odds API): unaffected by any of this.
 
 ---
@@ -196,3 +202,4 @@ boundaries.
 - This addendum should be merged into `docs/PLAN.md` §1 (data sources), the Week 1 day-by-day
   table, Week 4 Friday's task list, and §5 (risk register) at your convenience — flagged here
   as an addendum rather than an in-place edit so you can review before it overwrites anything.
+- Full reasoning for the upcoming-events API choice: **ADR-009**, `docs/DECISIONS.md`

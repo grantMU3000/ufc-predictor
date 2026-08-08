@@ -33,12 +33,48 @@ The actual reasoning. Be specific about tradeoffs accepted, not just benefits ga
 ### Consequences
 What this makes easier, what this makes harder, what it forecloses or defers.
 ```
+---
+## [ADR-009] Switch upcoming-events data collection from HTML scraping to Wikipedia's API
+
+**Date:** 2026-08-08
+**Status:** Accepted
+
+### Context
+Per `PLAN_ADDENDUM.md` §3 (Friday), the upcoming-events/rankings task was planned as HTML
+scraping against Wikipedia, reusing `fetch.py` unmodified. Inspecting the actual wikitext via
+the MediaWiki API showed event fight-card data is built from a `{{MMAevent bout}}` template —
+a fixed positional structure — rather than a plain wikitable, and the API additionally exposes
+a stable `pageid` that survives page renames (a real risk for upcoming events, which get
+retitled as cards are confirmed/reshuffled).
+
+### Options considered
+1. **HTML scraping** — original plan, reusing `fetch.py` unmodified. Works, but requires
+   parsing rendered HTML (BeautifulSoup) and offers no built-in way to get a page's stable ID.
+2. **MediaWiki Action API** (`action=parse`, `prop=wikitext`/`sections`) — returns raw wikitext;
+   combined with `mwparserfromhell`, the `{{MMAevent bout}}` template parses into clean
+   positional fields, and `pageid` comes back in the same response, for free.
+
+### Decision
+Use the MediaWiki Action API for both the "List of UFC events" schedule and individual event
+pages, instead of scraping rendered HTML.
+
+### Why
+Same cost (free, no auth) as scraping, but more reliable given the actual template-based page
+structure, and it solves the title-stability problem for upcoming events without extra work —
+`pageid` becomes the natural key instead of `source_url`.
+
+### Consequences
+`fetch.py` extended, not reused unmodified — added query-param support, a `use_cache` bypass
+(upcoming-event lookups must be live, not served stale from cache), and a Wikimedia-compliant
+`User-Agent`. New dependency: `mwparserfromhell`. Upcoming events/bouts will be keyed by
+Wikipedia `pageid` rather than `source_url` — a deliberate departure from the convention used
+for Greco/Odds data, worth noting when the upcoming-events table is built.
 
 ---
 ## [ADR-008] Revise odds-coverage exit criterion — The Odds API's June 2020 floor
 
 **Date:** 2026-08-07
-**Status:** Accepted
+**Status:** Resolved
 
 ### Context
 The original exit criterion (`docs/PLAN.md` §6) targets "≥4,000 bouts with odds attached."
@@ -65,7 +101,7 @@ loss is applied (the plan already budgets ~10% match failure on top of this).
 Option 3 — revise the exit criterion to ~2,800–2,900 bouts with odds attached (accounting for
 expected match-failure loss on top of the 3,209 ceiling), and explicitly note that coverage
 concentrates in the 2023+ validation/test window, where odds are actually consumed
-(baseline comparison, ROI backtest, calibration — never as a model feature).
+(baseline comparison, ROI backtest, calibration — never as a model feature). 
 
 ### Why
 Odds are evaluation-stage tooling, not training input (ADR-002), and evaluation only touches
