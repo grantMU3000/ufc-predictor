@@ -21,7 +21,7 @@ MIN_DELAY_SECONDS = 1.0  # Politely scraping
 
 # Labeled traffic is less suspicious
 HEADERS = {
-    "User-Agent": "ufc-predictor/0.1 (personal portfolio project)"
+    "User-Agent": "ufc-predictor/0.1 (https://github.com/grantMU3000/ufc-predictor; robinsonjg64@gmail.com)"
 }
 
 # Retry config
@@ -45,19 +45,21 @@ def _respect_rate_limit() -> None:
 # invalid request.
 RETRYABLE_STATUS_CODES = {408, 409, 429}
 
-def fetch(url: str) -> str:
+def fetch(url: str, params: dict | None = None, use_cache: bool = True) -> str:
     """
-    Fetch a page's HTML, using a local cache when available.
-
-    On transient failures (timeouts, connection errors, 5xx server errors),
-    retries a limited number of times with exponential backoff before
-    giving up. On most 4xx errors (e.g. 404), fails immediately — retrying
-    won't fix a page that doesn't exist.
+    Fetch a page's HTML/JSON, using a local cache when available.
+    Pass use_cache=False for sources that change over time (e.g. Wikipedia
+    upcoming-event pages) — the response is still written to cache for
+    debugging, just never read back.
     """
     global _last_request_time
+
+    if params:
+        url = requests.Request("GET", url, params=params).prepare().url
+
     cache_file = _cache_path(url)
 
-    if cache_file.exists():
+    if use_cache and cache_file.exists():
         return cache_file.read_text(encoding="utf-8")
 
     last_exception: Exception | None = None
