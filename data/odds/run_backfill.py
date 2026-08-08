@@ -86,8 +86,6 @@ def run():
         print(f"{snapshots_written} snapshots, {len(new_aliases)} new aliases, "
               f"{len(unresolved)} unresolved")
 
-        time.sleep(0.5)  # light pacing, not a documented hard limit
-
     print(f"\nDone. {totals['snapshots']} snapshots loaded, "
           f"{totals['aliases']} aliases confirmed, "
           f"{totals['unresolved']} unresolved.")

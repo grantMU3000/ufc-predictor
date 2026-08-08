@@ -6,7 +6,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2026-08-01T14:00:00Z,Ivan Klevets,Kevin Enz,False,False,UFC Fight Night: Medic vs. Rodriguez
 2026-08-01T14:00:00Z,Will Fleury,Makhmud Muradov,False,True,UFC Fight Night: Medic vs. Rodriguez
 2026-08-01T14:00:00Z,Miroslav Broz,Rafael Aronov,False,False,UFC Fight Night: Medic vs. Rodriguez
-2026-08-01T15:15:00Z,Nina Milošević,Hailey Cowan,False,True,UFC Fight Night: Medic vs. Rodriguez
 2026-08-01T16:00:00Z,Hafeni Nafuka,Tomáš Mudroch,False,False,UFC Fight Night: Medic vs. Rodriguez
 2026-08-01T16:00:00Z,Jakub Batfalsky,Vojtěch Kohl,False,False,UFC Fight Night: Medic vs. Rodriguez
 2026-08-01T17:00:00Z,Lucia Szabová,Lucie Pudilova,False,True,UFC Fight Night: Medic vs. Rodriguez
@@ -188,7 +187,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2026-04-25T20:30:00Z,Jordan Stronge,Marc-Philippe Ngatchou,False,False,UFC Fight Night: Sterling vs. Zalal
 2026-04-25T20:55:00Z,Jack Foote,Eoin McDonald,False,False,UFC Fight Night: Sterling vs. Zalal
 2026-04-25T21:30:00Z,Kevin Tariq Osaro,Nico Horta,False,False,UFC Fight Night: Sterling vs. Zalal
-2026-04-25T21:35:00Z,Max Griffin,Victor Valenzuela,True,True,UFC Fight Night: Sterling vs. Zalal
 2026-04-25T21:45:00Z,Sean Jr. Clancy,Justin Burlinson,True,True,UFC Fight Night: Sterling vs. Zalal
 2026-04-25T21:59:00Z,Donovan Wisse,Chico Kwasi,False,False,UFC Fight Night: Sterling vs. Zalal
 2026-04-26T01:15:00Z,Juan Martinetti,Davey Grant,False,True,UFC Fight Night: Sterling vs. Zalal
@@ -202,7 +200,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2026-04-18T15:00:00Z,Werlleson Martins,Marcelo Morrelli,False,False,UFC Fight Night: Burns vs. Malott
 2026-04-18T15:00:00Z,Phil De Fries,Marcin Wojcik,True,False,UFC Fight Night: Burns vs. Malott
 2026-04-18T15:00:00Z,Sebastian Decowski,Tobiasz Le,False,False,UFC Fight Night: Burns vs. Malott
-2026-04-18T22:25:00Z,Melissa Croden,Darya Zheleznyakova,True,False,UFC Fight Night: Burns vs. Malott
 2026-04-19T00:00:00Z,Arman Tsarukyan,Urijah Faber,True,True,UFC Fight Night: Burns vs. Malott
 2026-04-19T00:00:00Z,Merab Dvalishvili,Henry Cejudo,True,True,UFC Fight Night: Burns vs. Malott
 2026-04-11T15:00:00Z,Alexander Poppeck,Tomasz Narkun,True,False,UFC 327: Prochazka vs. Ulberg
@@ -242,7 +239,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2026-03-29T01:40:00Z,Jack Shore,Allan Begosso,True,True,UFC Fight Night: Adesanya vs. Pyfer
 2026-03-29T02:40:00Z,Alexei Pergande,Julio Arce,False,True,UFC Fight Night: Adesanya vs. Pyfer
 2026-03-29T03:10:00Z,Sumiko Inaba,Ariane Lipski,False,False,UFC Fight Night: Adesanya vs. Pyfer
-2026-03-29T03:45:00Z,Israel Adesanya,Joseph Pyfer,True,False,UFC Fight Night: Adesanya vs. Pyfer
 2026-03-29T04:10:00Z,Johnny Eblen,Bryan Battle,False,True,UFC Fight Night: Adesanya vs. Pyfer
 2026-03-14T16:00:00Z,Adrian Bartosinski,Madars Fleminas,False,False,UFC Fight Night: Emmett vs. Vallejos
 2026-03-14T16:00:00Z,Oliver Tero,Alexis Tsarmantidis,False,False,UFC Fight Night: Emmett vs. Vallejos
@@ -274,8 +270,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2026-03-07T17:00:00Z,Raul Lemberanskij,Ali Gündüz,False,False,UFC 326: Holloway vs. Oliveira 2
 2026-03-07T17:00:00Z,Christian Eckerlin,Matouš Kohout,False,False,UFC 326: Holloway vs. Oliveira 2
 2026-03-07T17:00:00Z,Denis Frimpong,Tomáš Cigánik,False,False,UFC 326: Holloway vs. Oliveira 2
-2026-03-07T22:00:00Z,Sumudaerji Sumudaerji,Jesus Santos Aguilar,True,False,UFC 326: Holloway vs. Oliveira 2
-2026-03-07T23:45:00Z,Su Mudaerji,Jesus Santos Aguilar,False,False,UFC 326: Holloway vs. Oliveira 2
 2026-03-01T01:00:00Z,Aljamain Sterling,Benson Henderson,True,True,UFC Fight Night: Moreno vs. Kavanagh
 2026-03-01T01:00:00Z,Urijah Faber,Henry Cejudo,True,True,UFC Fight Night: Moreno vs. Kavanagh
 2026-02-21T17:00:00Z,Lukasz Charzewski,Alioune Nahaye,False,False,UFC Fight Night: Strickland vs. Hernandez
@@ -302,7 +296,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2026-02-21T22:20:00Z,Dario Bellandi,Paddy Mccorry,False,True,UFC Fight Night: Strickland vs. Hernandez
 2026-02-21T22:50:00Z,Solomon Simon,Nik Bagley,False,False,UFC Fight Night: Strickland vs. Hernandez
 2026-02-22T02:15:00Z,Ante Delija,Sergey Spivak,True,False,UFC Fight Night: Strickland vs. Hernandez
-2026-02-22T03:15:00Z,Geoffrey Neal,Uros Medic,False,True,UFC Fight Night: Strickland vs. Hernandez
 2026-02-07T14:00:00Z,Haider Khan,Jhony Gregory,False,False,UFC Fight Night: Bautista vs. Oliveira
 2026-02-07T14:30:00Z,Khabib Nabiev,Ahmed Sami,False,False,UFC Fight Night: Bautista vs. Oliveira
 2026-02-07T15:00:00Z,Luis Tavares,Alin Nechita,False,False,UFC Fight Night: Bautista vs. Oliveira
@@ -338,7 +331,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2026-01-31T23:10:00Z,Dom Mar Fan,Sang Uk Kim,True,False,UFC 325: Volkanovski vs. Lopes 2
 2026-01-31T23:45:00Z,Kaan Ofli,Yi Zha,True,False,UFC 325: Volkanovski vs. Lopes 2
 2026-02-01T03:45:00Z,Daniel Hooker,Benoit Saint-Denis,False,True,UFC 325: Volkanovski vs. Lopes 2
-2026-02-01T04:15:00Z,Alex Volkanovski,Diego Lopes,False,True,UFC 325: Volkanovski vs. Lopes 2
 2026-01-24T22:00:00Z,Alex Hernandez,Michael Johnson,False,True,UFC 324: Gaethje vs. Pimblett
 2025-12-13T15:00:00Z,Abraham Vidales,Achraf Aasila,False,False,UFC Fight Night: Royval vs. Kape
 2025-12-13T15:00:00Z,Miguel Trindade,Bobo Sacko,False,False,UFC Fight Night: Royval vs. Kape
@@ -391,7 +383,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2025-11-22T18:00:00Z,Tim Wilde,Oscar Ownsworth,False,False,UFC Fight Night: Tsarukyan vs. Hooker
 2025-11-22T18:00:00Z,Shay Ingram,Wellington Lopes,False,False,UFC Fight Night: Tsarukyan vs. Hooker
 2025-11-22T19:00:00Z,Omar Tugarev,Omiel Brown,False,False,UFC Fight Night: Tsarukyan vs. Hooker
-2025-11-22T20:15:00Z,Belal Muhammad,Ian Garry,True,False,UFC Fight Night: Tsarukyan vs. Hooker
 2025-11-22T20:45:00Z,Arman Tsarukyan,Daniel Hooker,True,False,UFC Fight Night: Tsarukyan vs. Hooker
 2025-11-15T12:00:00Z,Lany Silva,Charles Oliveira,False,True,UFC 322: Della Maddalena vs. Makhachev
 2025-11-15T12:00:00Z,Furkatbek Yokubov,Ruel Panales,False,True,UFC 322: Della Maddalena vs. Makhachev
@@ -410,7 +401,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2025-11-15T20:00:00Z,Thomas Paull,Marin Vetrila,True,False,UFC 322: Della Maddalena vs. Makhachev
 2025-11-15T20:00:00Z,Ollie Sarwa,Tuomas Gronvall,False,False,UFC 322: Della Maddalena vs. Makhachev
 2025-11-15T21:00:00Z,Jordan Vucenic,Torpal Merjoev,True,False,UFC 322: Della Maddalena vs. Makhachev
-2025-11-08T22:00:00Z,Tecia Torres,Denise Gomes,False,True,UFC Fight Night: Bonfim vs. Brown
 2025-11-01T20:45:00Z,Philip Rowe,Seok Hyun Ko,True,False,UFC Fight Night: Garcia vs. Onama
 2025-11-01T22:15:00Z,Timothy Cuamba,Chang Ho Lee,False,True,UFC Fight Night: Garcia vs. Onama
 2025-10-25T18:00:00Z,Andrea Bicchi,Tomas Melis,False,False,UFC 321: Aspinall vs. Gane
@@ -443,7 +433,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2025-10-18T16:00:00Z,Phil De Fries,Tefan Vojcak,True,False,UFC Fight Night: De Ridder vs. Allen
 2025-10-18T17:00:00Z,Patrick Ocheme,Abdoul Razac Sankara,False,False,UFC Fight Night: De Ridder vs. Allen
 2025-10-18T17:00:00Z,Christian Eckerlin,Ivica Trušček,False,False,UFC Fight Night: De Ridder vs. Allen
-2025-10-18T23:45:00Z,Cody Gibson,Aori Qileng,True,False,UFC Fight Night: De Ridder vs. Allen
 2025-10-11T16:00:00Z,Berjan Peposhi,Aitor Ibanez Currito,False,False,UFC Fight Night: Oliveira vs. Gamrot
 2025-10-11T16:00:00Z,Miloš Cvjetićanin,Alin Nechita,False,False,UFC Fight Night: Oliveira vs. Gamrot
 2025-10-11T16:00:00Z,Levi Rigters,Asadulla Nasipov,False,False,UFC Fight Night: Oliveira vs. Gamrot
@@ -482,7 +471,7 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2025-10-04T16:30:00Z,Alexander O'Sullivan,Manuel Lancioli,False,False,UFC 320: Ankalaev vs. Pereira 2
 2025-10-04T17:00:00Z,Kerim Engizek,Dominik Humburger,False,True,UFC 320: Ankalaev vs. Pereira 2
 2025-10-04T22:00:00Z,Mike Perry,Jeremy Stephens,True,True,UFC 320: Ankalaev vs. Pereira 2
-2025-10-05T02:15:00Z,Abusupyian Magomedov,Joseph Pyfer,False,False,UFC 320: Ankalaev vs. Pereira 2
+2025-10-05T02:15:00Z,Abusupyian Magomedov,Joseph Pyfer,False,True,UFC 320: Ankalaev vs. Pereira 2
 2025-09-27T14:45:00Z,Yanis Ghemmouri,Izzeddine Al Derbani,True,False,UFC Fight Night: Ulberg vs. Reyes
 2025-09-27T16:00:00Z,Adam Darby,Robert Alexandru Constantin,True,False,UFC Fight Night: Ulberg vs. Reyes
 2025-09-27T16:00:00Z,Malik Basahel,Ahmed Mostafa,False,False,UFC Fight Night: Ulberg vs. Reyes
@@ -529,7 +518,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2025-09-13T18:45:00Z,Connor Patterson,Jake McHugh,False,False,UFC Fight Night: Lopes vs. Silva
 2025-09-13T19:10:00Z,Giovanni Fernandez,Sam Kelly,False,False,UFC Fight Night: Lopes vs. Silva
 2025-09-13T19:30:00Z,Alice Pereira,Montserrat Rendon,True,False,UFC Fight Night: Lopes vs. Silva
-2025-09-13T20:45:00Z,Jesus Santos Aguilar,Luis Gurule,False,True,UFC Fight Night: Lopes vs. Silva
 2025-09-13T20:55:00Z,Andrew Fisher,Orlando Wilson Prins,False,False,UFC Fight Night: Lopes vs. Silva
 2025-09-13T22:45:00Z,Carlos Diego Ferreira,Alex Hernandez,True,False,UFC Fight Night: Lopes vs. Silva
 2025-08-23T16:00:00Z,Alin Nechita,Naim Hebbar,False,False,UFC Fight Night: Walker vs. Zhang
@@ -545,7 +533,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2025-08-23T19:00:00Z,Levi Rigters,Ben Sosoli,False,True,UFC Fight Night: Walker vs. Zhang
 2025-08-17T00:00:00Z,Alex Hernandez,Chase Hooper,False,True,UFC 319: Du Plessis vs. Chimaev
 2025-08-17T00:00:00Z,Jessica Andrade,Lupita Godinez,True,False,UFC 319: Du Plessis vs. Chimaev
-2025-08-17T03:15:00Z,Geoffrey Neal,Carlos Prates,False,True,UFC 319: Du Plessis vs. Chimaev
 2025-08-09T13:00:00Z,Radek Rousal,Adrian Hamerski,False,False,UFC Fight Night: Dolidze vs. Hernandez
 2025-08-09T15:00:00Z,Shadrick Dju Yemba,Abdoul Razac Sankara,False,False,UFC Fight Night: Dolidze vs. Hernandez
 2025-08-09T16:00:00Z,Elbert Lukas Steyn,Abderrahman Errachidy,False,False,UFC Fight Night: Dolidze vs. Hernandez
@@ -606,7 +593,7 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2025-07-19T19:25:00Z,Sumiko Inaba,Dakota Ditcheva,False,False,UFC 318: Holloway vs. Poirier 3
 2025-07-19T19:55:00Z,Costello Van Steenis,Johnny Eblen,False,False,UFC 318: Holloway vs. Poirier 3
 2025-07-19T21:00:00Z,Lorenz Larkin,Randall Wallace,True,True,UFC 318: Holloway vs. Poirier 3
-2025-07-20T02:00:00Z,Dan Ige,Patricio Freire,True,False,UFC 318: Holloway vs. Poirier 3
+2025-07-20T02:00:00Z,Dan Ige,Patricio Freire,True,True,UFC 318: Holloway vs. Poirier 3
 2025-07-20T02:45:00Z,Dan Ige,Patricio Pitbull,True,True,UFC 318: Holloway vs. Poirier 3
 2025-07-20T03:45:00Z,Paulo Henrique Costa,Roman Kopylov,True,True,UFC 318: Holloway vs. Poirier 3
 2025-07-12T17:00:00Z,Callum Haughian,Joshua Adeboye,False,False,UFC Fight Night: Lewis vs. Teixeira
@@ -647,7 +634,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2025-06-28T20:50:00Z,Michael Pagani,Tim Wilde,False,False,UFC 317: Topuria vs. Oliveira
 2025-06-28T21:40:00Z,Liam Gittins,Alessandro Giordano,False,False,UFC 317: Topuria vs. Oliveira
 2025-06-29T02:00:00Z,Niklas Stolze,Jessin Ayari,True,True,UFC 317: Topuria vs. Oliveira
-2025-06-21T17:30:00Z,Melissa Mullins,Darya Zheleznyakova,True,False,UFC Fight Night: Hill vs. Rountree Jr.
 2025-06-21T18:30:00Z,Seok Hyun Ko,Oban Elliott,False,True,UFC Fight Night: Hill vs. Rountree Jr.
 2025-06-22T00:00:00Z,Mariya Agapova,Jessica Eye,True,True,UFC Fight Night: Hill vs. Rountree Jr.
 2025-06-14T13:05:00Z,Iuri Fernandes,Samuele Pugliese,False,False,UFC Fight Night: Usman vs. Buckley
@@ -688,7 +674,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2025-06-15T02:00:00Z,Joshua Van,Brandon Royval,True,True,UFC Fight Night: Usman vs. Buckley
 2025-06-07T23:35:00Z,Ariane Lipski,Wang Cong,False,True,UFC 316: Dvalishvili vs. O'Malley 2
 2025-06-08T00:40:00Z,Waldo Cortes-Acosta,Sergey Spivak,True,False,UFC 316: Dvalishvili vs. O'Malley 2
-2025-06-08T03:05:00Z,Kelvin Gastelum,Joseph Pyfer,True,False,UFC 316: Dvalishvili vs. O'Malley 2
 2025-05-31T14:30:00Z,Antonio Amodeo,Manuel Lancioli,False,False,UFC Fight Night: Blanchfield vs. Barber
 2025-05-31T14:30:00Z,Pietro Mochetti,Dimitrios Tzeiranidis,False,False,UFC Fight Night: Blanchfield vs. Barber
 2025-05-31T14:30:00Z,Emanuele Tetti,Rodrigo Rivoin,False,False,UFC Fight Night: Blanchfield vs. Barber
@@ -720,8 +705,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2025-05-17T16:00:00Z,Jovan Zeljkovic,Patrick Vespaziani,False,False,UFC Fight Night: Burns vs. Morales
 2025-05-17T16:00:00Z,Tomáš Mudroch,Ozan Aslaner,False,False,UFC Fight Night: Burns vs. Morales
 2025-05-17T17:00:00Z,Victor Hugo Silva,Damien Lapilus,True,False,UFC Fight Night: Burns vs. Morales
-2025-05-17T20:10:00Z,Tecia Torres,Luana Pinheiro,False,True,UFC Fight Night: Burns vs. Morales
-2025-05-17T22:40:00Z,Gabriel Green,Matheus Camilo,False,True,UFC Fight Night: Burns vs. Morales
 2025-05-18T00:45:00Z,Rodolfo Bellato,Paul Craig,True,True,UFC Fight Night: Burns vs. Morales
 2025-05-10T15:00:00Z,Alioune Nahaye,Piotr Kacprzak,False,False,UFC 315: Muhammad vs. Della Maddalena
 2025-05-10T15:00:00Z,Amaury Wako,Kacper Fornalski,False,False,UFC 315: Muhammad vs. Della Maddalena
@@ -742,10 +725,7 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2025-05-10T16:00:00Z,Gemma Auld,Sammy-Jo Luxton,False,False,UFC 315: Muhammad vs. Della Maddalena
 2025-05-10T16:00:00Z,Haider Khan,Sean McCormac,False,False,UFC 315: Muhammad vs. Della Maddalena
 2025-05-10T16:00:00Z,Souheil Kaouchen,Oskar Stachura,False,False,UFC 315: Muhammad vs. Della Maddalena
-2025-05-10T22:30:00Z,Marc-Andre Barriault,Bruno Silva,True,True,UFC 315: Muhammad vs. Della Maddalena
-2025-05-10T23:10:00Z,Jeongyoung Lee,Daniel Santos,False,True,UFC 315: Muhammad vs. Della Maddalena
 2025-05-11T02:00:00Z,John Mitchell,Lorenzo Parente,False,False,UFC 315: Muhammad vs. Della Maddalena
-2025-05-11T03:15:00Z,José Aldo,Aiemann Zahabi,False,True,UFC 315: Muhammad vs. Della Maddalena
 2025-04-26T13:00:00Z,Marcin Krakowiak,Adam Niedzwiedz,False,False,UFC Fight Night: Machado Garry vs. Prates
 2025-04-26T13:00:00Z,Andrej Kalasnik,Mate Kertesz,False,False,UFC Fight Night: Machado Garry vs. Prates
 2025-04-26T13:00:00Z,Michal Turynski,Denis Gorniak,False,False,UFC Fight Night: Machado Garry vs. Prates
@@ -804,11 +784,8 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2025-04-26T22:45:00Z,Timothy Cuamba,Roberto Romero,False,True,UFC Fight Night: Machado Garry vs. Prates
 2025-04-26T23:46:00Z,Heili Alateng,Da'Mon Blackshear,False,True,UFC Fight Night: Machado Garry vs. Prates
 2025-04-27T02:16:00Z,Abusupyian Magomedov,Michel Pereira,False,True,UFC Fight Night: Machado Garry vs. Prates
-2025-04-27T03:46:00Z,Carlos Prates,Ian Garry,True,False,UFC Fight Night: Machado Garry vs. Prates
-2025-04-12T23:10:00Z,Su Mudaerji,Mitch Raposo,False,True,UFC 314: Volkanovski vs. Lopes
-2025-04-13T03:15:00Z,Yair Rodriguez,Patricio Freire,True,False,UFC 314: Volkanovski vs. Lopes
+2025-04-13T03:15:00Z,Yair Rodriguez,Patricio Freire,True,True,UFC 314: Volkanovski vs. Lopes
 2025-04-13T03:15:00Z,Yair Rodriguez,Patricio Pitbull,True,True,UFC 314: Volkanovski vs. Lopes
-2025-04-13T04:15:00Z,Diego Lopes,Alex Volkanovski,True,False,UFC 314: Volkanovski vs. Lopes
 2025-04-05T15:00:00Z,Nathan Cook,Anis Bouzid,False,False,UFC Fight Night: Emmett vs. Murphy
 2025-04-05T15:00:00Z,Asdren Gashi,Nidal Bchiri,False,False,UFC Fight Night: Emmett vs. Murphy
 2025-04-05T15:00:00Z,Miroslav Vujovic,Colin George,False,False,UFC Fight Night: Emmett vs. Murphy
@@ -841,7 +818,7 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2025-03-29T17:00:00Z,Rohullah Yousofi,Karvann Ahmadi,False,False,UFC Fight Night: Moreno vs. Erceg
 2025-03-29T17:00:00Z,Theodor Berggren,Leonardo Damiani,True,True,UFC Fight Night: Moreno vs. Erceg
 2025-03-29T21:25:00Z,Julia Polastri,Lupita Godinez,True,False,UFC Fight Night: Moreno vs. Erceg
-2025-03-30T00:45:00Z,Kelvin Gastelum,Joseph Pyfer,True,False,UFC Fight Night: Moreno vs. Erceg
+2025-03-30T00:45:00Z,Kelvin Gastelum,Joseph Pyfer,True,True,UFC Fight Night: Moreno vs. Erceg
 2025-03-30T01:45:00Z,Brandon Moreno,Stephen Erceg,True,False,UFC Fight Night: Moreno vs. Erceg
 2025-03-22T19:15:00Z,Marcin Tybura,Michael Parkin,True,False,UFC Fight Night: Edwards vs. Brady
 2025-03-23T01:00:00Z,An Tuan Ho,Jimi Natividad,True,False,UFC Fight Night: Edwards vs. Brady
@@ -922,7 +899,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2025-02-22T19:00:00Z,Michael Boapeah,Ibrahim El Bouni,False,False,UFC Fight Night: Cejudo vs. Song
 2025-02-22T19:00:00Z,Iliass Hammouche,Mesud Selimovic,False,False,UFC Fight Night: Cejudo vs. Song
 2025-02-22T21:00:00Z,Uku Jurjendal,Ben Sosoli,False,True,UFC Fight Night: Cejudo vs. Song
-2025-02-15T23:15:00Z,Rafael Estevam,Jesus Santos Aguilar,True,False,UFC Fight Night: Cannonier vs. Rodrigues
 2025-02-09T00:40:00Z,Kody Steele,Zhu Rong,True,False,UFC 312: Du Plessis vs. Strickland 2
 2025-02-01T16:00:00Z,Matouš Kohout,Cihad Akipa,False,False,UFC Fight Night: Adesanya vs. Imavov
 2025-02-01T16:00:00Z,Daniel Solaja,Raphael Federico,False,False,UFC Fight Night: Adesanya vs. Imavov
@@ -934,7 +910,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2025-02-01T16:00:00Z,Hojat Khajevand,Kamil Oniszczuk,False,False,UFC Fight Night: Adesanya vs. Imavov
 2025-02-01T16:00:00Z,Zoran Solaja,Lukáš Eliáš,False,False,UFC Fight Night: Adesanya vs. Imavov
 2025-01-19T02:00:00Z,Jailton Almeida,Sergey Spivak,True,False,UFC 311: Makhachev vs. Moicano
-2025-01-11T21:10:00Z,Nurullo Aliev,Joseph Solecki,True,False,UFC Fight Night: Dern vs. Ribas 2
 2024-12-07T16:00:00Z,Oleh Pryimachov,Abderrahman Barkouch,False,False,UFC 310: Pantoja vs. Asakura
 2024-12-07T16:00:00Z,Ayoub Bourass,Anass Ahmidouch,False,False,UFC 310: Pantoja vs. Asakura
 2024-12-07T16:00:00Z,Endy Semeleer,Jay Overmeer,False,False,UFC 310: Pantoja vs. Asakura
@@ -956,7 +931,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-12-07T17:00:00Z,Sergej Maslobojev,Stefan Latescu,False,False,UFC 310: Pantoja vs. Asakura
 2024-12-07T20:00:00Z,Tarik Khbabez,Donegi Abena,False,False,UFC 310: Pantoja vs. Asakura
 2024-12-07T21:00:00Z,Rico Verhoeven,Levi Rigters,False,False,UFC 310: Pantoja vs. Asakura
-2024-12-08T04:50:00Z,Ian Garry,Shavkat Rakhmonov,False,True,UFC 310: Pantoja vs. Asakura
 2024-11-23T16:00:00Z,Aiden Lee,Daniel Konrad,False,False,UFC Fight Night: Yan vs. Figueiredo
 2024-11-23T16:00:00Z,Bailey Gilbert,Alberth Dias,False,False,UFC Fight Night: Yan vs. Figueiredo
 2024-11-23T16:00:00Z,Andrey Augusto,Sean Jr. Clancy,False,True,UFC Fight Night: Yan vs. Figueiredo
@@ -979,7 +953,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-11-16T19:30:00Z,Phil De Fries,Darko Stosic,True,True,UFC 309: Jones vs. Miocic
 2024-11-16T20:00:00Z,Mamed Khalidov,Adrian Bartosinski,False,False,UFC 309: Jones vs. Miocic
 2024-11-17T02:15:00Z,Chris Weidman,Eryk Anders,True,True,UFC 309: Jones vs. Miocic
-2024-11-09T21:00:00Z,Elizeu Zaleski,Zach Scroggin,True,False,UFC Fight Night: Magny vs. Prates
 2024-11-10T00:00:00Z,Ricky Turcios,Benardo Sopaj,True,True,UFC Fight Night: Magny vs. Prates
 2024-11-02T16:00:00Z,Andrea Flamminio,Niko Ceraglia,False,False,UFC Fight Night: Moreno vs. Albazi
 2024-11-02T16:00:00Z,Gianluca Rocca,Conor McCarthy,False,False,UFC Fight Night: Moreno vs. Albazi
@@ -995,9 +968,7 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-11-02T19:30:00Z,Solomon Simon,Walter Cogliandro,False,False,UFC Fight Night: Moreno vs. Albazi
 2024-11-02T20:00:00Z,Stefano Paternò,Jorge Bueno,True,False,UFC Fight Night: Moreno vs. Albazi
 2024-11-03T01:15:00Z,Ariane Lipski,Jasmine Jasudavicius,False,True,UFC Fight Night: Moreno vs. Albazi
-2024-10-26T14:44:00Z,Bruno Silva,Ismail Naurdiev,True,True,UFC 308: Topuria vs. Holloway
 2024-10-26T16:14:00Z,Brunno Ferreira,Abusupyian Magomedov,True,False,UFC 308: Topuria vs. Holloway
-2024-10-26T17:14:00Z,Rafael dos Anjos,Geoffrey Neal,True,False,UFC 308: Topuria vs. Holloway
 2024-10-19T17:00:00Z,Viktor Cervinsky,Adam Niedźwiedź,False,False,UFC Fight Night: Hernandez vs. Pereira
 2024-10-19T17:00:00Z,Vasil Ducar,Bartosz Kurek,False,False,UFC Fight Night: Hernandez vs. Pereira
 2024-10-19T17:00:00Z,Hanka Gelnarova,Dominika Steczkowska,False,False,UFC Fight Night: Hernandez vs. Pereira
@@ -1016,7 +987,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-10-19T20:00:00Z,Johnny Eblen,Fabian Edwards,False,False,UFC Fight Night: Hernandez vs. Pereira
 2024-10-19T20:00:00Z,Husein Kadimagomaev,Zafar Mohsen,False,False,UFC Fight Night: Hernandez vs. Pereira
 2024-10-19T21:00:00Z,Francis Ngannou,Renan Ferreira,True,False,UFC Fight Night: Hernandez vs. Pereira
-2024-10-20T00:15:00Z,Charles Johnson,Su Mudaerji,True,False,UFC Fight Night: Hernandez vs. Pereira
 2024-10-12T16:00:00Z,Lazar Todev,Adam Palasz,False,False,UFC Fight Night: Royval vs. Taira
 2024-10-12T16:00:00Z,Max Coga,Antun Račić,False,False,UFC Fight Night: Royval vs. Taira
 2024-10-12T16:00:00Z,Hafeni Nafuka,Arijan Topallaj,False,False,UFC Fight Night: Royval vs. Taira
@@ -1039,11 +1009,7 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-10-12T19:50:00Z,Donovan Wisse,Sergej Braun,False,False,UFC Fight Night: Royval vs. Taira
 2024-10-12T20:00:00Z,CJ Vergara,Ramazonbek Temirov,True,False,UFC Fight Night: Royval vs. Taira
 2024-10-12T20:30:00Z,Chico Kwasi,Tyjani Beztati,False,False,UFC Fight Night: Royval vs. Taira
-2024-10-12T20:45:00Z,Daniel Argueta,Cody Haddon,False,True,UFC Fight Night: Royval vs. Taira
-2024-10-05T23:10:00Z,Tecia Torres,Carla Esparza,False,True,UFC 307: Pereira vs. Rountree Jr.
-2024-10-05T23:40:00Z,Ovince St. Preux,Ryan Spann,False,True,UFC 307: Pereira vs. Rountree Jr.
 2024-10-06T00:42:00Z,Austin Hubbard,Alex Hernandez,True,False,UFC 307: Pereira vs. Rountree Jr.
-2024-10-06T03:15:00Z,José Aldo,Mario Bautista,False,True,UFC 307: Pereira vs. Rountree Jr.
 2024-09-28T15:00:00Z,Julien Pierre Lopez,Alexander Luster,False,False,UFC Fight Night: Moicano vs. Saint Denis
 2024-09-28T15:00:00Z,Matiss Zaharovs,Brian Hyslop,False,False,UFC Fight Night: Moicano vs. Saint Denis
 2024-09-28T15:00:00Z,Connor Hughes,Ignacio Capella,False,False,UFC Fight Night: Moicano vs. Saint Denis
@@ -1057,7 +1023,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-09-28T15:00:00Z,Mark Ewen,Yassin Chtatou,False,False,UFC Fight Night: Moicano vs. Saint Denis
 2024-09-28T15:00:00Z,Robert Whiteford,Roger Huerta,True,True,UFC Fight Night: Moicano vs. Saint Denis
 2024-09-28T15:00:00Z,Shanelle Dyer,Valentina Scatizzi,True,False,UFC Fight Night: Moicano vs. Saint Denis
-2024-09-28T17:20:00Z,Ailin Perez,Darya Zheleznyakova,True,False,UFC Fight Night: Moicano vs. Saint Denis
 2024-09-28T18:25:00Z,Da Un Jung,Oumar Sy,False,True,UFC Fight Night: Moicano vs. Saint Denis
 2024-09-14T17:00:00Z,Kacper Fornalski,Aleksander Budziłek,False,False,UFC 306: Riyadh Season Noche UFC
 2024-09-14T17:00:00Z,Artur Szczepaniak,Krystian Kaszubowski,False,False,UFC 306: Riyadh Season Noche UFC
@@ -1079,7 +1044,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-09-14T20:30:00Z,Simeon Powell,Rafael Alves,False,True,UFC 306: Riyadh Season Noche UFC
 2024-09-14T20:45:00Z,Simeon Powell,Rafael Xavier,False,False,UFC 306: Riyadh Season Noche UFC
 2024-09-14T21:15:00Z,Leah Mccourt,Sara Collins,False,False,UFC 306: Riyadh Season Noche UFC
-2024-09-14T23:35:00Z,Raul Rosas Jr,Aori Qileng,True,False,UFC 306: Riyadh Season Noche UFC
 2024-09-07T15:00:00Z,Gephte Jiffa Kundo,Aldin Reiz,False,False,UFC Fight Night: Burns vs. Brady
 2024-09-07T15:00:00Z,Kevin Törö,Alexander Yakob,False,False,UFC Fight Night: Burns vs. Brady
 2024-09-07T16:00:00Z,Alejandro Toutparfait,Mashrab Mamadaliyev,False,False,UFC Fight Night: Burns vs. Brady
@@ -1133,14 +1097,12 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-08-24T17:00:00Z,Marcin Krakowiak,Muslim Tulshaev,False,False,UFC Fight Night: Cannonier vs. Borralho
 2024-08-24T17:00:00Z,Szymon Bajor,Matheus Scheffel,False,True,UFC Fight Night: Cannonier vs. Borralho
 2024-08-24T23:45:00Z,Zygimantas Ramaska,Nathan Fletcher,True,True,UFC Fight Night: Cannonier vs. Borralho
-2024-08-17T22:45:00Z,Stewart Nicoll,Jesus Santos Aguilar,True,False,UFC 305: Du Plessis vs. Adesanya
 2024-08-18T03:15:00Z,Mateusz Gamrot,Daniel Hooker,True,False,UFC 305: Du Plessis vs. Adesanya
 2024-08-18T03:45:00Z,Kai Kara-France,Stephen Erceg,True,False,UFC 305: Du Plessis vs. Adesanya
 2024-08-11T01:15:00Z,Damon Jackson,Jose Mariscal,True,False,UFC Fight Night: Tybura vs. Spivac 2
 2024-08-11T01:45:00Z,Marcin Tybura,Sergey Spivak,True,False,UFC Fight Night: Tybura vs. Spivac 2
 2024-08-03T19:45:00Z,Lupita Godinez,Mackenzie Dern,False,True,UFC Fight Night: Sandhagen vs. Nurmagomedov
 2024-07-27T22:30:00Z,Lukasz Brzeski,Michael Parkin,True,False,UFC 304: Edwards vs. Muhammad 2
-2024-07-28T03:15:00Z,Paddy Pimblett,Bobby Green,True,False,UFC 304: Edwards vs. Muhammad 2
 2024-07-20T14:00:00Z,Eimear Darcy,Camilla Bergstrøm,False,False,UFC Fight Night: Lemos vs. Jandiroba
 2024-07-20T14:00:00Z,Jordan Little,Daniel Crooks-May,False,False,UFC Fight Night: Lemos vs. Jandiroba
 2024-07-20T14:00:00Z,Francesco Mazzeo,Vanderlei Junior,True,False,UFC Fight Night: Lemos vs. Jandiroba
@@ -1184,10 +1146,7 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-07-20T19:30:00Z,Thomas Paull,Milad Ahady,True,False,UFC Fight Night: Lemos vs. Jandiroba
 2024-07-20T19:30:00Z,Nik Bagley,Ryan Shelley,False,False,UFC Fight Night: Lemos vs. Jandiroba
 2024-07-20T20:00:00Z,Jordan Vucenic,Adrian Kępa,True,False,UFC Fight Night: Lemos vs. Jandiroba
-2024-07-20T23:45:00Z,Jeongyoung Lee,Hyder Amil,False,True,UFC Fight Night: Lemos vs. Jandiroba
 2024-06-29T23:30:00Z,Michelle Waterson,Gillian Robertson,False,True,UFC 303: Pereira vs. Prochazka 2
-2024-06-30T01:45:00Z,Joseph Pyfer,Marc-Andre Barriault,False,True,UFC 303: Pereira vs. Prochazka 2
-2024-06-30T02:15:00Z,Ian Garry,Michael Page,False,True,UFC 303: Pereira vs. Prochazka 2
 2024-06-30T03:45:00Z,Brian Ortega,Diego Lopes,True,True,UFC 303: Pereira vs. Prochazka 2
 2024-06-22T15:00:00Z,Nathan Kelly,Jose Sanchez,False,False,UFC Fight Night: Whittaker vs. Aliskerov
 2024-06-22T15:00:00Z,Michelle Montague,Karolina Sobek,True,False,UFC Fight Night: Whittaker vs. Aliskerov
@@ -1232,7 +1191,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-06-01T18:25:00Z,Alexander Loof,Andrey Tyshchenko,False,False,UFC 302: Makhachev vs. Poirier
 2024-06-01T18:55:00Z,Jonny Touma,Rohullah Yousofi,False,False,UFC 302: Makhachev vs. Poirier
 2024-06-01T19:20:00Z,Tobias Harila,Levan Kirtadze,True,False,UFC 302: Makhachev vs. Poirier
-2024-06-02T00:45:00Z,Grant Dawson,Joseph Solecki,True,False,UFC 302: Makhachev vs. Poirier
 2024-06-02T03:45:00Z,Sean Strickland,Paulo Henrique Costa,True,True,UFC 302: Makhachev vs. Poirier
 2024-05-18T17:00:00Z,Ahmad Chikh Mousa,Berjan Peposhi,False,False,UFC Fight Night: Barboza vs. Murphy
 2024-05-18T17:00:00Z,Anis Bouzid,Mory Kromah,False,False,UFC Fight Night: Barboza vs. Murphy
@@ -1256,8 +1214,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-05-11T17:00:00Z,Robert Ruchala,Patryk Kaczmarczyk,True,False,UFC Fight Night: Lewis vs. Nascimento
 2024-05-11T17:00:00Z,Ricardo Prasel,Tefan Vojcak,True,False,UFC Fight Night: Lewis vs. Nascimento
 2024-05-11T19:00:00Z,Adrian Bartosinski,Igor Michaliszyn,False,False,UFC Fight Night: Lewis vs. Nascimento
-2024-05-11T21:35:00Z,Tecia Torres,Tabatha Ricci,False,True,UFC Fight Night: Lewis vs. Nascimento
-2024-05-05T02:00:00Z,Jonathan Martinez,José Aldo,True,False,UFC 301: Pantoja vs. Erceg
 2024-05-05T04:15:00Z,Alexandre Pantoja,Stephen Erceg,True,False,UFC 301: Pantoja vs. Erceg
 2024-04-27T16:30:00Z,Robin Ciric,Diaguely Camara,False,False,UFC Fight Night: Nicolau vs. Perez
 2024-04-27T16:30:00Z,Florian Kroger,Ramy Deghir,False,False,UFC Fight Night: Nicolau vs. Perez
@@ -1270,7 +1226,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-04-27T19:00:00Z,Bahram Rajabzadeh,Kevin Oumar,False,False,UFC Fight Night: Nicolau vs. Perez
 2024-04-27T19:30:00Z,Endy Semeleer,Chico Kwasi,False,False,UFC Fight Night: Nicolau vs. Perez
 2024-04-28T01:45:00Z,Ariane Lipski,Karine Silva,False,True,UFC Fight Night: Nicolau vs. Perez
-2024-04-13T22:41:00Z,Jim Miller,Bobby Green,True,False,UFC 300: Pereira vs. Hill
 2024-04-06T17:00:00Z,Alfan Rocher-Labes,Kenji Bortoluzzi,False,False,UFC Fight Night: Allen vs. Curtis 2
 2024-04-06T17:00:00Z,Aymard Guih,Francisco Albano Barrio,False,False,UFC Fight Night: Allen vs. Curtis 2
 2024-04-06T17:00:00Z,Dara Ward,Ben Petches Kelly,False,False,UFC Fight Night: Allen vs. Curtis 2
@@ -1294,7 +1249,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-04-06T20:00:00Z,Ger Harris,Gregory Wamytan,True,False,UFC Fight Night: Allen vs. Curtis 2
 2024-04-06T20:00:00Z,Taka Mhandu,Rory Evans,False,False,UFC Fight Night: Allen vs. Curtis 2
 2024-04-06T20:00:00Z,Salahdine Parnasse,Valeriu Mircea,True,False,UFC Fight Night: Allen vs. Curtis 2
-2024-04-06T20:15:00Z,Jean Matsumoto,Daniel Argueta,True,False,UFC Fight Night: Allen vs. Curtis 2
 2024-04-06T21:00:00Z,James Sheehan,Daniel Konrad,False,False,UFC Fight Night: Allen vs. Curtis 2
 2024-04-06T23:15:00Z,Jose Mariscal,Morgan Charriere,False,True,UFC Fight Night: Allen vs. Curtis 2
 2024-04-06T23:45:00Z,Alex Hernandez,Damon Jackson,False,True,UFC Fight Night: Allen vs. Curtis 2
@@ -1314,15 +1268,13 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-03-30T21:00:00Z,Jordan Vucenic,Simone D'Anna,True,False,UFC Fight Night: Blanchfield vs. Fiorot
 2024-03-30T23:00:00Z,Virna Jandiroba,Lupita Godinez,True,False,UFC Fight Night: Blanchfield vs. Fiorot
 2024-03-30T23:00:00Z,Melissa Gatto,Viktoriya Dudakova,True,True,UFC Fight Night: Blanchfield vs. Fiorot
-2024-03-31T02:00:00Z,Bruno Silva,Chris Weidman,True,True,UFC Fight Night: Blanchfield vs. Fiorot
 2024-03-23T17:00:00Z,João Moraes,Esteferson Da Silva,False,False,UFC Fight Night: Ribas vs. Namajunas
 2024-03-23T20:00:00Z,Jose Delano,Alan Villalba,True,False,UFC Fight Night: Ribas vs. Namajunas
 2024-03-23T20:00:00Z,Augusto Matias,Richard Martins,False,False,UFC Fight Night: Ribas vs. Namajunas
 2024-03-23T21:00:00Z,Geraldo Neto,Vanilto Antunes,False,True,UFC Fight Night: Ribas vs. Namajunas
 2024-03-23T23:15:00Z,Mohammed Usman,Michael Parkin,True,False,UFC Fight Night: Ribas vs. Namajunas
 2024-03-23T23:35:00Z,Andre Lima,Igor da Silva,True,False,UFC Fight Night: Ribas vs. Namajunas
-2024-03-24T00:15:00Z,Montserrat Rendon,Darya Zheleznyakova,False,False,UFC Fight Night: Ribas vs. Namajunas
-2024-03-24T03:00:00Z,Edmen Shahbazyan,Aj Dobson,True,False,UFC Fight Night: Ribas vs. Namajunas
+2024-03-24T00:15:00Z,Montserrat Rendon,Darya Zheleznyakova,False,True,UFC Fight Night: Ribas vs. Namajunas
 2024-03-16T18:00:00Z,Wiktor Zalewski,Adrian Zielinski,False,False,UFC Fight Night: Tuivasa vs. Tybura
 2024-03-16T18:00:00Z,Damian Mieczkowski,David Hosek,False,False,UFC Fight Night: Tuivasa vs. Tybura
 2024-03-16T18:00:00Z,Daniel Rutkowski,Julio Cesar Neves,False,True,UFC Fight Night: Tuivasa vs. Tybura
@@ -1343,7 +1295,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-03-16T21:00:00Z,Sam Kelly,Alessandro Giordano,False,False,UFC Fight Night: Tuivasa vs. Tybura
 2024-03-16T21:00:00Z,James Power,Gianluca Rocca,False,False,UFC Fight Night: Tuivasa vs. Tybura
 2024-03-16T22:00:00Z,Andrew Clamp,Matty Byfield,False,False,UFC Fight Night: Tuivasa vs. Tybura
-2024-03-17T00:30:00Z,Ovince St. Preux,Kennedy Nzechukwu,False,True,UFC Fight Night: Tuivasa vs. Tybura
 2024-03-09T18:00:00Z,Kevin Tariq Osaro,Bahram Rajabzadeh,False,False,UFC 299: O'Malley vs. Vera 2
 2024-03-09T18:00:00Z,Nabil Khachab,Benjamin Adegbuyi,False,False,UFC 299: O'Malley vs. Vera 2
 2024-03-09T18:00:00Z,Donegi Abena,Tarik Khbabez,False,False,UFC 299: O'Malley vs. Vera 2
@@ -1380,7 +1331,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-02-24T23:30:00Z,Renan Ferreira,Ryan Bader,False,True,UFC Fight Night: Moreno vs. Royval 2
 2024-02-25T01:00:00Z,Denys Bondar,Luis Rodriguez,True,False,UFC Fight Night: Moreno vs. Royval 2
 2024-02-25T01:50:00Z,Daniel Da Silva,Edgar Chairez,False,True,UFC Fight Night: Moreno vs. Royval 2
-2024-02-25T02:25:00Z,Jesus Santos Aguilar,Mateus Mendonca,False,True,UFC Fight Night: Moreno vs. Royval 2
 2024-02-25T04:15:00Z,Raul Rosas Jr,Ricky Turcios,True,True,UFC Fight Night: Moreno vs. Royval 2
 2024-02-17T18:00:00Z,Dominik Humburger,Adrian Dudek,True,False,UFC 298: Volkanovski vs. Topuria
 2024-02-17T18:00:00Z,Josef Stummer,Adrian Wieliczko,False,False,UFC 298: Volkanovski vs. Topuria
@@ -1392,30 +1342,19 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2024-02-17T18:00:00Z,Petra Castkova,Wiktoria Czyżewska,False,False,UFC 298: Volkanovski vs. Topuria
 2024-02-17T19:00:00Z,Leo Brichta,Valeriu Mircea,False,False,UFC 298: Volkanovski vs. Topuria
 2024-02-18T00:15:00Z,Valentine Woodburn,Oban Elliott,False,True,UFC 298: Volkanovski vs. Topuria
-2024-02-18T04:15:00Z,Geoffrey Neal,Ian Garry,False,False,UFC 298: Volkanovski vs. Topuria
 2024-02-18T04:45:00Z,Robert Whittaker,Paulo Henrique Costa,True,True,UFC 298: Volkanovski vs. Topuria
-2024-02-18T05:15:00Z,Alex Volkanovski,Ilia Topuria,False,True,UFC 298: Volkanovski vs. Topuria
-2024-02-10T21:10:00Z,Daniel Marcos,Aori Qileng,True,False,UFC Fight Night: Hermansson vs. Pyfer
 2024-02-10T23:45:00Z,Bolaji Oki,Timothy Cuamba,True,False,UFC Fight Night: Hermansson vs. Pyfer
-2024-02-11T02:45:00Z,Jack Hermansson,Joseph Pyfer,True,False,UFC Fight Night: Hermansson vs. Pyfer
-2024-02-03T22:26:00Z,Blake Bilder,Jeongyoung Lee,True,False,UFC Fight Night: Dolidze vs. Imavov
 2024-01-14T01:45:00Z,Matheus Nicolau,Manel Kape,True,True,UFC Fight Night: Ankalaev vs. Walker 2
 2023-12-16T17:00:58Z,Tomasz Romanowski,Damian Janikowski,False,False,UFC 296: Edwards vs. Covington
 2023-12-17T01:15:00Z,Ariane Lipski,Casey O'Neill,False,True,UFC 296: Edwards vs. Covington
-2023-12-10T04:15:00Z,Su Mudaerji,Tim Elliott,False,True,UFC Fight Night: Song vs. Gutierrez
-2023-12-02T22:50:00Z,Drakkar Klose,Joseph Solecki,True,False,UFC Fight Night: Dariush vs. Tsarukyan
-2023-12-03T02:16:00Z,Bobby Green,Jalin Turner,False,True,UFC Fight Night: Dariush vs. Tsarukyan
 2023-11-18T20:30:00Z,Michael Parkin,Caio Machado,False,True,UFC Fight Night: Allen vs. Craig
 2023-11-12T02:14:00Z,Tabatha Ricci,Lupita Godinez,True,False,UFC 295: Prochazka vs. Pereira
 2023-11-12T02:44:00Z,Alessandro Costa,Stephen Erceg,True,False,UFC 295: Prochazka vs. Pereira
 2023-11-05T01:15:00Z,Armen Petrosyan,Rodolfo Vieira,True,True,UFC Fight Night: Almeida vs. Lewis
 2023-11-05T01:45:00Z,Abusupyian Magomedov,Caio Borralho,False,True,UFC Fight Night: Almeida vs. Lewis
-2023-10-21T14:10:00Z,Shara Magomedov,Bruno Silva,True,True,UFC 294: Makhachev vs. Volkanovski 2
-2023-10-21T20:30:00Z,Islam Makhachev,Alex Volkanovski,True,False,UFC 294: Makhachev vs. Volkanovski 2
 2023-10-14T20:44:00Z,Chris Gutierrez,Heili Alateng,True,False,UFC Fight Night: Yusuff vs. Barboza
 2023-10-14T21:14:00Z,Melissa Dixon,Irina Alekseeva,False,True,UFC Fight Night: Yusuff vs. Barboza
 2023-10-14T23:45:00Z,Edgar Chairez,Daniel Da Silva,True,False,UFC Fight Night: Yusuff vs. Barboza
-2023-10-07T20:45:10Z,Aori Qileng,Johnny Munoz,False,True,UFC Fight Night: Dawson vs. Green
 2023-10-07T21:45:10Z,Nathan Maness,Mateus Mendonca,False,True,UFC Fight Night: Dawson vs. Green
 2023-10-07T22:30:00Z,Bobby Seronio III,Alberto Garcia,False,False,UFC Fight Night: Dawson vs. Green
 2023-10-07T22:30:00Z,Bryce Meredith,Miguel Peimbert,False,False,UFC Fight Night: Dawson vs. Green
@@ -1432,8 +1371,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2023-10-07T22:30:00Z,Sara McMann,Leah Mccourt,True,False,UFC Fight Night: Dawson vs. Green
 2023-10-07T22:45:10Z,Philipe Lins,Ion Cutelaba,True,True,UFC Fight Night: Dawson vs. Green
 2023-10-07T23:15:10Z,Alex Hernandez,Bill Algeo,False,True,UFC Fight Night: Dawson vs. Green
-2023-10-08T00:45:10Z,Joseph Pyfer,Abdul Razak Alhassan,False,True,UFC Fight Night: Dawson vs. Green
-2023-10-08T01:15:10Z,Grant Dawson,Bobby Green,True,False,UFC Fight Night: Dawson vs. Green
 2023-10-08T02:15:00Z,Liz Carmouche,Ilima-Lei Macfarlane,True,False,UFC Fight Night: Dawson vs. Green
 2023-10-08T03:00:00Z,Cris Cyborg,Cat Zingano,False,True,UFC Fight Night: Dawson vs. Green
 2023-10-08T03:10:00Z,Usman Nurmagomedov,Brent Primus,True,True,UFC Fight Night: Dawson vs. Green
@@ -1458,7 +1395,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2023-09-23T21:15:00Z,Sinead Kavanagh,Sara Collins,False,False,UFC Fight Night: Fiziev vs. Gamrot
 2023-09-23T21:45:00Z,Aaron Pico,Pedro Carvalho,True,False,UFC Fight Night: Fiziev vs. Gamrot
 2023-09-23T22:15:00Z,Johnny Eblen,Fabian Edwards,False,False,UFC Fight Night: Fiziev vs. Gamrot
-2023-09-23T22:45:00Z,Daniel Argueta,Miles Johns,False,True,UFC Fight Night: Fiziev vs. Gamrot
 2023-09-24T00:15:00Z,Marina Rodriguez,Michelle Waterson,True,False,UFC Fight Night: Fiziev vs. Gamrot
 2023-09-17T00:30:00Z,Edgar Chairez,Daniel Da Silva,True,False,UFC Fight Night: Grasso vs. Shevchenko 2
 2023-09-17T01:45:44Z,Lupita Godinez,Elise Reed,False,True,UFC Fight Night: Grasso vs. Shevchenko 2
@@ -1466,14 +1402,11 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2023-09-10T01:15:00Z,Jack Jenkins,Jose Mariscal,True,False,UFC 293: Adesanya vs. Strickland
 2023-09-10T01:45:00Z,Carlos Ulberg,Da Un Jung,True,False,UFC 293: Adesanya vs. Strickland
 2023-09-02T21:46:00Z,Sergey Spivak,Ciryl Gane,False,True,UFC Fight Night: Gane vs. Spivac
-2023-08-20T03:16:00Z,Neil Magny,Ian Garry,True,False,UFC 292: Sterling vs. O'Malley
-2023-08-12T23:40:00Z,Aj Dobson,Tafon Nchukwi,False,True,UFC Fight Night: Luque vs. Dos Anjos
-2023-07-30T02:00:00Z,Tony Ferguson,Bobby Green,True,False,UFC 291: Poirier vs. Gaethje 2
 2023-07-30T03:00:00Z,Andrey Koreshkov,Lorenz Larkin,True,True,UFC 291: Poirier vs. Gaethje 2
 2023-07-30T03:00:00Z,Danny Sabatello,Magomed Magomedov,True,False,UFC 291: Poirier vs. Gaethje 2
 2023-07-30T03:00:00Z,Kana Watanabe,Veta Arteaga,False,True,UFC 291: Poirier vs. Gaethje 2
 2023-07-30T03:00:00Z,Kyoji Horiguchi,Makoto Shinryu,True,False,UFC 291: Poirier vs. Gaethje 2
-2023-07-30T03:30:00Z,Patricky Pitbull,Roberto De Souza,False,False,UFC 291: Poirier vs. Gaethje 2
+2023-07-30T03:30:00Z,Patricky Pitbull,Roberto De Souza,True,False,UFC 291: Poirier vs. Gaethje 2
 2023-07-22T17:50:00Z,Michael Parkin,Jamal Pogues,False,True,UFC Fight Night: Aspinall vs. Tybura
 2023-07-15T17:00:00Z,Nemanja Nikolic,Bartosz Leśko,False,False,UFC Fight Night: Holm vs. Bueno Silva
 2023-07-15T17:00:00Z,Borys Dzikowski,Damian Mieczkowski,False,False,UFC Fight Night: Holm vs. Bueno Silva
@@ -1486,23 +1419,15 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2023-07-15T17:30:00Z,Islam Djabrailov,Sebastian Przybysz,False,False,UFC Fight Night: Holm vs. Bueno Silva
 2023-07-15T18:00:00Z,Phil De Fries,Szymon Bajor,True,False,UFC Fight Night: Holm vs. Bueno Silva
 2023-07-15T23:00:00Z,Carl Deaton,Alex Munoz,True,False,UFC Fight Night: Holm vs. Bueno Silva
-2023-07-08T22:45:51Z,Shannon Ross,Jesus Santos Aguilar,True,False,UFC 290: Volkanovski vs. Rodriguez
 2023-07-09T02:10:00Z,Bo Nickal,Valentine Woodburn,True,False,UFC 290: Volkanovski vs. Rodriguez
 2023-07-09T02:40:00Z,Jalin Turner,Daniel Hooker,True,False,UFC 290: Volkanovski vs. Rodriguez
-2023-07-09T04:00:00Z,Alex Volkanovski,Yair Rodriguez,False,True,UFC 290: Volkanovski vs. Rodriguez
 2023-07-02T00:14:00Z,Ariane Lipski,Melissa Gatto,False,True,UFC Fight Night: Strickland vs. Magomedov
 2023-07-02T01:35:00Z,Sean Strickland,Abusupyian Magomedov,True,False,UFC Fight Night: Strickland vs. Magomedov
 2023-06-24T16:45:34Z,Trevor Peek,Jose Mariscal,True,False,UFC Fight Night: Emmett vs. Topuria
-2023-06-24T19:15:00Z,Brendan Allen,Bruno Silva,True,True,UFC Fight Night: Emmett vs. Topuria
-2023-06-17T23:45:00Z,Ronnie Lawrence,Daniel Argueta,True,False,UFC Fight Night: Vettori vs. Cannonier
 2023-06-18T03:30:00Z,Armen Petrosyan,Chris Duncan,True,True,UFC Fight Night: Vettori vs. Cannonier
 2023-06-10T23:35:00Z,David Dvorak,Stephen Erceg,True,False,UFC 289: Nunes vs. Aldana
-2023-06-11T00:00:02Z,Aiemann Zahabi,Aori Qileng,True,False,UFC 289: Nunes vs. Aldana
 2023-05-21T00:15:00Z,Emily Ducote,Lupita Godinez,True,False,UFC Fight Night: Dern vs. Hill
-2023-05-13T15:40:00Z,Tainara Lisboa,Jessy-Rose Clark,True,False,UFC Fight Night: Rozenstruik vs. Almeida
-2023-05-13T16:05:00Z,Bryan Battle,Gabriel Green,True,False,UFC Fight Night: Rozenstruik vs. Almeida
 2023-05-13T16:55:00Z,Natan Levy,Pete Rodriguez,True,True,UFC Fight Night: Rozenstruik vs. Almeida
-2023-05-13T20:10:00Z,Daniel Rodriguez,Ian Garry,True,False,UFC Fight Night: Rozenstruik vs. Almeida
 2023-04-22T20:30:00Z,Priscila Cachoeira,Karine Silva,True,True,UFC Fight Night: Pavlovich vs. Blaydes
 2023-04-22T23:55:00Z,Bobby King,Aalon Cruz,False,True,UFC Fight Night: Pavlovich vs. Blaydes
 2023-04-22T23:55:00Z,Kai Kamaka,Adli Edwards,True,True,UFC Fight Night: Pavlovich vs. Blaydes
@@ -1516,12 +1441,9 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2023-04-23T00:00:00Z,Aaron Pico,James Gonzalez,True,False,UFC Fight Night: Pavlovich vs. Blaydes
 2023-04-23T00:00:00Z,Ilima-Lei Macfarlane,Kana Watanabe,False,False,UFC Fight Night: Pavlovich vs. Blaydes
 2023-04-23T00:00:00Z,Raufeon Stots,Patchy Mix,False,True,UFC Fight Night: Pavlovich vs. Blaydes
-2023-04-23T00:15:00Z,Jared Gordon,Bobby Green,True,False,UFC Fight Night: Pavlovich vs. Blaydes
-2023-04-23T00:45:00Z,Bruno Silva,Brad Tavares,True,True,UFC Fight Night: Pavlovich vs. Blaydes
 2023-04-23T03:00:00Z,Ray Borg,Kyoji Horiguchi,True,True,UFC Fight Night: Pavlovich vs. Blaydes
 2023-04-08T23:43:00Z,Cynthia Calvillo,Lupita Godinez,True,False,UFC 287: Pereira vs. Adesanya 2
 2023-04-09T00:15:00Z,Chase Sherman,Karl Williams,True,True,UFC 287: Pereira vs. Adesanya 2
-2023-04-09T00:43:00Z,Gerald Meerschaert,Joseph Pyfer,True,False,UFC 287: Pereira vs. Adesanya 2
 2023-04-09T01:13:00Z,Michelle Waterson,Luana Pinheiro,False,True,UFC 287: Pereira vs. Adesanya 2
 2023-03-25T21:15:00Z,Daniel Da Silva,CJ Vergara,False,True,UFC Fight Night: Vera vs. Sandhagen
 2023-03-25T23:45:00Z,Alex Perez,Manel Kape,True,True,UFC Fight Night: Vera vs. Sandhagen
@@ -1529,8 +1451,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2023-03-11T21:20:00Z,Ariane Lipski,J.J. Aldrich,False,True,UFC Fight Night: Yan vs. Dvalishvili
 2023-03-12T00:15:00Z,Ricardo Ramos,Austin Lingo,True,True,UFC Fight Night: Yan vs. Dvalishvili
 2023-03-05T00:10:00Z,Leomana Martinez,Cameron Saaiman,False,True,UFC 285: Jones vs. Gane
-2023-03-05T00:40:00Z,Ian Garry,Kenan Song,False,True,UFC 285: Jones vs. Gane
-2023-03-05T04:10:00Z,Geoffrey Neal,Shavkat Rakhmonov,False,True,UFC 285: Jones vs. Gane
 2023-02-25T16:30:00Z,Norbert Novenyi Jr.,Andy Manzolo,True,False,UFC Fight Night: Muniz vs. Allen
 2023-02-25T16:30:00Z,Asael Adjoudj,Liam Mccracken,False,True,UFC Fight Night: Muniz vs. Allen
 2023-02-25T16:30:00Z,Charlie Ward,Mike Shipman,True,False,UFC Fight Night: Muniz vs. Allen
@@ -1546,15 +1466,12 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2023-02-25T19:10:00Z,Brian Moore,Luca Iovine,False,False,UFC Fight Night: Muniz vs. Allen
 2023-02-25T21:15:00Z,Ciaran Clarke,Leonardo Sinis,False,False,UFC Fight Night: Muniz vs. Allen
 2023-02-25T21:35:00Z,Hailey Cowan,Ailin Perez,True,True,UFC Fight Night: Muniz vs. Allen
-2023-02-25T21:45:00Z,Carl Deaton,Joseph Solecki,True,False,UFC Fight Night: Muniz vs. Allen
 2023-02-25T21:45:00Z,Sinead Kavanagh,Janay Harding,False,True,UFC Fight Night: Muniz vs. Allen
 2023-02-25T22:15:00Z,Peter Queally,Bryce Logan,False,False,UFC Fight Night: Muniz vs. Allen
 2023-02-25T22:45:00Z,Pedro Carvalho,Jeremy Kennedy,False,True,UFC Fight Night: Muniz vs. Allen
 2023-02-25T23:15:00Z,Yaroslav Amosov,Logan Storley,True,False,UFC Fight Night: Muniz vs. Allen
 2023-02-26T02:15:00Z,Ryan Spann,Nikita Krylov,True,True,UFC Fight Night: Muniz vs. Allen
-2023-02-18T22:15:00Z,Ovince St. Preux,Philipe Lins,False,True,UFC Fight Night: Andrade vs. Blanchfield
 2023-02-19T00:16:00Z,Jim Miller,Alex Hernandez,True,False,UFC Fight Night: Andrade vs. Blanchfield
-2023-02-12T05:30:00Z,Islam Makhachev,Alex Volkanovski,True,False,UFC 284: Makhachev vs. Volkanovski
 2023-02-04T22:55:00Z,Ethan Hughes,Yusuf Karakaya,False,False,UFC Fight Night: Lewis vs. Spivac
 2023-02-04T23:00:00Z,Henry Corrales,Akhmed Magomedov,True,False,UFC Fight Night: Lewis vs. Spivac
 2023-02-04T23:00:00Z,Diana Avsaragova,Alejandra Lara,False,False,UFC Fight Night: Lewis vs. Spivac
@@ -1569,15 +1486,11 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2023-02-05T01:50:00Z,Darrion Caldwell,Nikita Mikhail,True,False,UFC Fight Night: Lewis vs. Spivac
 2023-02-05T02:00:00Z,Johnny Eblen,Anatoly Tokov,False,True,UFC Fight Night: Lewis vs. Spivac
 2023-02-05T02:00:00Z,Sabah Homasi,Brennan Ward,True,True,UFC Fight Night: Lewis vs. Spivac
-2023-02-05T03:00:00Z,Tatsuro Taira,Jesus Santos Aguilar,True,False,UFC Fight Night: Lewis vs. Spivac
 2023-02-05T03:10:00Z,Fedor Emelianenko,Ryan Bader,True,True,UFC Fight Night: Lewis vs. Spivac
-2023-02-05T03:15:00Z,Tatsura Taira,Jesus Santos Aguilar,True,False,UFC Fight Night: Lewis vs. Spivac
 2023-02-05T04:00:00Z,Mandy Böhm,Ji Yeon Kim,True,True,UFC Fight Night: Lewis vs. Spivac
-2023-02-05T05:15:00Z,Jeongyoung Lee,Yi Zha,False,False,UFC Fight Night: Lewis vs. Spivac
+2023-02-05T05:15:00Z,Jeongyoung Lee,Yi Zha,True,False,UFC Fight Night: Lewis vs. Spivac
 2023-02-05T07:45:00Z,Devin Clark,Da Un Jung,True,False,UFC Fight Night: Lewis vs. Spivac
 2023-02-05T07:55:00Z,Derrick Lewis,Sergey Spivak,True,False,UFC Fight Night: Lewis vs. Spivac
-2023-01-14T21:45:00Z,Nick Aguirre,Daniel Argueta,True,False,UFC Fight Night: Strickland vs. Imavov
-2022-12-18T00:45:00Z,Bobby Green,Drew Dober,False,True,UFC Fight Night: Cannonier vs. Strickland
 2022-12-11T00:40:00Z,Alex Hernandez,Billy Quarantillo,False,True,UFC 282: Blachowicz vs. Ankalaev
 2022-11-19T23:40:00Z,Sergey Spivak,Derrick Lewis,False,True,UFC Fight Night: Nzechukwu vs. Cutelaba
 2022-11-13T03:15:00Z,Claudio Puelles,Daniel Hooker,True,False,UFC 281: Adesanya vs. Pereira
@@ -1595,7 +1508,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2022-10-29T19:00:00Z,Tim Wilde,Saul Rogers,False,False,UFC Fight Night: Kattar vs. Allen
 2022-10-29T20:15:00Z,Justin Gonzales,Andrew Fisher,True,False,UFC Fight Night: Kattar vs. Allen
 2022-10-29T21:15:00Z,Fabian Edwards,Charlie Ward,False,True,UFC Fight Night: Kattar vs. Allen
-2022-10-22T15:45:00Z,Armen Petrosyan,Aj Dobson,True,False,UFC 280: Oliveira vs. Makhachev
 2022-10-22T18:15:00Z,Manon Fiorot,Katlyn Chookagian,True,False,UFC 280: Oliveira vs. Makhachev
 2022-10-15T23:00:00Z,Brandon Davis,Leomana Martinez,True,False,UFC Fight Night: Grasso vs. Araujo
 2022-10-01T21:15:00Z,Philipe Lins,Maxim Grishin,True,True,UFC Fight Night: Dern vs. Yan
@@ -1612,45 +1524,31 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2022-10-02T02:00:00Z,Juan Archuleta,Enrique Barzola,False,True,UFC Fight Night: Dern vs. Yan
 2022-10-02T02:10:00Z,Spike Carlyle,AJ McKee,True,True,UFC Fight Night: Dern vs. Yan
 2022-10-02T02:15:00Z,Aaron Pico,Jeremy Kennedy,True,True,UFC Fight Night: Dern vs. Yan
-2022-10-02T02:30:00Z,Patricio Freire,Adam Borics,False,False,UFC Fight Night: Dern vs. Yan
+2022-10-02T02:30:00Z,Patricio Freire,Adam Borics,True,False,UFC Fight Night: Dern vs. Yan
 2022-10-02T02:30:00Z,Adam Borics,Patricio Pitbull,False,True,UFC Fight Night: Dern vs. Yan
-2022-09-17T23:00:00Z,Alen Amedovski,Joseph Pyfer,True,False,UFC Fight Night: Sandhagen vs. Song
 2022-09-10T23:15:00Z,Heili Alateng,Chad Anheliger,False,True,UFC 279: Diaz vs. Ferguson
 2022-09-10T16:00:00Z,Emil Weber Meek,Kacper Koziorzębski,False,False,UFC 279: Diaz vs. Ferguson
 2022-09-03T18:45:00Z,Dustin Stoltzfus,Abusupyian Magomedov,True,False,UFC Fight Night: Gane vs. Tuivasa
-2022-08-21T03:15:00Z,Merab Dvalishvili,José Aldo,True,False,UFC 278: Usman vs. Edwards
 2022-08-21T04:00:00Z,Paulo Henrique Costa,Luke Rockhold,True,True,UFC 278: Usman vs. Edwards
-2022-08-20T22:35:00Z,Jay Perrin,Aori Qileng,True,False,UFC 278: Usman vs. Edwards
 2022-08-20T22:00:00Z,Victor Altamirano,Daniel Da Silva,True,False,UFC 278: Usman vs. Edwards
 2022-08-20T18:00:00Z,Ben Sosoli,Benjamin Adegbuyi,True,False,UFC 278: Usman vs. Edwards
-2022-08-13T23:15:00Z,Gerald Meerschaert,Bruno Silva,True,True,UFC Fight Night: Vera vs. Cruz
 2022-08-13T23:40:00Z,Priscila Cachoeira,Ariane Lipski,True,False,UFC Fight Night: Vera vs. Cruz
 2022-08-13T20:00:00Z,Angela Hill,Lupita Godinez,True,False,UFC Fight Night: Vera vs. Cruz
 2022-08-07T02:15:00Z,Priscila Cachoeira,Ariane Lipski,True,False,UFC Fight Night: Santos vs. Hill
 2022-08-07T02:45:00Z,Sergey Spivak,Augusto Sakai,False,True,UFC Fight Night: Santos vs. Hill
-2022-08-07T04:00:00Z,Vicente Luque,Geoffrey Neal,True,False,UFC Fight Night: Santos vs. Hill
 2022-08-06T23:55:00Z,Josh Quinlan,Jason Witt,True,True,UFC Fight Night: Santos vs. Hill
 2022-07-30T22:15:00Z,Orion Cosce,Mike Mathetha,True,False,UFC 277: Pena vs. Nunes 2
-2022-07-16T19:15:00Z,Su Mudaerji,Matt Schnell,False,True,UFC Fight Night: Ortega vs. Rodriguez
 2022-07-16T18:45:00Z,Michelle Waterson,Amanda Lemos,False,True,UFC Fight Night: Ortega vs. Rodriguez
 2022-07-16T15:00:00Z,Dustin Jacoby,Da Un Jung,True,False,UFC Fight Night: Ortega vs. Rodriguez
 2022-07-10T01:45:00Z,Nina Nunes,Cynthia Calvillo,True,True,UFC Fight Night: Dos Anjos vs. Fiziev
-2022-07-03T04:00:00Z,Max Holloway,Alex Volkanovski,True,False,UFC 276: Adesanya vs. Cannonier
-2022-07-03T00:45:00Z,Ian Garry,Gabriel Green,False,False,UFC 276: Adesanya vs. Cannonier
-2022-07-02T22:10:00Z,Julija Stoliarenko,Jessy-Rose Clark,True,False,UFC 276: Adesanya vs. Cannonier
 2022-06-25T23:00:00Z,Umar Nurmagomedov,Nathan Maness,True,False,UFC Fight Night: Tsarukyan vs. Gamrot
 2022-06-18T17:00:00Z,Marian Ziolkowski,Sebastian Rajewski,False,False,UFC Fight Night: Kattar vs. Emmett
 2022-06-19T01:10:00Z,Joe Lauzon,Donald Cerrone,True,True,UFC Fight Night: Kattar vs. Emmett
-2022-06-04T19:30:00Z,Damon Jackson,Daniel Argueta,True,False,UFC Fight Night: Volkov vs. Rozenstruik
-2022-06-04T19:50:00Z,Joseph Solecki,Alex da Silva,False,True,UFC Fight Night: Volkov vs. Rozenstruik
 2022-05-15T03:15:00Z,Katlyn Chookagian,Amanda Ribas,False,True,UFC Fight Night: Blachowicz vs. Rakic
-2022-05-08T02:45:00Z,Ovince St. Preux,Mauricio Rua,False,True,UFC 274: Oliveira vs. Gaethje
 2022-05-08T02:15:00Z,Joe Lauzon,Donald Cerrone,True,True,UFC 274: Oliveira vs. Gaethje
 2022-05-07T22:30:00Z,Lupita Godinez,Ariane Carnelossi,False,True,UFC 274: Oliveira vs. Gaethje
 2022-04-30T20:35:00Z,Tatsuro Taira,Carlos Candelario,True,True,UFC Fight Night: Font vs. Vera
 2022-04-30T22:50:00Z,Francisco Figueiredo,Daniel Da Silva,True,False,UFC Fight Night: Font vs. Vera
-2022-04-30T20:00:00Z,Yohan Lainesse,Gabriel Green,True,False,UFC Fight Night: Font vs. Vera
-2022-04-23T23:25:00Z,Cameron Else,Aori Qileng,True,False,UFC Fight Night: Lemos vs. Andrade
 2022-04-23T23:00:00Z,Justine Kish,Ilima-Lei Macfarlane,True,False,UFC Fight Night: Lemos vs. Andrade
 2022-04-23T23:00:00Z,Arlene Blencowe,Cris Cyborg,True,False,UFC Fight Night: Lemos vs. Andrade
 2022-04-23T23:00:00Z,Nainoa Dung,Lance Gibson Jr,False,True,UFC Fight Night: Lemos vs. Andrade
@@ -1665,9 +1563,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2022-04-23T23:00:00Z,Whittany Pyles,Sumiko Inaba,False,False,UFC Fight Night: Lemos vs. Andrade
 2022-04-24T01:00:00Z,Alexander Romanov,Chase Sherman,True,True,UFC Fight Night: Lemos vs. Andrade
 2022-04-16T19:00:00Z,Heili Alateng,Kevin Croom,False,True,UFC Fight Night: Luque vs. Muhammad
-2022-04-10T03:35:00Z,Chan-Sung Jung,Alex Volkanovski,True,False,UFC 273: Volkanovski vs. The Korean Zombie
-2022-04-10T01:40:00Z,Darian Weeks,Ian Garry,True,False,UFC 273: Volkanovski vs. The Korean Zombie
-2022-04-10T02:15:00Z,Tecia Torres,Mackenzie Dern,False,True,UFC 273: Volkanovski vs. The Korean Zombie
 2022-03-26T23:45:00Z,Ilir Latifi,Aleksei Oleinik,True,True,UFC Fight Night: Blaydes vs. Daukaus
 2022-03-19T21:45:00Z,Rodrigo Vargas,Paddy Pimblett,False,True,UFC Fight Night: Volkov vs. Aspinall
 2022-03-19T22:15:00Z,Daniel Hooker,Arnold Allen,False,True,UFC Fight Night: Volkov vs. Aspinall
@@ -1681,13 +1576,10 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2022-03-12T23:00:00Z,Roman Faraldo,Kelvin Rayford,False,False,UFC Fight Night: Santos vs. Ankalaev
 2022-03-12T23:00:00Z,Jordan Howard,Trevor Ward,False,False,UFC Fight Night: Santos vs. Ankalaev
 2022-03-12T23:00:00Z,Josh Augustine,Josh Weston,False,False,UFC Fight Night: Santos vs. Ankalaev
-2022-03-13T00:15:00Z,Bruno Silva,Alex Pereira,True,True,UFC Fight Night: Santos vs. Ankalaev
 2022-03-12T22:40:00Z,Kyra Batara,Diana Avsaragova,False,False,UFC Fight Night: Santos vs. Ankalaev
 2022-03-06T03:15:00Z,Sergey Spivak,Greg Hardy,False,True,UFC 272: Covington vs. Masvidal
 2022-03-06T00:50:00Z,Said Nurmagomedov,Brian Kelleher,True,True,UFC 272: Covington vs. Masvidal
 2022-02-26T23:45:00Z,Zhu Rong,Ignacio Bahamondes,False,True,UFC Fight Night: Makhachev vs. Green
-2022-02-27T02:30:00Z,Bobby Green,Islam Makhachev,False,True,UFC Fight Night: Makhachev vs. Green
-2022-02-19T21:00:00Z,Jessy-Rose Clark,Stephanie Egger,False,True,UFC Fight Night: Walker vs. Hill
 2022-02-19T23:00:00Z,Justin Montalvo,Corey Samuels,False,False,UFC Fight Night: Walker vs. Hill
 2022-02-19T23:00:00Z,Theodore Macuka,Isaiah Hokit,False,False,UFC Fight Night: Walker vs. Hill
 2022-02-19T23:00:00Z,Jaylon Bates,Chris Disonell,False,False,UFC Fight Night: Walker vs. Hill
@@ -1702,10 +1594,8 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2022-02-19T23:00:00Z,Justine Kish,Deanna Bennett,True,True,UFC Fight Night: Walker vs. Hill
 2022-02-19T23:00:00Z,Jordan Newman,Cody Herbert,False,False,UFC Fight Night: Walker vs. Hill
 2022-02-12T23:00:00Z,Mike Mathetha,Jeremiah Wells,False,True,UFC 271: Adesanya vs. Whittaker 2
-2022-02-13T03:15:00Z,Nasrat Haqparast,Bobby Green,True,False,UFC 271: Adesanya vs. Whittaker 2
 2022-02-13T03:45:00Z,Renato Moicano,Alex Hernandez,True,False,UFC 271: Adesanya vs. Whittaker 2
 2022-02-13T00:45:00Z,Ronnie Lawrence,Leomana Martinez,True,False,UFC 271: Adesanya vs. Whittaker 2
-2022-02-13T00:15:00Z,Jacob Malkoun,Aj Dobson,True,False,UFC 271: Adesanya vs. Whittaker 2
 2022-01-15T18:00:00Z,Sebastian Rajewski,Niklas Bäckström,False,False,UFC Fight Night: Kattar vs. Chikadze
 2022-01-15T17:00:00Z,Kacper Koziorzębski,Hubert Szymajda,False,False,UFC Fight Night: Kattar vs. Chikadze
 2022-01-15T17:00:00Z,Łukasz Rajewski,Donovan Desmae,False,False,UFC Fight Night: Kattar vs. Chikadze
@@ -1715,21 +1605,13 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2022-01-15T18:00:00Z,Michal Materla,Jason Radcliffe,False,False,UFC Fight Night: Kattar vs. Chikadze
 2022-01-15T17:00:00Z,Patryk Surdyn,David Martnik,False,False,UFC Fight Night: Kattar vs. Chikadze
 2022-01-16T01:15:00Z,Katlyn Chookagian,Jennifer Maia,False,True,UFC Fight Night: Kattar vs. Chikadze
-2021-12-12T04:15:00Z,Santiago Ponzinibbio,Geoffrey Neal,True,False,UFC 269: Oliveira vs. Poirier
-2021-12-12T01:15:00Z,Jordan Wright,Bruno Silva,True,True,UFC 269: Oliveira vs. Poirier
-2021-12-05T06:00:00Z,Rob Font,José Aldo,True,False,UFC Fight Night: Font vs. Aldo
 2021-11-20T23:45:00Z,Taila Santos,Joanne Calderwood,True,False,UFC Fight Night: Vieira vs. Tate
 2021-11-13T18:10:00Z,Kennedy Nzechukwu,Da Un Jung,True,False,UFC Fight Night: Holloway vs. Rodriguez
-2021-11-07T01:15:00Z,Bobby Green,Al Iaquinta,False,True,UFC 268: Usman vs. Covington 2
 2021-11-07T00:45:00Z,Phil Hawes,Chris Gruetzemacher,True,True,UFC 268: Usman vs. Covington 2
 2021-10-30T19:45:00Z,Islam Makhachev,Daniel Hooker,True,False,UFC 267: Blachowicz vs. Teixeira
 2021-10-23T23:00:00Z,Marvin Vettori,Paulo Henrique Costa,True,True,UFC Fight Night: Costa vs. Vettori
-2021-10-23T21:45:00Z,Joselyne Edwards,Jessy-Rose Clark,True,False,UFC Fight Night: Costa vs. Vettori
 2021-10-23T17:30:00Z,Randa Markos,Livia Renata Souza,True,False,UFC Fight Night: Costa vs. Vettori
 2021-10-17T00:45:00Z,Antonio Carlos Junior,Andrei Arlovski,True,True,UFC Fight Night: Ladd vs. Dumont
-2021-10-16T22:35:00Z,Bruno Silva,Andrew Sanchez,True,True,UFC Fight Night: Ladd vs. Dumont
-2021-10-02T22:40:00Z,Joseph Solecki,Jared Gordon,False,True,UFC Fight Night: Santos vs. Walker
-2021-09-26T04:45:00Z,Alex Volkanovski,Brian Ortega,False,True,UFC 266: Volkanovski vs. Ortega
 2021-09-26T01:15:00Z,Nasrat Haqparast,Daniel Hooker,True,False,UFC 266: Volkanovski vs. Ortega
 2021-09-25T22:30:00Z,Matthew Lopez,Martin Sano,True,True,UFC 266: Volkanovski vs. Ortega
 2021-09-18T20:30:00Z,Heili Alateng,Gustavo Lopez,False,True,UFC Fight Night: Smith vs. Spann
@@ -1737,15 +1619,10 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2021-09-19T00:45:00Z,Mandy Böhm,Ariane Lipski,True,False,UFC Fight Night: Smith vs. Spann
 2021-09-04T22:15:00Z,Tom Aspinall,Sergey Spivak,True,False,UFC Fight Night: Brunson vs. Till
 2021-08-28T23:35:00Z,Vanessa Melo,J.J. Aldrich,True,True,UFC Fight Night: Barboza vs. Chikadze
-2021-08-08T04:00:00Z,José Aldo,Pedro Munhoz,False,True,UFC 265: Lewis vs. Gane
-2021-08-08T02:55:00Z,Tecia Torres,Angela Hill,False,True,UFC 265: Lewis vs. Gane
-2021-08-08T01:45:00Z,Rafael Fiziev,Bobby Green,True,False,UFC 265: Lewis vs. Gane
 2021-08-01T03:15:00Z,Kyung Ho Kang,Rani Yahya,True,True,UFC Fight Night: Hall vs. Strickland
 2021-07-18T00:15:00Z,Anderson Dos Santos,Miles Johns,True,True,UFC Fight Night: Makhachev vs. Moises
 2021-07-11T02:45:00Z,Yana Kunitskaya,Irene Aldana,False,True,UFC 264: Poirier vs. McGregor 3
-2021-06-26T22:15:00Z,Tanner Boser,Ovince St. Preux,True,False,UFC Fight Night: Gane vs. Volkov
 2021-06-20T01:15:00Z,Aleksei Oleinik,Sergey Spivak,True,False,UFC Fight Night: Jung vs. Ige
-2021-06-19T23:45:00Z,Wellington Turman,Bruno Silva,True,True,UFC Fight Night: Jung vs. Ige
 2021-06-19T21:35:00Z,Matthew Lopez,Khaos Williams,True,True,UFC Fight Night: Jung vs. Ige
 2021-06-13T00:45:00Z,Lauren Murphy,Joanne Calderwood,True,False,UFC 263: Adesanya vs. Vettori 2
 2021-06-12T22:15:00Z,Antonio Carlos Junior,Jake Collier,True,True,UFC 263: Adesanya vs. Vettori 2
@@ -1759,14 +1636,12 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2021-05-08T23:45:00Z,Ben Rothwell,Philipe Lins,True,True,UFC Fight Night: Rodriguez vs. Waterson
 2021-05-08T22:05:00Z,Zarrukh Adashev,Ryan Benoit,True,True,UFC Fight Night: Rodriguez vs. Waterson
 2021-05-08T23:45:00Z,Angela Hill,Amanda Ribas,True,True,UFC Fight Night: Rodriguez vs. Waterson
-2021-05-09T01:35:00Z,Neil Magny,Geoffrey Neal,True,False,UFC Fight Night: Rodriguez vs. Waterson
 2021-05-09T02:35:00Z,Marina Rodriguez,Michelle Waterson,True,False,UFC Fight Night: Rodriguez vs. Waterson
 2021-05-02T01:10:00Z,Jonathan Pearce,Gabriel Benitez,True,True,UFC Fight Night: Reyes vs. Prochazka
 2021-04-18T04:10:00Z,Jeremy Stephens,Drakkar Klose,True,True,UFC Fight Night: Whittaker vs. Gastelum
 2021-04-18T02:40:00Z,Luis Pena,Alex Munoz,True,False,UFC Fight Night: Whittaker vs. Gastelum
 2021-04-18T02:10:00Z,Bill Algeo,Ricardo Ramos,True,True,UFC Fight Night: Whittaker vs. Gastelum
 2021-04-10T19:30:00Z,Nina Ansaroff,Mackenzie Dern,False,True,UFC Fight Night: Vettori vs. Holland
-2021-04-10T18:30:00Z,Joseph Solecki,Jim Miller,False,True,UFC Fight Night: Vettori vs. Holland
 2021-03-21T04:05:00Z,Brad Riddell,Gregor Gillespie,True,True,UFC Fight Night: Brunson vs. Holland
 2021-03-14T02:15:00Z,Jonathan Martinez,David Grant,True,False,UFC Fight Night: Edwards vs. Muhammad
 2021-03-13T22:30:00Z,Jinh Yu Frey,Isabella de Padua,True,True,UFC Fight Night: Edwards vs. Muhammad
@@ -1780,25 +1655,19 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2021-02-21T04:00:00Z,Yana Kunitskaya,Ketlen Vieira,False,True,UFC Fight Night: Blaydes vs. Lewis
 2021-02-21T00:30:00Z,Luis Pena,Drakkar Klose,True,True,UFC Fight Night: Blaydes vs. Lewis
 2021-02-13T23:30:00Z,Miranda Maverick,Gillian Robertson,True,True,UFC 258: Usman vs. Burns
-2021-02-14T00:00:00Z,Gabriel Green,Philip Rowe,False,True,UFC 258: Usman vs. Burns
 2021-02-07T02:00:00Z,Askar Askarov,Cody Stamann,True,True,UFC Fight Night: Overeem vs. Volkov
 2021-01-24T04:15:00Z,Joanne Calderwood,Jessica Eye,False,True,UFC 257: Poirier vs. McGregor
 2021-01-24T04:45:00Z,Michael Chandler,Daniel Hooker,True,False,UFC 257: Poirier vs. McGregor
 2021-01-20T15:00:00Z,Jon Jones,Mike Davis,True,True,UFC Fight Night: Chiesa vs. Magny
-2021-01-20T16:00:00Z,Zarrukh Adashev,Su Mudaerji,True,False,UFC Fight Night: Chiesa vs. Magny
 2021-01-16T18:15:00Z,Justin Tafa,Antonio Carlos Junior,True,True,UFC Fight Night: Holloway vs. Kattar
-2020-12-20T04:00:00Z,Stephen Thompson,Geoffrey Neal,True,False,UFC Fight Night: Thompson vs. Neal
-2020-12-20T02:15:00Z,Marlon Vera,José Aldo,True,False,UFC Fight Night: Thompson vs. Neal
 2020-12-19T22:00:00Z,Badr Hari,Benjamin Adegbuyi,False,False,UFC Fight Night: Thompson vs. Neal
 2020-12-19T23:05:00Z,Karl Roberson,Dalcha Lungiambula,True,True,UFC Fight Night: Thompson vs. Neal
 2020-12-13T04:00:00Z,Kevin Holland,Ronaldo Souza,True,False,UFC 256: Figueiredo vs. Moreno
-2020-12-06T04:00:00Z,Jamahal Hill,Ovince St. Preux,True,False,UFC Fight Night: Hermansson vs. Vettori
 2020-12-06T03:00:00Z,Movsar Evloev,Nate Landwehr,True,True,UFC Fight Night: Hermansson vs. Vettori
 2020-12-06T01:00:00Z,Cody Durden,Jimmy Flick,True,True,UFC Fight Night: Hermansson vs. Vettori
 2020-12-06T01:00:00Z,Louis Smolka,Jose Alberto Quinonez,True,False,UFC Fight Night: Hermansson vs. Vettori
 2020-12-06T03:00:00Z,Taila Santos,Montana De La Rosa,True,True,UFC Fight Night: Hermansson vs. Vettori
 2020-11-29T00:15:00Z,Luke Sanders,Nathan Maness,True,False,UFC Fight Night: Smith vs. Clark
-2020-11-29T00:45:00Z,Su Mudaerji,Malcolm Gordon,False,True,UFC Fight Night: Smith vs. Clark
 2020-11-22T01:45:00Z,Ariane Lipski,Antonina Shevchenko,False,True,UFC 255: Figueiredo vs. Perez
 2020-11-22T03:45:00Z,Katlyn Chookagian,Cynthia Calvillo,False,True,UFC 255: Figueiredo vs. Perez
 2020-11-14T22:30:00Z,Louis Smolka,Jose Alberto Quinonez,True,False,UFC Fight Night: Felder vs. Dos Anjos
@@ -1817,7 +1686,6 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2020-10-04T03:00:00Z,Antonio Carlos Junior,Douglas Silva de Andrade,True,True,UFC Fight Night: Holm vs. Aldana
 2020-09-27T04:45:00Z,Israel Adesanya,Paulo Henrique Costa,True,True,UFC 253: Adesanya vs. Costa
 2020-09-19T23:30:00Z,Montel Jackson,Mirsad Bektic,True,True,UFC Fight Night: Covington vs. Woodley
-2020-09-19T22:00:00Z,Sarah Alpar,Jessy-Rose Clark,True,False,UFC Fight Night: Covington vs. Woodley
 2020-09-19T22:35:00Z,Sarah Alpar,Devin Clark,True,True,UFC Fight Night: Covington vs. Woodley
 2020-09-12T22:00:00Z,Bryan Barberena,Anthony Rocco Martin,True,True,UFC Fight Night: Waterson vs. Hill
 2020-09-13T03:00:00Z,Angela Hill,Michelle Waterson,True,False,UFC Fight Night: Waterson vs. Hill
@@ -1825,17 +1693,15 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2020-09-12T21:40:00Z,Anthony Hernandez,Bryan Barberena,True,True,UFC Fight Night: Waterson vs. Hill
 2020-09-05T23:00:00Z,Thiago Moises,Jalin Turner,True,True,UFC Fight Night: Overeem vs. Sakai
 2020-09-05T22:30:00Z,Alexander Romanov,Marcos Rogerio de Lima,True,True,UFC Fight Night: Overeem vs. Sakai
-2020-09-06T02:30:00Z,Ovince St. Preux,Alonzo Menifield,False,True,UFC Fight Night: Overeem vs. Sakai
 2020-09-06T00:30:00Z,Kevin Lee,Brian Kelleher,True,True,UFC Fight Night: Overeem vs. Sakai
 2020-09-05T23:00:00Z,Khama Worthy,Ottman Azaitar,True,True,UFC Fight Night: Overeem vs. Sakai
 2020-08-30T01:00:00Z,Magomed Ankalaev,Ion Cutelaba,True,True,UFC Fight Night: Smith vs. Rakic
-2020-08-23T00:00:00Z,Joseph Solecki,Austin Hubbard,False,True,UFC Fight Night: Munhoz vs. Edgar
-2020-08-23T02:15:00Z,Ovince St. Preux,Alonzo Menifield,False,True,UFC Fight Night: Munhoz vs. Edgar
+2020-08-23T02:15:00Z,Ovince St. Preux,Alonzo Menifield,True,True,UFC Fight Night: Munhoz vs. Edgar
 2020-08-23T00:45:00Z,Mike Rodriguez,Dwight Grant,True,True,UFC Fight Night: Munhoz vs. Edgar
 2020-08-16T00:15:00Z,Ashley Yoder,Livia Renata Souza,True,False,UFC 252: Miocic vs. Cormier 3
 2020-08-15T23:30:00Z,Danny Chavez,Matt Brown,True,True,UFC 252: Miocic vs. Cormier 3
 2020-08-16T02:00:00Z,Gilbert Burns,Daniel Pineda,True,True,UFC 252: Miocic vs. Cormier 3
-2020-08-09T00:00:00Z,Nasrat Haqparast,Alex Volkanovski,True,False,UFC Fight Night: Lewis vs. Oleinik
+2020-08-09T00:00:00Z,Nasrat Haqparast,Alex Volkanovski,True,True,UFC Fight Night: Lewis vs. Oleinik
 2020-08-02T01:30:00Z,Gerald Meerschaert,Ed Herman,True,True,UFC Fight Night: Brunson vs. Shahbazyan
 2020-08-02T01:00:00Z,Trevin Giles,Kevin Holland,True,True,UFC Fight Night: Brunson vs. Shahbazyan
 2020-08-02T02:00:00Z,Amanda Bobby Cooper,Landon Vannata,True,True,UFC Fight Night: Brunson vs. Shahbazyan
@@ -1843,13 +1709,10 @@ commence_time,home_team,away_team,home_resolved,away_resolved,event_name
 2020-07-26T02:45:00Z,Mauricio Rua,Antonio Rogerio Nogueira,True,True,UFC Fight Night: Whittaker vs. Till
 2020-07-19T00:45:00Z,Ariane Lipski,Luana Carolina,False,True,UFC Fight Night: Figueiredo vs. Benavidez 2
 2020-07-18T21:15:00Z,Sergey Spivak,Antonio Carlos Junior,False,True,UFC Fight Night: Figueiredo vs. Benavidez 2
-2020-07-18T22:45:00Z,Joel Alvarez,Joseph Duffy,True,False,UFC Fight Night: Figueiredo vs. Benavidez 2
 2020-07-15T23:05:00Z,John Phillips,Jack Hermansson,True,True,UFC Fight Night: Kattar vs. Ige
 2020-07-16T01:20:00Z,Ricardo Ramos,Lauren Murphy,True,True,UFC Fight Night: Kattar vs. Ige
-2020-07-12T03:00:00Z,Petr Yan,José Aldo,True,False,UFC 251: Usman vs. Masvidal
-2020-07-12T04:00:00Z,Max Holloway,Alex Volkanovski,True,False,UFC 251: Usman vs. Masvidal
 2020-07-11T22:00:00Z,David Grant,Martin Day,False,True,UFC 251: Usman vs. Masvidal
 2020-07-12T01:00:00Z,Taila Santos,Muslim Salikhov,True,True,UFC 251: Usman vs. Masvidal
 2020-06-28T02:45:00Z,Daniel Hooker,Dustin Poirier,False,True,UFC Fight Night: Poirier vs. Hooker
-2020-06-20T23:15:00Z,Wuliji Buren,Tecia Torres,False,False,UFC Fight Night: Blaydes vs. Volkov
+2020-06-20T23:15:00Z,Wuliji Buren,Tecia Torres,False,True,UFC Fight Night: Blaydes vs. Volkov
 2020-06-20T23:45:00Z,Clay Guida,Amanda Bobby Cooper,True,True,UFC Fight Night: Blaydes vs. Volkov

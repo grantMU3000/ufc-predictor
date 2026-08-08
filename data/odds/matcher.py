@@ -19,19 +19,26 @@ FUZZY_MATCH_THRESHOLD = 90
 
 def resolve_fighter_name(
     name: str,
-    real_name_lookup: dict[str, int],
+    real_name_lookup: dict[str, int | list[int]],
     alias_lookup: dict[str, int],
-) -> tuple[int | None, str]:
+) -> tuple[int | list[int] | None, str]:
     """
     Resolve a raw Odds API fighter name string to a fighter_id.
 
-    Returns (fighter_id_or_None, method):
-    - 'alias'      -> matched a previously-confirmed alias (no fuzzy work needed)
-    - 'exact'      -> matches fighters.real_name exactly
-    - 'fuzzy'      -> matched above threshold, NOT yet a confirmed alias --
-                      still routed to manual review before being trusted,
-                      same discipline as the Greco name-collision work
-    - 'unresolved' -> below threshold or no candidates at all
+    Returns (result, method):
+    - 'alias'           -> result is a single int (confirmed alias match)
+    - 'exact'           -> result is a single int (unambiguous real_name match)
+    - 'exact_ambiguous' -> result is a list[int]; name is shared by >1 real
+                           fighter (e.g. two "Bruno Silva"s). Caller must
+                           disambiguate via bout-matching, and must NEVER
+                           write this raw name as a new alias -- the string
+                           itself is permanently ambiguous, not a one-off.
+    - 'fuzzy'           -> result is a single int, safe to confirm as an alias
+    - 'fuzzy_ambiguous' -> result is a list[int]; the fuzzy match landed on
+                           an ambiguous real_name. Same caution as
+                           exact_ambiguous -- a variant spelling of an
+                           ambiguous name inherits that same ambiguity.
+    - 'unresolved'      -> result is None
     """
     name = name.strip()
 
@@ -39,13 +46,19 @@ def resolve_fighter_name(
         return alias_lookup[name], "alias"
 
     if name in real_name_lookup:
-        return real_name_lookup[name], "exact"
+        value = real_name_lookup[name]
+        if isinstance(value, list):
+            return value, "exact_ambiguous"
+        return value, "exact"
 
     match = process.extractOne(name, real_name_lookup.keys(), scorer=fuzz.WRatio)
     if match is not None:
         matched_name, score, _ = match
         if score >= FUZZY_MATCH_THRESHOLD:
-            return real_name_lookup[matched_name], "fuzzy"
+            value = real_name_lookup[matched_name]
+            if isinstance(value, list):
+                return value, "fuzzy_ambiguous"
+            return value, "fuzzy"
 
     return None, "unresolved"
 

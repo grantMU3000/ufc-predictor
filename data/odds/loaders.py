@@ -17,10 +17,35 @@ def _moneyline_to_implied_prob(price: int) -> float:
         return abs(price) / (abs(price) + 100)
     return 100 / (price + 100)
 
-def build_real_name_lookup(engine) -> dict[str, int]:
+def build_real_name_lookup(engine) -> dict[str, int | list[int]]:
+    """
+    Map real_name -> fighter_id, collision-safe.
+
+    Names shared by more than one real fighter (e.g. two different
+    people both named "Bruno Silva") map to a LIST of candidate ids
+    instead of silently keeping whichever row the SQL query happened to
+    return last -- that's what the old plain dict comprehension did,
+    and it's what was misattributing roughly half of Bruno Silva's real
+    fights to the wrong person.
+
+    Odds API responses carry no weight_class field, so this can't reuse
+    Greco's COLLISION_RESOLUTIONS approach directly. Disambiguation for
+    these names has to happen downstream, in
+    resolve_and_prepare_snapshot_rows, by trying each candidate id
+    against match_to_bout and keeping whichever one actually resolves
+    to a real bout.
+    """
     with engine.begin() as conn:
         rows = conn.execute(text("SELECT id, real_name FROM fighters")).fetchall()
-    return {row.real_name: row.id for row in rows}
+
+    grouped: dict[str, list[int]] = {}
+    for row in rows:
+        grouped.setdefault(row.real_name, []).append(row.id)
+
+    return {
+        name: ids[0] if len(ids) == 1 else ids
+        for name, ids in grouped.items()
+    }
 
 def build_alias_lookup(engine) -> dict[str, int]:
     with engine.begin() as conn:
@@ -39,44 +64,52 @@ def build_bout_lookup_from_db(engine) -> dict[frozenset, list[dict]]:
 
 def resolve_and_prepare_snapshot_rows(
     filtered_odds_data: list[dict],
-    real_name_lookup: dict[str, int],
+    real_name_lookup: dict[str, int | list[int]],
     alias_lookup: dict[str, int],
     bout_lookup: dict[frozenset, list[dict]],
 ) -> tuple[list[dict], list[dict], list[dict]]:
-    """
-    Resolves each entry's two fighters and matches to a real bout ONCE per
-    entry (not per bookmaker row -- home_team/away_team are fixed for the
-    whole entry, no reason to re-resolve them per sportsbook/outcome).
-
-    Returns (ready_snapshot_rows, new_confirmed_aliases, unresolved_log).
-    new_confirmed_aliases only includes 'fuzzy' matches -- 'exact' matches
-    need no alias (the name already IS the canonical real_name), and
-    'alias' matches are already in the table.
-    """
     ready_rows, new_aliases, unresolved_log = [], [], []
 
     for entry in filtered_odds_data:
-        home_id, home_method = resolve_fighter_name(entry["home_team"], real_name_lookup, alias_lookup)
-        away_id, away_method = resolve_fighter_name(entry["away_team"], real_name_lookup, alias_lookup)
+        home_result, home_method = resolve_fighter_name(entry["home_team"], real_name_lookup, alias_lookup)
+        away_result, away_method = resolve_fighter_name(entry["away_team"], real_name_lookup, alias_lookup)
 
-        bout_id = None
-        if home_id is not None and away_id is not None:
-            bout_id = match_to_bout(home_id, away_id, entry["commence_time"], bout_lookup)
+        home_candidates = home_result if isinstance(home_result, list) else ([home_result] if home_result is not None else [])
+        away_candidates = away_result if isinstance(away_result, list) else ([away_result] if away_result is not None else [])
+
+        # Try every (home, away) candidate pair against real bouts -- for
+        # non-ambiguous names this is just one pair, same as before. For
+        # a collision name (e.g. either real Bruno Silva), this is what
+        # actually picks the CORRECT one: whichever candidate produces a
+        # real bout match wins.
+        bout_id = home_id = away_id = None
+        for h in home_candidates:
+            for a in away_candidates:
+                matched = match_to_bout(h, a, entry["commence_time"], bout_lookup)
+                if matched is not None:
+                    bout_id, home_id, away_id = matched, h, a
+                    break
+            if bout_id is not None:
+                break
 
         if bout_id is None:
             unresolved_log.append({
                 "commence_time": entry["commence_time"],
                 "home_team": entry["home_team"], "away_team": entry["away_team"],
-                "home_resolved": home_id is not None, "away_resolved": away_id is not None,
+                "home_resolved": len(home_candidates) > 0, "away_resolved": len(away_candidates) > 0,
             })
             continue
 
-        for name, fighter_id, method in [
-            (entry["home_team"], home_id, home_method),
-            (entry["away_team"], away_id, away_method)
+        # Only an UNAMBIGUOUS fuzzy match is safe to alias. An ambiguous
+        # name resolving correctly for THIS fight (via bout-matching)
+        # says nothing about which real person that string means the
+        # NEXT time it appears -- it could legitimately be the other one.
+        for name, method, fid in [
+            (entry["home_team"], home_method, home_id),
+            (entry["away_team"], away_method, away_id),
         ]:
             if method == "fuzzy":
-                new_aliases.append({"fighter_id": fighter_id, "alias_name": name})
+                new_aliases.append({"fighter_id": fid, "alias_name": name})
 
         entry_fighter_map = {entry["home_team"]: home_id, entry["away_team"]: away_id}
 
@@ -88,7 +121,7 @@ def resolve_and_prepare_snapshot_rows(
                 for outcome in market["outcomes"]:
                     fighter_id = entry_fighter_map.get(outcome["name"])
                     if fighter_id is None:
-                        continue  # shouldn't happen -- outcome names should always be home/away
+                        continue
                     moneyline = outcome["price"]
                     ready_rows.append({
                         "bout_id": bout_id,
