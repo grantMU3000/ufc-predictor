@@ -4,17 +4,17 @@ Orchestrates the Greco1899 ingestion pipeline: parse -> transform -> load.
 Run with: uv run python -m data.ingestion.run_ingest
 """
 import shutil
-from data.ingestion.transform import LOG_DIR
 
+from data.ingestion.loaders import load_all
 from data.ingestion.transform import (
+    LOG_DIR,
     _build_fighter_lookup,
     _build_source_url_lookup,
-    build_fighters_table,
-    build_events_table,
-    build_bouts_table,
     build_bout_stats_table,
+    build_bouts_table,
+    build_events_table,
+    build_fighters_table,
 )
-from data.ingestion.loaders import load_all
 
 
 def run() -> tuple:

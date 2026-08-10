@@ -26,7 +26,8 @@ def _parse_dts(cell_wikicode) -> date | None:
         year, month, day = params[:3]
         for fmt in ("%Y %b %d", "%Y %B %d", "%Y %m %d"):
             try:
-                return datetime.strptime(f"{year} {month} {day}", fmt).date()
+                # Calendar date only, no time component -- tzinfo doesn't apply.
+                return datetime.strptime(f"{year} {month} {day}", fmt).date()  # noqa: DTZ007
             except ValueError:
                 continue
     return None

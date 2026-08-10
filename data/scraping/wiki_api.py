@@ -1,4 +1,5 @@
 import json
+
 from .fetch import fetch
 
 WIKI_API = "https://en.wikipedia.org/w/api.php"

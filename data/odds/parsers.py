@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 
 def filter_by_event_date(
@@ -25,11 +25,11 @@ def filter_by_event_date(
     sharing the same sport_key) -- that's the fighter-name matcher's job,
     applied as a separate step after this one.
     """
-    window_start = datetime.combine(event_date, datetime.min.time(), tzinfo=timezone.utc) - timedelta(hours=hours_before)
-    window_end = datetime.combine(event_date, datetime.min.time(), tzinfo=timezone.utc) + timedelta(hours=hours_after)
+    window_start = datetime.combine(event_date, datetime.min.time(), tzinfo=UTC) - timedelta(hours=hours_before)
+    window_end = datetime.combine(event_date, datetime.min.time(), tzinfo=UTC) + timedelta(hours=hours_after)
 
     def _in_window(entry: dict) -> bool:
-        commence = datetime.fromisoformat(entry["commence_time"].replace("Z", "+00:00"))
+        commence = datetime.fromisoformat(entry["commence_time"])
         return window_start <= commence <= window_end
 
     return [entry for entry in odds_data if _in_window(entry)]

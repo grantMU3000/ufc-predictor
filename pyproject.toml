@@ -10,6 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.18.5",
     "duckdb>=1.5.5",
+    "mwparserfromhell>=0.7.2",
     "pandas>=3.0.5",
     "psycopg2-binary>=2.9.12",
     "python-dotenv>=1.2.2",

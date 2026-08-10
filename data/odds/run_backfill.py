@@ -4,8 +4,7 @@ matched to real bouts, loaded into odds_snapshots.
 
 Run with: uv run python -m data.odds.run_backfill
 """
-import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -13,11 +12,15 @@ from sqlalchemy import text
 
 from data.ingestion.loaders import _get_engine
 from data.odds.client import fetch_historical_odds
-from data.odds.parsers import filter_by_event_date
 from data.odds.loaders import (
-    build_real_name_lookup, build_alias_lookup, build_bout_lookup_from_db,
-    resolve_and_prepare_snapshot_rows, write_fighter_aliases, load_odds_snapshots,
+    build_alias_lookup,
+    build_bout_lookup_from_db,
+    build_real_name_lookup,
+    load_odds_snapshots,
+    resolve_and_prepare_snapshot_rows,
+    write_fighter_aliases,
 )
+from data.odds.parsers import filter_by_event_date
 
 LOG_PATH = Path("data/odds/logs/unresolved_odds_entries.csv")
 
@@ -51,7 +54,7 @@ def run():
 
     for i, event in enumerate(events, 1):
         query_date = datetime.combine(
-            event["event_date"], datetime.min.time(), tzinfo=timezone.utc
+            event["event_date"], datetime.min.time(), tzinfo=UTC
         ).replace(hour=12).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         print(f"[{i}/{len(events)}] {event['name']} ({query_date})...", end=" ")

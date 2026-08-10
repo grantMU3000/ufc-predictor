@@ -2,7 +2,8 @@
 This module gathers historical MMA match odds from Odds API. These odds are 
 cached and will be filtered to just UFC bouts in subsequent modules. 
 """
-import json, os
+import json
+import os
 from pathlib import Path
 
 import requests

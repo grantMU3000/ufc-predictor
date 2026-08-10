@@ -1,6 +1,10 @@
-import json, os, requests
+import json
+import os
 from pathlib import Path
+
+import requests
 from dotenv import load_dotenv
+
 load_dotenv()
 
 API_KEY = os.environ["ODDS_API_KEY"]

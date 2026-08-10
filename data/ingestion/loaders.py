@@ -44,15 +44,15 @@ def _upsert_by_source_url(
 
     stmt = pg_insert(table).values(records)
     update_cols = {
-        c: stmt.excluded[c] for c in insert_cols 
+        c: stmt.excluded[c] for c in insert_cols
         if c != "source_url" and c not in preserve_on_conflict
     }
-    stmt = stmt.on_conflict_do_update(
+    upsert_stmt = stmt.on_conflict_do_update(
         index_elements=["source_url"], set_=update_cols
     ).returning(table.c.id, table.c.source_url)
 
     with engine.begin() as conn:
-        result = conn.execute(stmt)
+        result = conn.execute(upsert_stmt)
         return {row.source_url: row.id for row in result}
 
 def _remap_ids(series: pd.Series, pandas_id_to_url: dict, url_to_db_id: dict) -> pd.Series:
@@ -60,7 +60,6 @@ def _remap_ids(series: pd.Series, pandas_id_to_url: dict, url_to_db_id: dict) ->
     each id's source_url. NaN/unmapped ids stay NaN."""
     return series.map(pandas_id_to_url).map(url_to_db_id)
 
-from sqlalchemy import text
 
 def backfill_ufc_debut_dates(engine) -> int:
     """
@@ -164,22 +163,22 @@ def load_bout_stats(
     metadata = MetaData()
     stats_tbl = Table("bout_stats", metadata, autoload_with=engine)
 
-    insert_cols = [c for c in df.columns if c in stats_tbl.c.keys()]
+    insert_cols = [c for c in df.columns if c in stats_tbl.c]
     records = _clean_for_insert(df, insert_cols)
     if not records:
-        return
+        return 0
 
     stmt = pg_insert(stats_tbl).values(records)
     update_cols = {
         c: stmt.excluded[c] for c in insert_cols
         if c not in ("bout_id", "fighter_id", "round_number")
     }
-    stmt = stmt.on_conflict_do_update(
+    upsert_stmt = stmt.on_conflict_do_update(
         index_elements=["bout_id", "fighter_id", "round_number"], set_=update_cols
     ).returning(stats_tbl.c.id)
 
     with engine.begin() as conn:
-        result = conn.execute(stmt)
+        result = conn.execute(upsert_stmt)
         return len(result.fetchall())
 
 def load_all(fighters_df, events_df, bouts_df, bout_stats_df) -> None:

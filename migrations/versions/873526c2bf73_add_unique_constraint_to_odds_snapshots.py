@@ -6,8 +6,8 @@ Create Date: 2026-08-07 14:57:45.273421
 
 """
 from collections.abc import Sequence
-from alembic import op
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = '873526c2bf73'

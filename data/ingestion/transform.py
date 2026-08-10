@@ -134,14 +134,17 @@ def build_bouts_table(events: pd.DataFrame, fighter_lookup, source_url_lookup: d
         resolved = _resolve_collision(name, weight_class, source_url_lookup)
         return resolved if resolved is not None else fighter_lookup.get(name)
 
+    # pandas-stubs' apply() overloads don't have a variant for a row-function
+    # returning `int | None` (they expect pandas' NAType for missing values,
+    # not plain None) -- these are correct at runtime.
     bouts["fighter_red_id"] = bouts.apply(
         lambda row: _resolve_fighter(row["fighter_red_name"], row["weight_class"]),
         axis=1,
-    )
+    )  # type: ignore[call-overload]
     bouts["fighter_blue_id"] = bouts.apply(
         lambda row: _resolve_fighter(row["fighter_blue_name"], row["weight_class"]),
         axis=1,
-    )
+    )  # type: ignore[call-overload]
     bouts["event_id"] = bouts["event_name"].map(event_lookup)
 
     unresolved_mask = (
@@ -202,9 +205,10 @@ def build_bout_stats_table(bouts: pd.DataFrame, fighter_lookup, source_url_looku
         resolved = _resolve_collision(name, weight_class, source_url_lookup)
         return resolved if resolved is not None else fighter_lookup.get(name)
 
+    # Same pandas-stubs limitation as above (Optional-returning row apply).
     merged["fighter_id"] = merged.apply(
         lambda row: _resolve_fighter(row["fighter_name"], row["weight_class"]), axis=1
-    )
+    )  # type: ignore[call-overload]
 
     unresolved_mask = merged["fighter_id"].isna()
     if unresolved_mask.any():

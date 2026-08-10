@@ -7,8 +7,9 @@ at all -- every name is a freeform string ("Conor McGregor") with nothing
 to key against except the string itself. Fuzzy matching is the only
 option here, not a fallback for edge cases.
 """
+from datetime import datetime
+
 from rapidfuzz import fuzz, process
-from datetime import date, datetime, timedelta, timezone
 
 # Below this score (0-100), a fuzzy match is not auto-accepted -- logged
 # for manual review instead of guessed. Kept conservative: fighter names
@@ -64,7 +65,7 @@ def resolve_fighter_name(
 
 def resolve_odds_entries(
     odds_entries: list[dict],
-    real_name_lookup: dict[str, int],
+    real_name_lookup: dict[str, int | list[int]],
     alias_lookup: dict[str, int],
 ) -> list[dict]:
     """
@@ -118,7 +119,7 @@ def match_to_bout(
     if not candidates:
         return None
 
-    commence_date = datetime.fromisoformat(commence_time.replace("Z", "+00:00")).date()
+    commence_date = datetime.fromisoformat(commence_time).date()
     best = min(candidates, key=lambda c: abs((c["event_date"] - commence_date).days))
 
     if abs((best["event_date"] - commence_date).days) > max_days_diff:

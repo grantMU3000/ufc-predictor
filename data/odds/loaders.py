@@ -2,14 +2,15 @@
 Transferring Historical Odds into my database
 """
 
+import pandas as pd
 from sqlalchemy import MetaData, Table, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-import pandas as pd
 
 # Reused rather than duplicated -- same low-level helpers the Greco
 # pipeline already uses (engine creation, NaN-safe record cleaning).
-from data.ingestion.loaders import _get_engine, _clean_for_insert
-from data.odds.matcher import resolve_fighter_name, match_to_bout, build_bout_lookup
+from data.ingestion.loaders import _clean_for_insert
+from data.odds.matcher import build_bout_lookup, match_to_bout, resolve_fighter_name
+
 
 def _moneyline_to_implied_prob(price: int) -> float:
     """American odds -> implied probability, e.g. -270 -> 0.7297, +220 -> 0.3125."""
@@ -163,7 +164,7 @@ def load_odds_snapshots(engine, ready_rows: list[dict]) -> int:
     # inserting. Flag loudly if two "duplicates" actually disagree on
     # price -- that's a real inconsistency, not a harmless repeat.
     key_cols = ("bout_id", "fighter_id", "sportsbook", "collected_at")
-    seen = {}
+    seen: dict[tuple, dict] = {}
     for row in ready_rows:
         key = tuple(row[c] for c in key_cols)
         if key in seen and seen[key]["moneyline"] != row["moneyline"]:
@@ -180,11 +181,11 @@ def load_odds_snapshots(engine, ready_rows: list[dict]) -> int:
 
     stmt = pg_insert(snapshots_tbl).values(records)
     update_cols = {c: stmt.excluded[c] for c in ("moneyline", "implied_prob")}
-    stmt = stmt.on_conflict_do_update(
+    upsert_stmt = stmt.on_conflict_do_update(
         index_elements=["bout_id", "fighter_id", "sportsbook", "collected_at"],
         set_=update_cols,
     ).returning(snapshots_tbl.c.id)
 
     with engine.begin() as conn:
-        result = conn.execute(stmt)
+        result = conn.execute(upsert_stmt)
         return len(result.fetchall())

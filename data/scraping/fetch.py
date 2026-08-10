@@ -55,7 +55,11 @@ def fetch(url: str, params: dict | None = None, use_cache: bool = True) -> str:
     global _last_request_time
 
     if params:
-        url = requests.Request("GET", url, params=params).prepare().url
+        prepared_url = requests.Request("GET", url, params=params).prepare().url
+        if prepared_url is None:
+            msg = f"failed to build a request URL from {url!r} with params {params!r}"
+            raise ValueError(msg)
+        url = prepared_url
 
     cache_file = _cache_path(url)
 
