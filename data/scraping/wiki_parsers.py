@@ -88,6 +88,25 @@ def _get_param(template, index: int) -> str:
         return mwparserfromhell.parse(value).strip_code().strip()
     return ""
 
+def _get_param_and_link(template, index: int) -> tuple[str, str | None]:
+    """
+    Extract positional param `index` (1-based) as (display_text, link_target).
+    link_target is the wikilink's target page title if the param is linked
+    (e.g. "Islam Makhachev", or a disambiguated title like
+    "Bruno Silva (welterweight)"), or None if the fighter's name appears
+    as plain unlinked text (e.g. no Wikipedia article yet).
+    """
+    key = str(index)
+    if not template.has(key):
+        return "", None
+
+    value_wikicode = template.get(key).value
+    links = value_wikicode.filter_wikilinks()
+    link_target = str(links[0].title).strip() if links else None
+
+    display_text = mwparserfromhell.parse(str(value_wikicode)).strip_code().strip()
+    return display_text, link_target
+
 def parse_fight_card(wikitext: str) -> list[dict]:
     """
     Parses a UFC event page's "Fight card" section wikitext into a list of
@@ -107,16 +126,18 @@ def parse_fight_card(wikitext: str) -> list[dict]:
         if name != "MMAevent bout":
             continue
 
-        fighter_red_raw = _get_param(template, 2)
-        fighter_blue_raw = _get_param(template, 4)
+        fighter_red_raw, fighter_red_link = _get_param_and_link(template, 2)
+        fighter_blue_raw, fighter_blue_link = _get_param_and_link(template, 4)
 
         bouts.append({
             "card_tier": current_tier,
             "weight_class": _get_param(template, 1),
             "fighter_red": fighter_red_raw.replace("(c)", "").strip(),
+            "fighter_red_link_target": fighter_red_link,
             "fighter_red_is_champion": "(c)" in fighter_red_raw,
             "connector": _get_param(template, 3),   # "vs." = not yet fought, "def." = result recorded
             "fighter_blue": fighter_blue_raw.replace("(c)", "").strip(),
+            "fighter_blue_link_target": fighter_blue_link,
             "fighter_blue_is_champion": "(c)" in fighter_blue_raw,
             "method": _get_param(template, 5),
             "round": _get_param(template, 6),
