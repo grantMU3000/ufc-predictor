@@ -36,8 +36,8 @@ Replace the original table with:
 | Source | What | Status |
 |---|---|---|
 | **Greco1899 CSVs** | Every event, bout, round-by-round stats, fighter bios | **Primary and current sole source**, until further notice. Pre-scraped from ufcstats.com by a third-party pipeline (their own daily GCP Cloud Run job), refreshed regularly. See §4 for the reliability caveat. |
-| **ufcstats.com (direct)** | — | **Not used.** Blocks all non-browser access via an enforced JS proof-of-work challenge (ADR-005). Not a `robots.txt` restriction — an active technical barrier. Revisit only if the site's posture changes. |
-| **Wikipedia** | UFC event schedule, official divisional rankings | **Primary** for both upcoming-events schedule and rankings, accessed via the MediaWiki API (ADR-009). Human-maintained, sourced from official UFC.com, not bot-gated. |
+| **ufcstats.com (direct)** | — | **Not used.** Blocks all non-browser access via an enforced JS proof-of-work challenge (ADR-006). Not a `robots.txt` restriction — an active technical barrier. Revisit only if the site's posture changes. |
+| **Wikipedia** | UFC event schedule, official divisional rankings | **Primary** for both upcoming-events schedule and rankings, accessed via the MediaWiki API (ADR-009). Human-maintained, sourced from official UFC.com, not bot-gated. Events are keyed on the stable `wikipedia_pageid`, not page title, since titles get renamed as fight cards are confirmed/reshuffled (ADR-011). |
 | **ESPN public MMA API** | Event schedule, rankings, fighter bios | **Fallback only.** Observed to return stale rankings data (a since-departed fighter still listed) as of 2026-08-05 — do not treat as current without spot-checking against a known-correct value first. |
 | **The Odds API** | Live + historical MMA moneylines | Unchanged. |
 
@@ -139,7 +139,7 @@ via their own daily automated job, decoupled from your event timing.
 - Add a **staleness check**: if a known UFC event (from the Wikipedia-sourced schedule) has
   passed and Greco's data hasn't reflected it within a defined threshold, surface a warning
   rather than silently settling nothing. This directly addresses the real gap observed
-  May 21–Jul 19, 2026 (6 events, later backfilled) — see ADR-005 and §5 below.
+  May 21–Jul 19, 2026 (6 events, later backfilled) — see ADR-006 and §5 below.
 - Re-running the full `parsers.py → transform.py → loaders.py` pipeline should be safe and
   idempotent by construction (via `source_url` uniqueness), so "new data arrived" can simply
   mean "rerun the pipeline," not a specially-built incremental path.
@@ -149,6 +149,21 @@ via their own daily automated job, decoupled from your event timing.
   passes `use_cache=False` since these lookups need to reflect live state.
 - Odds refresh (6x/day, Odds API): unaffected by any of this.
 
+**Status update (2026-08-09):** the Wikipedia-sourced upcoming-events pipeline itself —
+`wiki_api.py`, `wiki_parsers.py`, `upcoming_events_loader.py`, `ingest_upcoming_events.py`
+(ADR-009/010/011) — is now built and idempotency-tested. The bullets above still describe
+future GitHub Actions cron/event-trigger work, not the ingestion logic those triggers will
+call; that logic already exists.
+
+**Greco↔Wikipedia duplicate-event reconciliation:** ADR-011 flagged the merge step between
+a Wikipedia-sourced event row and Greco's later-confirmed row as an unbuilt bridge. As of
+this update, that gap has **automated detection** — `check_duplicate_events` in
+`data/ingestion/quality_checks.py` fuzzy-matches event name + date across the two sources
+and flags likely pairs — but **not automated reconciliation**. Merging a flagged pair (or
+deciding how to) is still a manual step. The actual bridge remains a prerequisite before the
+first of the currently-tracked upcoming events completes and Greco ingests a real result for
+it.
+
 ---
 
 ## 5. Updated: Risk register
@@ -157,7 +172,7 @@ via their own daily automated job, decoupled from your event timing.
 
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
-| ufcstats.com blocks all non-browser access (proof-of-work gate) | **Realized**, not hypothetical | High — eliminated a planned primary data path | Greco1899 CSVs adopted as sole source (ADR-005). No workaround attempted — see ADR-005 for reasoning. |
+| ufcstats.com blocks all non-browser access (proof-of-work gate) | **Realized**, not hypothetical | High — eliminated a planned primary data path | Greco1899 CSVs adopted as sole source (ADR-006). No workaround attempted — see ADR-006 for reasoning. |
 
 **Add:**
 
@@ -165,18 +180,25 @@ via their own daily automated job, decoupled from your event timing.
 |---|---|---|---|
 | Sole reliance on Greco1899 as a third-party pipeline; update cadence not guaranteed to match live event timing | Medium (one ~2-month gap observed: May 21–Jul 19, 2026, 6 events, later backfilled) | Medium — could delay settlement/track-record accuracy | Staleness detection in Week 4 settlement job (§4); idempotent, safely re-runnable loader |
 | ESPN public rankings API returns stale data | Confirmed (outdated fighter observed in rankings, 2026-08-05) | Low–Medium, contained to fallback-only usage | Wikipedia as primary; ESPN used only with manual verification against a known-correct value |
+| Greco↔Wikipedia duplicate `events` rows once a Wikipedia-sourced event completes and Greco ingests its real result (ADR-011's known follow-up) | Medium — will occur for every currently-tracked upcoming event unless resolved first | Medium — duplicate event/bout rows; risk of orphaned `predictions` rows if not caught | Automated detection via `check_duplicate_events` (`data/ingestion/quality_checks.py`); reconciliation itself (merging the two rows) is still manual — see §4 |
 
 ---
 
 ## 6. Schema changelog (for reference — already applied, no action needed)
 
-Three migrations applied since the original schema design:
+Five migrations applied since the original schema design:
 
 1. `38e3db2c80a5` — initial schema
 2. `e14a345445b9` — added `source_url` (unique, nullable) to `fighters` and `bouts`, enabling
    idempotent reloads keyed on Greco's own URLs rather than requiring name-matching on every run
 3. `e849068ec219` — added `reversals` to `bout_stats` (present in source data, initially dropped,
    reinstated as a kept stat)
+4. added `wikipedia_pageid` (`BigInteger`, nullable, unique) to `events` — the stable key for
+   Wikipedia-sourced upcoming events, kept separate from `source_url` since it applies before
+   Greco has any data for the event and survives page-title renames (ADR-011)
+5. added `rounds_confirmed` (`Boolean`, `NOT NULL`, default `false`) to `bouts` — guards a
+   manually-corrected `scheduled_rounds`/`is_title_fight` from being silently reverted on the
+   next Wikipedia ingest rerun (ADR-010)
 
 **Open item, not yet acted on:** if a `CHECK` constraint on `fighters.stance` is added in the
 future, it must include `'open stance'` and `'sideways'` in addition to `'orthodox'`/
@@ -198,8 +220,12 @@ boundaries.
 
 ## 8. Cross-references
 
-- Full reasoning for the ufcstats.com decision: **ADR-005**, `docs/DECISIONS.md`
+- Full reasoning for the ufcstats.com decision: **ADR-006**, `docs/DECISIONS.md`
 - This addendum should be merged into `docs/PLAN.md` §1 (data sources), the Week 1 day-by-day
   table, Week 4 Friday's task list, and §5 (risk register) at your convenience — flagged here
   as an addendum rather than an in-place edit so you can review before it overwrites anything.
 - Full reasoning for the upcoming-events API choice: **ADR-009**, `docs/DECISIONS.md`
+- Full reasoning for reusing `events`/`bouts` with `status='scheduled'` instead of a staging
+  table: **ADR-010**, `docs/DECISIONS.md`
+- Full reasoning for `wikipedia_pageid` as a dedicated identity column: **ADR-011**,
+  `docs/DECISIONS.md`
