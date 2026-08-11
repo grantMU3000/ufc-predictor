@@ -89,7 +89,8 @@ def load_bout(engine, event_id: int, bout: dict, fighter_red_id: int, fighter_bl
                 text("""
                     UPDATE bouts
                     SET weight_class = :wc, card_position = :cp,
-                        scheduled_rounds = :rounds, is_title_fight = :title
+                        scheduled_rounds = CASE WHEN rounds_confirmed THEN scheduled_rounds ELSE :rounds END,
+                        is_title_fight = CASE WHEN rounds_confirmed THEN is_title_fight ELSE :title END
                     WHERE id = :id
                 """),
                 {
