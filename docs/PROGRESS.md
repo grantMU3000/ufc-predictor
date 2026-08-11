@@ -33,6 +33,80 @@ Daily log of what shipped, what's blocked, and what's next. Written at the end o
 
 ## Log
 
+## 2026-08-10 (Week 1, Day 7)
+
+**Planned today:** Wire `wiki_parsers.py` output into the actual ingestion path — persist parsed scheduled events and fight cards keyed by `pageid`.
+
+**Shipped:**
+- Fixed CI, red since Aug 8: ruff import-sort errors (which had been masking mypy not running), assorted real ruff hits, and 10 mypy errors; declared `mwparserfromhell` in `pyproject.toml`/`uv.lock` (`d7db47a`)
+- Researched data leakage and reviewed the data split/transformation plan (`docs/research/2026-08-10-DataLeakage.md`) (`e423d3d`)
+- Added `wikipedia_pageid` column to `events` via migration, to support keying upcoming events (`a429e0b`)
+- Implemented the upcoming-events ingestion path: `data/ingestion/fighter_resolution.py`, `data/ingestion/upcoming_events_loader.py`, `data/scraping/ingest_upcoming_events.py` — wires `wiki_parsers.py` output through to persistence, closing out yesterday's "tomorrow" task. Surfaced fighter name collision bugs in the process, logged to `data/ingestion/logs/` (4 unresolved fighters, 4 alias collisions) (`e7afc59`)
+
+**Blocked / open questions:**
+-
+
+**Research (1hr):** Data leakage — `docs/research/2026-08-10-DataLeakage.md`
+
+**Tomorrow's first task:** Resolve the fighter name-collision bugs from today's ingestion run — 4 unresolved fighters (Choi Doo-ho, Osman Diaz, Yoo Joo-sang, Wesley Schultz). Also check whether `alias_collisions.jsonl` double-logging each row is a real dupe-write bug in `fighter_resolution.py`.
+
+**Energy / notes:**
+-
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
+## 2026-08-09 (Week 1, Day 6)
+
+**Planned today:** Add `mwparserfromhell` as a dependency and implement the parser that turns `{{MMAevent bout}}`/`{{MMAevent card}}` wikitext (from `get_section_wikitext`) into structured fight-card rows keyed by `pageid`.
+
+**Shipped:**
+- Added `mwparserfromhell` dependency (`pyproject.toml`, `uv.lock`)
+- Implemented `data/scraping/wiki_parsers.py`: `parse_scheduled_events` (parses the "Scheduled events" wikitable into event dicts with title/display name/date/venue/location) and `parse_fight_card` (parses `{{MMAevent bout}}`/`{{MMAevent card}}` templates into bout dicts — tier, weight class, fighters, champion flags, method/round/time/notes)
+- Added `get_page_info` to `data/scraping/wiki_api.py` to resolve a page title to its stable `pageid`, for keying event pages later
+- (Uncommitted) `data/scraping/_manual_test.py` — manual smoke test against live Wikipedia data (List_of_UFC_events scheduled-events parsing, pageid resolution, UFC 330 fight-card parsing. This is a throwaway script
+
+**Blocked / open questions:**
+-
+
+**Research (1hr):** —
+
+**Tomorrow's first task:** Wire `wiki_parsers.py` output into the actual ingestion path — persist parsed scheduled events and fight cards keyed by `pageid`.
+
+**Energy / notes:**
+- Short day today. Will have to do a lot of work tomorrow with the API and data quality suite
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
+## 2026-08-08 (Week 1, Day 5)
+
+**Planned today:** Audit the 1,855 unresolved odds entries in `data/odds/logs/unresolved_odds_entries.csv` — categorize why each failed to match, resolve or write off as many as possible, then confirm final odds coverage against the ~3,200-fight target.
+
+**Shipped:**
+- Resolved name conflicts blocking ~200 bouts from odds matching; final backfilled historical odds now at 2,775 bouts / 59,972 snapshots (`data/odds/loaders.py`, `matcher.py`) — unresolved log down to 1,718 remaining rows
+- Researched fuzzy matching / entity resolution for scraped-to-database fighter/event matching — `docs/research/2026-08-08-EntityResolution.md`
+- Tested Wikipedia's MediaWiki API response for the UFC 330 fight card (`scripts/wiki_api_test.py`) — found event pages use a `{{MMAevent bout}}` template with a stable `pageid`, not a plain wikitable
+- Implemented `data/scraping/wiki_api.py` lookup functions (`get_section_index`, `get_section_wikitext`) and extended `fetch.py` with query-param support + a `use_cache` bypass
+- Pivoted upcoming-events/rankings retrieval from HTML scraping to the MediaWiki Action API — logged as ADR-009 in `docs/DECISIONS.md`, updated `docs/PLAN_ADDENDUM.md` accordingly
+- (Untracked, not yet committed) `scripts/2020_fight_amount.py`
+
+**Blocked / open questions:**
+-
+
+**Research (1hr):** Fuzzy matching / entity resolution — `docs/research/2026-08-08-EntityResolution.md`
+
+**Tomorrow's first task:** Add `mwparserfromhell` as a dependency and implement the parser that turns `{{MMAevent bout}}`/`{{MMAevent card}}` wikitext (from `get_section_wikitext`) into structured fight-card rows keyed by `pageid` — the piece ADR-009 commits to but `wiki_api.py` doesn't have yet. (The 1,718 remaining unresolved odds entries from yesterday are also still open if you'd rather pick that back up.)
+
+**Energy / notes:**
+-
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
 ## 2026-08-07 (Week 1, Day 4)
 
 **Planned today:** Start Thursday's odds ingestion — pay for one month of The Odds API historical tier, backfill MMA moneylines to 2020, join to bouts by (date, fighter pair). Expect ~10% match failures — log them, don't silently drop.

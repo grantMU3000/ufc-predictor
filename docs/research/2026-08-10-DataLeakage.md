@@ -1,7 +1,7 @@
 # Research — 2026-08-10: Data leakage taxonomy 
 
 **Week:** 2 · **Curriculum area:** Data leakage taxonomy
-**Time spent:** <target ~60 min>
+**Time spent:** 60 min
 
 ## What I read/watched
 - [Preventing training data leakage in AI systems](https://www.tonic.ai/blog/prevent-training-data-leakage-ai)
