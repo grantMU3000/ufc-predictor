@@ -34,6 +34,56 @@ The actual reasoning. Be specific about tradeoffs accepted, not just benefits ga
 What this makes easier, what this makes harder, what it forecloses or defers.
 ```
 ---
+## [ADR-011] Track Wikipedia identity via a dedicated `wikipedia_pageid` column, separate from `source_url`
+
+**Date:** 2026-08-09
+**Status:** Accepted
+
+### Context
+Upcoming events are ingested from Wikipedia before Greco/ufcstats has any data for them — `events.source_url` starts NULL and gets filled in later, once Greco's daily job picks up the completed event. Wikipedia article titles for upcoming events are not stable: they get renamed as fights are confirmed, reshuffled, or drop out (e.g. a Fight Night page titled after a headliner who is later replaced). Something had to serve as the durable key for upserting these rows across reruns.
+
+### Options considered
+1. **Store the Wikipedia page title/URL in `source_url`, same column Greco writes to** — reuses existing infrastructure, but conflates two different identity schemes in one column (a ufcstats URL that never changes vs. a Wikipedia title that can), and breaks the moment a page gets renamed between scrapes.
+2. **Add a new `wikipedia_pageid` column, populated from Wikipedia's own stable numeric page ID, kept independent of `source_url`** — small schema cost (one migration), but each column keeps one clear meaning for its whole lifetime, and `pageid` is immune to title renames by construction.
+
+### Decision
+Option 2 — added `wikipedia_pageid` (nullable, unique) to `events`. `source_url` keeps its existing meaning (a ufcstats.com URL, set once Greco ingests the event) and starts NULL for Wikipedia-originated rows; `wikipedia_pageid` is set immediately and never cleared, even after `source_url` is eventually populated.
+
+### Why
+Overloading one column with two identity schemes that apply at different times was the same mistake already avoided once with the fighter `source_url` convention. Two columns, two fixed meanings, both nullable independently, means the Wikipedia-sourced ingestion path and the Greco ingestion path can both write to the same `events` row without ever needing to agree on what "the identity" of that row is.
+
+### Consequences
+Upcoming-events upserts key on `wikipedia_pageid`, resolved via the MediaWiki API's `action=query` metadata lookup (which follows redirects) rather than trusting whatever title a link happened to show at scrape time. Requires a follow-up reconciliation step in the Greco loader path: when Greco later ingests a real result for an event that already has a Wikipedia-sourced row (`source_url IS NULL`, `wikipedia_pageid` set), the loader must match on `event_date` (+ fuzzy name as a second check) and update that row in place rather than inserting a duplicate — this bridge logic doesn't exist yet as of this session and is a known follow-up, not yet built.
+
+---
+## [ADR-010] Store upcoming events/bouts in the existing `events`/`bouts` tables with `status='scheduled'`, not a separate staging table
+
+**Date:** 2026-08-09
+**Status:** Accepted
+
+### Context
+Upcoming-events data (from Wikipedia, per ADR-009) needs a landing spot in the schema. `predictions.bout_id` is a foreign key directly into `bouts` — the project's core goal of logging a prediction before a fight happens requires that whatever table holds "an upcoming fight" is the same table a prediction can point at from day one, without a later migration/promotion step.
+
+### Options considered
+1. **A separate staging table for unresolved/upcoming bouts, promoted into `bouts` once confirmed** — cleanly isolates churny, pre-fight data from the stable historical table, but requires a "promote from staging" step before any prediction could ever be logged against it, adding a reconciliation job for something that should be a plain insert.
+2. **Reuse `bouts`/`events` directly, with `status='scheduled'` and null result columns** — `bouts.status` was already designed to support this (`scheduled`/`completed`/`cancelled`, from the original schema). A prediction logged against a `scheduled` bout keeps the same `bout_id` for its entire lifecycle, through completion.
+
+### Decision
+Option 2. Upcoming events insert into `events` (keyed on `wikipedia_pageid`, see ADR-011). Upcoming bouts insert into `bouts` with `status='scheduled'` and all result columns NULL, resolved through the same `fighter_red_id`/`fighter_blue_id` FKs as historical bouts.
+
+### Why
+The staging-table approach solves a data-hygiene concern (keep churny data separate) at the cost of breaking the one hard constraint that actually matters — predictions must be able to reference a bout before it happens, permanently, without ever needing to know if that bout was "promoted." The existing schema had already anticipated this exact case via the `status` column; no schema redesign was needed, only three additive behaviors layered on top (below).
+
+### Consequences
+Three new mechanisms were required to make bout-level data reliable under this reuse, since Wikipedia doesn't hand any of them over directly:
+
+- **Stub fighters:** a Wikipedia fighter name with no match in `fighters` (via alias → exact → blocked fuzzy match, WRatio@90) gets a minimal stub row (`real_name` only, `source_url` left NULL — an unverified ufcstats guess was judged worse than no link, since a wrong guess would silently misattribute a future Greco fighter's real stats to the wrong row). Verified links are added manually later via the same override-dict process used for Greco's collisions, never inferred automatically.
+- **Cancel-and-reinsert for fighter swaps:** since there's no stable natural key for an upcoming bout the way `source_url` serves historical ones, a fighter replacement is detected as "an active bout on this event involving one of the two fighters, but a different pairing" — the stale row is marked `status='cancelled'` (not deleted, preserving what was originally booked) and a new row inserted for the current pairing.
+- **Inferred fields, explicitly flagged as inferred:** `is_title_fight` (from champion markers/notes text) and `scheduled_rounds` (5 for title fights and main events, 3 otherwise) aren't provided by the Wikipedia template and are derived. A `rounds_confirmed` boolean column was added after a manual correction was found to silently revert on the next ingest run — the inference now only overwrites `scheduled_rounds`/`is_title_fight` when that flag is false, so a human correction persists across reruns.
+
+**Deliberately out of scope for this session, logged as known gaps rather than fixed:** events whose fight card is still in an "Announced bouts" prose section (pre-table stage) get their `events` row but zero parsed bouts — parsing prose-announced matchups was judged a meaningfully messier problem than the clean `{{MMAevent bout}}` template case and left for later. Wikipedia's own live-edited result fields (method/round/time, if a fast editor fills them in before Greco's daily job runs) are never trusted — `status` stays `'scheduled'` until Greco provides a confirmed result through the normal ingestion path, preserving the prediction ledger's single source of truth.
+
+---
 ## [ADR-009] Switch upcoming-events data collection from HTML scraping to Wikipedia's API
 
 **Date:** 2026-08-08
