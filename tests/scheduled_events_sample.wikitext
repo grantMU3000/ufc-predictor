@@ -1,0 +1,27 @@
+{|
+! scope="col" | Event
+! scope="col" | Date
+! scope="col" | Venue
+! scope="col" | Location
+! scope="col" | Ref.
+|-
+| [[Test Event Alpha]]
+| {{dts|2026|Sep|12}}
+| Test Arena One
+| Test City, Test State, U.S.
+| 
+|-
+| [[Test Event Beta|UFC Test Beta: Someone vs Someone]]
+| {{dts|2026|Sep|19}}
+| Test Arena Two
+| Test City Two, Test Country
+| 
+|-
+| Not A Link Event
+| {{dts|2026|Sep|26}}
+| Test Arena Three
+| Test City Three, Test Country
+| 
+|-
+| colspan="5" | TBD — event details pending
+|}

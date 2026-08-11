@@ -1,0 +1,5 @@
+{{MMAevent card|Main card}}
+{{MMAevent bout|Heavyweight|[[Test Fighter Alpha]] (c)|vs.|Test Fighter Beta||||}}
+{{MMAevent bout|Lightweight|Test Fighter Gamma|vs.|[[Test Fighter Delta (fighter)|Test Fighter Delta]]||||}}
+{{MMAevent card|Preliminary card}}
+{{MMAevent bout|Welterweight|[[Test Fighter Epsilon]]|def.|Test Fighter Zeta|KO (punches)|2|3:14|}}
