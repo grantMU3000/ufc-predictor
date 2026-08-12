@@ -33,6 +33,32 @@ Daily log of what shipped, what's blocked, and what's next. Written at the end o
 
 ## Log
 
+## 2026-08-12 (Week 2, Day 1)
+
+**Planned today:** Confirm the quality suite is catching real Greco/Wikipedia dupes correctly on a completed-event update. Also run unit test coverage for the quality checks themselves, and fix the CI corrections still outstanding.
+
+**Shipped:**
+- Fixed CI (red since 40e0bbf, 5 consecutive failing runs): ruff import-order/unused-import errors, a mypy typing gap in `fighter_resolution.py`'s alias-index build (`itertuples()` → `zip()`), and a pytest module-resolution gap (missing `pythonpath` config, plus a `tests/fixtures/` directory the wiki_parsers tests expected but that had never been committed) (`b675913`)
+- Resolved a Wikipedia API name-conflict pull; one fighter (Timothy Cuamba) couldn't be resolved and was logged to `unresolved_fighters.jsonl` for manual review rather than guessed
+- Investigated ~70 quality-check false positives on title fights scheduled for 3 rounds (mostly TUF/Road to UFC tournament finales, plus one legitimate historical exception) — individually confirmed each, then reused `rounds_confirmed` to suppress them so the check stays a clean signal going forward. Logged as ADR-012, including a caveat that `rounds_confirmed` isn't enforced the same way on the Greco loader as it is on the Wikipedia loader (`1f34c2c`)
+- Researched feature engineering for time-series/sports — `docs/research/2026-08-12-Features.md` (`3ba77a7`)
+- Started feature store design (Week 2 Monday deliverable): built `bout_history.py` (`get_prior_bouts`, the shared leak-safe "everything before this date" function), `bout_stats_history.py` (round-by-round stat history), `snapshot.py` (Postgres → Parquet point-in-time snapshotting), and the first Tier 1 feature (`age_at_fight`); stubbed `store.py`, `tier2.py`, and `test_features.py` as placeholders for tomorrow (`fe4e665`)
+
+**Blocked / open questions:**
+-
+
+**Research (1hr):** Feature engineering for time-series/sports — `docs/research/2026-08-12-Features.md`
+
+**Tomorrow's first task:** Compute the remaining Tier 1 features in `tier1.py` (`age_at_fight` is the only one built so far), then write hand-computed unit tests for `get_prior_bouts` and the Tier 1 features in `test_features.py` — closes out Monday's "unit-test each against a hand-computed example" bar before more untested functions get built on top. After that, start Tier 2 point-in-time career-rate features in `tier2.py`.
+
+**Energy / notes:**
+- The research today really made me realize how difficult it is to feature engineer to the appropriate extent that sports predictions need. Especially for UFC, a sport that's so unpredictable.
+- I'll attempt to formulate as many different feature ideas as I can and get them documented 
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
 ## 2026-08-11 (Week 1, Day 8)
 
 **Planned today:** Resolve the fighter name-collision bugs from yesterday's ingestion run — 4 unresolved fighters (Choi Doo-ho, Osman Diaz, Yoo Joo-sang, Wesley Schultz) — and check whether `alias_collisions.jsonl` double-logging each row is a real dupe-write bug in `fighter_resolution.py`.
