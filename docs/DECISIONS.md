@@ -34,6 +34,84 @@ The actual reasoning. Be specific about tradeoffs accepted, not just benefits ga
 What this makes easier, what this makes harder, what it forecloses or defers.
 ```
 ---
+## [ADR-012] Reuse `rounds_confirmed` to suppress quality-check false positives on legitimate 3-round title fights
+
+**Date:** 2026-08-13
+**Status:** Accepted
+
+### Context
+The `title_fights_have_five_rounds` quality check (`data/ingestion/quality_checks.py`)
+flagged ~70 bouts where `is_title_fight = true` but `scheduled_rounds = 3`. Investigation
+showed these are not data errors:
+
+- The overwhelming majority are tournament-finale "Title Bout"s from *The Ultimate Fighter*
+  and *Road to UFC* franchises — these crown a tournament winner and have always been
+  scheduled for 3 rounds, unlike a standard 5-round UFC title bout. `is_title_fight` is
+  correctly `true` (real_name string contains "Title Bout"/"Championship"), but the
+  5-round assumption baked into the check doesn't hold for this bout type.
+- One additional case (`bouts.id=8559`, event_id=640, "UFC Welterweight Title Bout") is a
+  legitimate standard UFC title bout from an older event, predating the modern 5-round
+  title-bout convention — a real historical exception, not a parsing bug.
+
+All ~70 rows were individually confirmed as legitimate before this decision was made, not
+bulk-suppressed on assumption.
+
+### Options considered
+1. **Leave the check failing, treat it as expected noise** — simplest, but a check that's
+   expected to always show ~70 failures stops being useful as a signal; a *new*, real
+   regression (e.g. a genuine 3/5-round data bug introduced later) would be lost in the
+   same noise.
+2. **Change the check's query to exclude bouts by event-name pattern** (e.g. name contains
+   "Ultimate Fighter" or "Road to UFC") — mirrors ADR-007's existing pattern for excluding
+   Road to UFC rows, but would need to also special-case the one non-tournament historical
+   outlier separately, and doesn't leave a durable, per-row record of *which* bouts were
+   actually reviewed and confirmed correct.
+3. **Reuse the existing `rounds_confirmed` column**: set it `true` on exactly these ~70
+   confirmed rows, and add `AND NOT rounds_confirmed` to the check's `WHERE` clause.
+
+### Decision
+Option 3. `rounds_confirmed` was set `true` on the ~70 confirmed-legitimate 3-round title
+bouts, and `check_title_fights_have_five_rounds` was updated to exclude
+`rounds_confirmed = true` rows.
+
+### Why
+`rounds_confirmed` already exists on `bouts` and already means, informally, "a human has
+looked at this row's round count and it's correct" — reusing it avoids adding a second
+column with near-identical meaning, and leaves a durable, queryable record of exactly which
+rows were reviewed (versus a name-pattern filter, which encodes "why we think this is fine"
+in the query rather than on the data itself).
+
+**Important distinction from this column's original purpose (ADR-010):** on the Wikipedia
+ingestion path, `upcoming_events_loader.py`'s `load_bout()` uses `rounds_confirmed` as an
+active guard — a literal `CASE WHEN rounds_confirmed THEN scheduled_rounds ELSE :rounds END`
+in the UPDATE statement, stopping a human correction from being silently reverted on rerun.
+**The Greco loader (`loaders.py`) has no such guard.** `rounds_confirmed` is not in its
+`insert_cols` list for `bouts`, so a Greco reload will never flip the flag back to `false`
+(the flag itself is safe) — but `is_title_fight` and `scheduled_rounds` *are* in
+`insert_cols`, meaning Greco unconditionally re-derives and rewrites both on every reload,
+with no check of `rounds_confirmed` at all. In practice this doesn't threaten these specific
+rows, since Greco's parser deterministically re-derives "3 rounds" from the same source CSV
+text every time — but that's a property of the source data being stable, not protection
+this column is actually providing on the Greco side. Here, `rounds_confirmed` is doing a
+narrower job than its original one: marking "human-verified, suppress the quality check,"
+not "protected from being overwritten."
+
+### Consequences
+**Easier:** `title_fights_have_five_rounds` goes back to being a clean signal — a future
+failure means a genuinely new, unreviewed round-count mismatch, not one of these ~70 known
+cases.
+
+**Requires care going forward:** any *new* legitimate 3-round title bout (e.g. a future TUF
+or Road to UFC finale ingested by Greco) will need `rounds_confirmed` set manually the same
+way, or it will correctly reappear in the check's output — this is expected, not a bug.
+
+**Worth remembering:** `rounds_confirmed = true` means two different things depending on
+which loader touches the row — "protected from being overwritten" (Wikipedia path) vs.
+"human-verified, quality-check suppressed, but not actually write-protected" (Greco path).
+Anyone editing `loaders.py`'s `insert_cols` or this quality check in the future should be
+aware the column isn't uniformly enforced across both ingestion paths.
+
+---
 ## [ADR-011] Track Wikipedia identity via a dedicated `wikipedia_pageid` column, separate from `source_url`
 
 **Date:** 2026-08-09

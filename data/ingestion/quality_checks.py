@@ -300,7 +300,7 @@ def check_title_fights_have_five_rounds(engine: Engine) -> QualityCheckResult:
     query = text("""
         SELECT id, event_id, weight_class, scheduled_rounds
         FROM bouts
-        WHERE is_title_fight = true AND scheduled_rounds != 5
+        WHERE is_title_fight = true AND scheduled_rounds != 5 AND NOT rounds_confirmed
     """)
     with engine.connect() as conn:
         mismatches = conn.execute(query).fetchall()
