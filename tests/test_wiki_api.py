@@ -84,9 +84,11 @@ class TestGetSectionIndex:
         # The error message should list what sections DO exist -- this
         # is what makes a real failure (e.g. Wikipedia renaming "Fight
         # card" to "Card") debuggable from the exception text alone.
-        with patch.object(wiki_api, "fetch", return_value=self.FAKE_SECTIONS):
-            with pytest.raises(wiki_api.SectionNotFoundError, match="Background.*Fight card"):
-                wiki_api.get_section_index("UFC 330", "Nonexistent Section")
+        with (
+            patch.object(wiki_api, "fetch", return_value=self.FAKE_SECTIONS),
+            pytest.raises(wiki_api.SectionNotFoundError, match="Background.*Fight card"),
+        ):
+            wiki_api.get_section_index("UFC 330", "Nonexistent Section")
 
 
 class TestGetSectionWikitext:

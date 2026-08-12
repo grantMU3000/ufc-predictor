@@ -50,16 +50,16 @@ class FighterRoster:
             name_index.setdefault(_normalize(name), []).append(fid)
 
         alias_index: dict[str, int] = {}
-        for row in aliases_df.itertuples():
-            norm = _normalize(row.alias_name)
-            if norm in alias_index and alias_index[norm] != row.fighter_id:
+        for alias_name, fighter_id in zip(aliases_df["alias_name"], aliases_df["fighter_id"]):
+            norm = _normalize(alias_name)
+            if norm in alias_index and alias_index[norm] != fighter_id:
                 _log("alias_collisions.jsonl", {
-                    "alias_name": row.alias_name,
+                    "alias_name": alias_name,
                     "existing_fighter_id": alias_index[norm],
-                    "conflicting_fighter_id": row.fighter_id,
+                    "conflicting_fighter_id": fighter_id,
                 })
                 continue  # keep the first-seen mapping, don't silently overwrite
-            alias_index[norm] = row.fighter_id
+            alias_index[norm] = fighter_id
 
         return cls(by_id=by_id, name_index=name_index, alias_index=alias_index)
 

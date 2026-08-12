@@ -6,11 +6,19 @@ fold into a real pytest file once the integration is confirmed working.
 
 import pandas as pd
 
+from data.ingestion.fighter_resolution import (
+    FighterRoster,
+    create_stub_fighter,
+    resolve_fighter,
+)
 from data.ingestion.loaders import _get_engine
-from data.ingestion.fighter_resolution import FighterRoster, create_stub_fighter, resolve_fighter
-from data.scraping.wiki_api import get_page_info, get_section_index, get_section_wikitext
-from data.scraping.wiki_parsers import parse_fight_card
 from data.ingestion.upcoming_events_loader import load_bout, load_upcoming_events
+from data.scraping.wiki_api import (
+    get_page_info,
+    get_section_index,
+    get_section_wikitext,
+)
+from data.scraping.wiki_parsers import parse_fight_card
 
 USE_CACHE = True  # iterating locally — flip to False for a final live check
 

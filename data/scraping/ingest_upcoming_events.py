@@ -3,13 +3,21 @@ End-to-end run: list page -> parsed events -> pageid resolution ->
 per-event fight card -> fighter resolution -> DB load.
 """
 
-from data.ingestion.loaders import _get_engine
-from data.ingestion.fighter_resolution import FighterRoster, create_stub_fighter, resolve_fighter
-from data.scraping.wiki_api import get_page_info, get_section_index, get_section_wikitext
-from data.scraping.wiki_parsers import parse_fight_card, parse_scheduled_events
-from data.ingestion.upcoming_events_loader import load_bout, load_upcoming_events
-
 import pandas as pd
+
+from data.ingestion.fighter_resolution import (
+    FighterRoster,
+    create_stub_fighter,
+    resolve_fighter,
+)
+from data.ingestion.loaders import _get_engine
+from data.ingestion.upcoming_events_loader import load_bout, load_upcoming_events
+from data.scraping.wiki_api import (
+    get_page_info,
+    get_section_index,
+    get_section_wikitext,
+)
+from data.scraping.wiki_parsers import parse_fight_card, parse_scheduled_events
 
 
 def run(use_cache: bool = False) -> None:
@@ -39,7 +47,7 @@ def run(use_cache: bool = False) -> None:
         event_id = pageid_to_event_id[event["wikipedia_pageid"]]
         try:
             card_index = get_section_index(event["name"], "Fight card", use_cache=use_cache)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — one bad event page shouldn't kill the whole run
             print(f"Skipping fight card for '{event['name']}': {e}")
             continue
 

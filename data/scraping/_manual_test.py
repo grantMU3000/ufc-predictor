@@ -1,6 +1,5 @@
-from .wiki_api import get_page_info, get_section_index, get_section_wikitext, resolve_event_pageids
-from .wiki_parsers import parse_fight_card, parse_scheduled_events
-
+from .wiki_api import get_section_index, get_section_wikitext, resolve_event_pageids
+from .wiki_parsers import parse_scheduled_events
 
 # 1. Scheduled events — should return 11 rows against today's list-page snapshot
 index = get_section_index("List_of_UFC_events", "Scheduled events", use_cache=False)

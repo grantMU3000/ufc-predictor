@@ -22,6 +22,7 @@ import pandas as pd
 from rapidfuzz import fuzz
 from sqlalchemy import Engine, text
 
+
 @dataclass
 class QualityCheckResult:
     """

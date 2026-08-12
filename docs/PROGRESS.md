@@ -33,6 +33,32 @@ Daily log of what shipped, what's blocked, and what's next. Written at the end o
 
 ## Log
 
+## 2026-08-11 (Week 1, Day 8)
+
+**Planned today:** Resolve the fighter name-collision bugs from yesterday's ingestion run — 4 unresolved fighters (Choi Doo-ho, Osman Diaz, Yoo Joo-sang, Wesley Schultz) — and check whether `alias_collisions.jsonl` double-logging each row is a real dupe-write bug in `fighter_resolution.py`.
+
+**Shipped:**
+- Researched idempotent ETL pipelines further — how the pipeline should handle new bouts, scheduled bouts, and pre-existing events consistently (`docs/research/2026-08-11-Idempotent2.md`) (`f86e0bd`)
+- Fixed default scheduled rounds: non-main-card/title fights confirmed by a human at 5 rounds no longer get silently reset to the default (`40e0bbf`)
+- Resolved the fighter name collisions flagged yesterday (`4c75f0c`)
+- Logged key decisions for the upcoming-events ingest pipeline: tracking Wikipedia identities via a dedicated column, and storing upcoming events/bouts in the existing tables rather than separate staging tables (`docs/DECISIONS.md`) (`82c6bd8`)
+- Updated `docs/PLAN_ADDENDUM.md` to reflect the Wikipedia pipeline work in progress (`ac43223`)
+- Built a data quality suite (`data/ingestion/quality_checks.py`) to guard bout/event integrity — specifically checks Wikipedia ingestion health and that Greco/Wikipedia events don't get duplicated when completed events are later updated; added integration + unit test coverage (`tests/integration/test_upcoming_events_loader_integration.py`, `tests/test_wiki_api.py`, `tests/test_wiki_parsers.py`) (`82abe9f`)
+
+**Blocked / open questions:**
+-
+
+**Research (1hr):** Idempotent ETL pipelines (part 2) — `docs/research/2026-08-11-Idempotent2.md`
+
+**Tomorrow's first task:** Confirm the quality suite is catching real Greco/Wikipedia dupes correctly on a completed-event update. Also run unit test coverage for the quality checks themselves, and fix the CI corrections still outstanding.
+
+**Energy / notes:**
+-
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
 ## 2026-08-10 (Week 1, Day 7)
 
 **Planned today:** Wire `wiki_parsers.py` output into the actual ingestion path — persist parsed scheduled events and fight cards keyed by `pageid`.
