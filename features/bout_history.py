@@ -47,6 +47,7 @@ def get_prior_bouts(
         SELECT
             b.id AS bout_id,
             e.event_date,
+            b.scheduled_rounds,
             CASE WHEN b.fighter_red_id = $fighter_id
                  THEN b.fighter_red_id ELSE b.fighter_blue_id END AS self_id,
             CASE WHEN b.fighter_red_id = $fighter_id
