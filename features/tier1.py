@@ -14,7 +14,6 @@ from datetime import date
 
 import duckdb
 
-
 _FIGHTER_COLUMNS = {"dob", "height_cm", "reach_cm", "stance"}
 
 
@@ -77,7 +76,7 @@ def age_at_fight(
 
 
 def height_at_fight(
-    con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date  # noqa: ARG001
+    con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date
 ) -> float | None:
     """Fighter's height in cm. Not date-dependent; as_of_date kept for signature consistency."""
     value = _fetch_fighter_column(con, fighter_id, "height_cm")
@@ -85,7 +84,7 @@ def height_at_fight(
 
 
 def reach_at_fight(
-    con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date  # noqa: ARG001
+    con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date
 ) -> float | None:
     """Fighter's reach in cm. Not date-dependent; as_of_date kept for signature consistency."""
     value = _fetch_fighter_column(con, fighter_id, "reach_cm")
@@ -102,7 +101,7 @@ def reach_to_height_ratio(
 
 
 def stance_at_fight(
-    con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date  # noqa: ARG001
+    con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date
 ) -> str | None:
     """
     Fighter's fighting stance ("Orthodox", "Southpaw", "Switch", and
