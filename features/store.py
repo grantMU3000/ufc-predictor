@@ -14,8 +14,6 @@ something tangled into assembly itself. Keeping them apart means a
 bug in one is never confused for a bug in the other.
 """
 
-from datetime import date
-
 import duckdb
 
 from features.tier1 import (
@@ -29,16 +27,71 @@ from features.tier1 import (
     stance_matchup,
     weight_class_at_bout,
 )
+from features.tier2 import (
+    average_fight_time_seconds,
+    career_win_percentage,
+    control_time_percentage,
+    days_since_last_fight,
+    decision_loss_percentage,
+    decision_win_percentage,
+    finish_rate,
+    knockdown_rate,
+    ko_loss_rate,
+    significant_strike_rate,
+    strikes_absorbed_per_minute,
+    strikes_landed_per_minute,
+    striking_accuracy,
+    striking_defense,
+    striking_output_decay,
+    sub_loss_rate,
+    submission_success_rate,
+    submission_win_count,
+    submissions_attempted_per_15,
+    takedown_accuracy,
+    takedown_defense,
+    takedown_output_decay,
+    takedowns_landed_per_15,
+    time_controlled_percentage,
+    times_knocked_down,
+    title_fight_experience,
+    total_ufc_fights,
+)
 
-# Station 1: same fighter_id/as_of_date shape every time. Called once
-# per corner (red, then blue). Adding a new Tier 1 fighter-level
-# feature later means adding ONE line here — nothing else changes.
 FIGHTER_FEATURES = [
-    ("age_at_fight", age_at_fight),
+    # Tier 1 — physical/static
+    ("age", age_at_fight),
     ("height_cm", height_at_fight),
     ("reach_cm", reach_at_fight),
     ("reach_to_height_ratio", reach_to_height_ratio),
     ("stance", stance_at_fight),
+    # Tier 2 — career rates, point-in-time
+    ("slpm", strikes_landed_per_minute),
+    ("sapm", strikes_absorbed_per_minute),
+    ("td_avg_per_15", takedowns_landed_per_15),
+    ("sub_attempts_per_15", submissions_attempted_per_15),
+    ("striking_accuracy", striking_accuracy),
+    ("takedown_accuracy", takedown_accuracy),
+    ("significant_strike_rate", significant_strike_rate),
+    ("striking_defense", striking_defense),
+    ("takedown_defense", takedown_defense),
+    ("career_win_pct", career_win_percentage),
+    ("decision_win_pct", decision_win_percentage),
+    ("decision_loss_pct", decision_loss_percentage),
+    ("submission_win_count", submission_win_count),
+    ("submission_success_rate", submission_success_rate),
+    ("finish_rate", finish_rate),
+    ("ko_loss_rate", ko_loss_rate),
+    ("sub_loss_rate", sub_loss_rate),
+    ("total_ufc_fights", total_ufc_fights),
+    ("days_since_last_fight", days_since_last_fight),
+    ("avg_fight_time_seconds", average_fight_time_seconds),
+    ("title_fight_experience", title_fight_experience),
+    ("times_knocked_down", times_knocked_down),
+    ("knockdown_rate", knockdown_rate),
+    ("control_time_pct", control_time_percentage),
+    ("time_controlled_pct", time_controlled_percentage),
+    ("striking_output_decay", striking_output_decay),
+    ("takedown_output_decay", takedown_output_decay),
 ]
 
 # Station 3: bout_id only, same value stamped for both corners.
@@ -140,8 +193,8 @@ def build_feature_row(con: duckdb.DuckDBPyConnection, bout_id: int) -> dict:
         ("red", fighter_red_id),
         ("blue", fighter_blue_id),
     ]:
-        for feature_name, feature_fn in FIGHTER_FEATURES:
-            row[f"{corner_prefix}_{feature_name}"] = feature_fn(
+        for fighter_feature_name, fighter_feature_fn in FIGHTER_FEATURES:
+            row[f"{corner_prefix}_{fighter_feature_name}"] = fighter_feature_fn(
                 con, this_fighter_id, as_of_date
             )
 
@@ -160,7 +213,7 @@ def build_feature_row(con: duckdb.DuckDBPyConnection, bout_id: int) -> dict:
     # Station 3: bout-level facts, computed once, no corner prefix —
     # both fighters share the exact same weight class/title-fight
     # status/round count.
-    for feature_name, feature_fn in BOUT_FEATURES:
-        row[feature_name] = feature_fn(con, bout_id)
+    for bout_feature_name, bout_feature_fn in BOUT_FEATURES:
+        row[bout_feature_name] = bout_feature_fn(con, bout_id)
 
     return row

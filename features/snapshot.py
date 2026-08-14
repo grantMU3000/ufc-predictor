@@ -18,6 +18,9 @@ import os
 from pathlib import Path
 
 import duckdb
+from dotenv import load_dotenv
+
+load_dotenv()
 
 OUTPUT_DIR = Path("data/processed")
 TABLES = ["fighters", "events", "bouts", "bout_stats", "fighter_aliases"]

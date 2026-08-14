@@ -14,11 +14,13 @@ once, not 20 times.
 """
 
 from datetime import date
+from functools import cache
 
 import duckdb
 import pandas as pd
 
 
+@cache
 def get_prior_bouts(
     con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date
 ) -> pd.DataFrame:
@@ -42,12 +44,32 @@ def get_prior_bouts(
     -------
     pd.DataFrame — one row per prior bout. Empty DataFrame for a debut
     fighter (this is the signal your min_prior_fights guard checks for).
+
+    CACHED (lru_cache): repeated calls with the same (fighter_id,
+    as_of_date) return the SAME DataFrame object from memory, not a
+    fresh query. This is safe only because every caller in this
+    codebase treats the result as read-only — filtering (df[...]),
+    aggregating (.sum(), .mean()), never mutating in place
+    (.fillna(inplace=True), column assignment, etc.). If a future
+    feature function ever mutates the returned DataFrame directly, it
+    would silently corrupt this cached copy for every OTHER function
+    that asks for the same fighter/date afterward. Always work off a
+    filtered or derived copy, never the object returned here.
+
+    Cache lives for the lifetime of the Python process — it does not
+    auto-clear between feature-store runs, but since this project's
+    pipeline runs as a single script (snapshot -> build -> exit),
+    that's the correct behavior: no manual cache-clearing needed
+    today. Would need revisiting only if this code ever ran inside a
+    long-lived process (e.g. a persistent API server) that needed to
+    reflect newly-changed data without restarting.
     """
     query = """
         SELECT
             b.id AS bout_id,
             e.event_date,
             b.scheduled_rounds,
+            b.is_title_fight,
             CASE WHEN b.fighter_red_id = $fighter_id
                  THEN b.fighter_red_id ELSE b.fighter_blue_id END AS self_id,
             CASE WHEN b.fighter_red_id = $fighter_id
