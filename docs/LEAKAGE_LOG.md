@@ -53,4 +53,4 @@ Sanity checks to run whenever a metric looks too good:
 
 ## Entries
 
-_(none yet — first suspicious result goes here)_
+Raw red-corner win rate (all decided bouts, pre-symmetrization): 0.6319 — recorded 2026-08-15. Reference baseline for Saturday's leakage audit (ADR-004): if a trained model's implied red-corner advantage approaches this number, symmetrization has failed.
