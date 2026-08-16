@@ -160,7 +160,7 @@ if __name__ == "__main__":
     from features.symmetrize import build_symmetrized_dataset
 
     con = duckdb.connect()
-    for table in ["fighters", "events", "bouts", "bout_stats", "fighter_aliases"]:
+    for table in ["fighters", "events", "bouts", "bout_stats", "fighter_aliases", "odds_snapshots"]:
         con.execute(
             f"CREATE VIEW {table} AS SELECT * FROM read_parquet('data/processed/{table}.parquet')"
         )
