@@ -23,7 +23,6 @@ import pandas as pd
 from features.labels import get_completed_decided_bouts
 from features.store import build_feature_row
 
-
 _STANCE_MATCHUP_SUFFIXES = {"stance_matchup_descriptive", "is_open_stance_matchup"}
 
 

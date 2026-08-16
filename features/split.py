@@ -17,8 +17,8 @@ having bouts in train, val, AND test is expected and fine — each
 row's features are frozen as of that specific bout's own date.
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
 
 import pandas as pd
 
@@ -98,7 +98,7 @@ def validate_split(
     # they should mechanically always land in the same split — but
     # "should" isn't "does," so verify it directly rather than
     # trusting the reasoning.
-    bout_to_splits = {}
+    bout_to_splits: dict[str, set[str]] = {}
     for split_name, part in [("train", train), ("val", val), ("test", test)]:
         for bout_id in part["bout_id"]:
             bout_to_splits.setdefault(bout_id, set()).add(split_name)
@@ -156,6 +156,7 @@ def save_split(
 
 if __name__ == "__main__":
     import duckdb
+
     from features.symmetrize import build_symmetrized_dataset
 
     con = duckdb.connect()

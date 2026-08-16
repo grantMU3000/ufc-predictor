@@ -81,7 +81,5 @@ def test_self_won_is_balanced(df, labels):
 
 
 def test_no_red_blue_columns_leak_through(df):
-    leaked_columns = [
-        c for c in df.columns if c.startswith("red_") or c.startswith("blue_")
-    ]
+    leaked_columns = [c for c in df.columns if c.startswith(("red_", "blue_"))]
     assert not leaked_columns, f"red_/blue_ columns leaked through: {leaked_columns}"

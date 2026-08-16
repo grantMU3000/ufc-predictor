@@ -15,3 +15,5 @@ __pycache__/
 
 # Data
 data/raw/
+data/processed/
+data/test_locked/

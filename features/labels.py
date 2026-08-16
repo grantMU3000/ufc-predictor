@@ -12,7 +12,6 @@ copy-paste away from becoming a feature itself — and a model that
 can see the answer will look great and mean nothing.
 """
 
-from datetime import date
 
 import duckdb
 import pandas as pd

@@ -27,12 +27,12 @@ generated, same pattern as test_features.py and test_symmetrize.py.
 
 from pathlib import Path
 
-import pandas as pd
 import duckdb
+import pandas as pd
 import pytest
 
+from features.split import TEST_START, VAL_START, temporal_split
 from features.symmetrize import build_symmetrized_dataset
-from features.split import VAL_START, TEST_START, temporal_split
 
 SNAPSHOT_DIR = Path("data/processed")
 REQUIRED_TABLES = ["fighters", "events", "bouts", "bout_stats", "fighter_aliases"]

@@ -33,6 +33,78 @@ Daily log of what shipped, what's blocked, and what's next. Written at the end o
 
 ## Log
 
+## 2026-08-15 (Week 2, Day 4)
+
+**Planned today:** With Tiers 1 & 2 complete and unit-tested, move to Wednesday's plan deliverable: symmetrization (dual rows / differential features, per ADR in `docs/DECISIONS.md`) so the model can't key off corner position, then the strict temporal split (train ≤2022, val 2023–24, test 2025+) with the test set moved to a locked directory.
+
+**Shipped:**
+- Built `features/labels.py`: `get_completed_decided_bouts`, the single source of truth for which bouts are eligible training rows (`status = 'completed'` and `winner_id IS NOT NULL`) — kept deliberately separate from the feature functions so the label can never leak into `store.py`
+- Built `features/symmetrize.py`: reshapes `store.py`'s red_/blue_ rows into self_/opp_ rows (two rows per bout) to kill corner-position leakage per ADR-004, dropping `stance_matchup`'s two fields as a redundant mirror rather than double-feeding the model the same fact
+- Established the leakage-audit reference baseline: raw red-corner win rate (pre-symmetrization) is 0.6319, logged in `docs/LEAKAGE_LOG.md` — if a trained model's implied red-corner advantage approaches this, symmetrization has failed
+- Added `tests/test_symmetrize.py` to test the symmetrization logic for leaks (`6bb3fe7`)
+
+**Blocked / open questions:**
+-
+
+**Research (1hr):** —
+
+**Tomorrow's first task:** Make CI green, then build the top-level assembly script that ties `store.py` → `labels.py` → `symmetrize.py` together into the full training dataset, and apply the strict temporal split (train ≤2022, val 2023–2024, test 2025+) with the test set moved into a locked directory — the piece "orchestration" in today's commit message sets up but doesn't finish yet.
+
+**Energy / notes:**
+-
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
+## 2026-08-14 (Week 2, Day 3)
+
+**Planned today:** Resolve any outstanding CI issues, then keep building out the rest of the Tier 2 features in `tier2.py` (point-in-time career-rate features beyond the strike/takedown rates already built). Unit tests for Tier 1 + Tier 2 will come once the full feature set is built out, not per-tier.
+
+**Shipped:**
+- Researched data leakage taxonomy further, ahead of the pipeline audit — `docs/research/2026-08-14-DataLeakage2.md` (`e70e11a`)
+- Wrote and passed unit tests for all 39 Tier 1 + Tier 2 features in `tests/test_features.py` (`9a2b47b`)
+- Completed the feature store: finished out the remaining Tier 2 point-in-time career-rate features in `tier2.py` and fleshed out `store.py`, then fixed the resulting ruff/mypy errors — Tiers 1 & 2 are now fully implemented (`01b5909`)
+- Added foreign key indexes to support feature-store query patterns (migration `..._add_query_indexes_for_feature_store_and_...`) (`1e7586c`)
+
+**Blocked / open questions:**
+-
+
+**Research (1hr):** Data leakage taxonomy, part 2 — `docs/research/2026-08-14-DataLeakage2.md`
+
+**Tomorrow's first task:** With Tiers 1 & 2 complete and unit-tested, move to Wednesday's plan deliverable: symmetrization (dual rows / differential features, per ADR in `docs/DECISIONS.md`) so the model can't key off corner position, then the strict temporal split (train ≤2022, val 2023–24, test 2025+) with the test set moved to a locked directory.
+
+**Energy / notes:**
+-
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
+## 2026-08-13 (Week 2, Day 2)
+
+**Planned today:** Compute the remaining Tier 1 features in `tier1.py` (`age_at_fight` was the only one built so far), then write hand-computed unit tests for `get_prior_bouts` and the Tier 1 features in `test_features.py`. After that, start Tier 2 point-in-time career-rate features in `tier2.py`.
+
+**Shipped:**
+- Built out the rest of the Tier 1 features in `tier1.py`: `height_at_fight`, `reach_at_fight`, `reach_to_height_ratio`, `stance_at_fight`, `stance_matchup`, plus bout-context lookups `weight_class_at_bout`, `is_title_fight_at_bout`, `scheduled_rounds_at_bout` (`1c8e53a`), then fixed the resulting ruff failures (`e01209e`)
+- Started Tier 2 point-in-time career-rate features: `get_fight_duration_seconds`, `get_total_seconds_fought`, `_rate_per_time_window`, `strikes_landed_per_minute`, `strikes_absorbed_per_minute`, `takedowns_landed_per_15` in `tier2.py`; also fleshed out `store.py` (`_get_bout_context`, `build_feature_row`) into a Tier 1-ready feature store (`63052e9`)
+- Researched Elo rating systems for feature engineering — `docs/research/2026-08-13-Feature2.md` (`19cbd74`)
+- Resolved a fighter name conflict from upcoming-bouts ingestion (Eduardo Chaplin), clearing it from `unresolved_fighters.jsonl` (`bf43a2b`)
+
+**Blocked / open questions:**
+-
+
+**Research (1hr):** Elo rating systems for sports prediction — `docs/research/2026-08-13-Feature2.md`
+
+**Tomorrow's first task:** Resolve any outstanding CI issues, then keep building out the rest of the Tier 2 features in `tier2.py` (point-in-time career-rate features beyond the strike/takedown rates already built). Unit tests for Tier 1 + Tier 2 will come once the full feature set is built out, not per-tier.
+
+**Energy / notes:**
+-
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
 ## 2026-08-12 (Week 2, Day 1)
 
 **Planned today:** Confirm the quality suite is catching real Greco/Wikipedia dupes correctly on a completed-event update. Also run unit test coverage for the quality checks themselves, and fix the CI corrections still outstanding.
