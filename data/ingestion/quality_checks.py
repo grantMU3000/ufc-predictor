@@ -144,6 +144,80 @@ def check_duplicate_events(
         details=details,
     )
 
+def check_duplicate_bouts(engine: Engine) -> QualityCheckResult:
+    """
+    Look for two `bouts` rows describing the same fight on the same card.
+ 
+    ELI5: on a real UFC card, a given pair of fighters appears exactly
+    once. If the database says Makhachev vs. Garry happened twice on
+    UFC 330, something duplicated a row — this is the check that would
+    have caught that before it reached the feature store.
+ 
+    Why this matters more than it looks: this is a leakage-class bug, not
+    just untidiness. A duplicated bout means the feature store's
+    `get_prior_bouts` counts that fight twice toward both fighters'
+    records, Elo updates twice off one result, and symmetrization emits
+    the same fight as four training rows instead of two. Any of those
+    quietly shifts metrics without ever throwing an error — exactly the
+    failure mode PLAN.md §0.2 warns about.
+ 
+    Detection is on (event_id, unordered fighter pair) rather than on
+    source_url, because the duplicated row is precisely the one whose
+    source_url started out NULL — keying on source_url would miss it by
+    construction. This is the same reasoning `claim_existing_bouts_for_greco`
+    (data/ingestion/reconciliation.py) uses to prevent the duplicate in the
+    first place; this check is the second line of defense in case that
+    prevention step ever misses a case (e.g. a stub-fighter row on one side
+    that never got reconciled to the real fighter).
+ 
+    'cancelled' bouts are excluded: a cancelled row plus its replacement is
+    the *intended* result of the ADR-010 fighter-swap logic, not a
+    duplicate.
+ 
+    Returns QualityCheckResult — passed=True means no fight is booked
+    twice on any card.
+    """
+    dupes = pd.read_sql(
+        """
+        SELECT b.event_id,
+               e.name AS event_name,
+               LEAST(b.fighter_red_id, b.fighter_blue_id)    AS pair_low,
+               GREATEST(b.fighter_red_id, b.fighter_blue_id) AS pair_high,
+               count(*)                          AS row_count,
+               array_agg(b.id ORDER BY b.id)      AS bout_ids,
+               array_agg(b.status ORDER BY b.id)  AS statuses
+        FROM bouts b
+        JOIN events e ON e.id = b.event_id
+        WHERE b.status <> 'cancelled'
+        GROUP BY b.event_id, e.name, pair_low, pair_high
+        HAVING count(*) > 1
+        ORDER BY b.event_id
+        """,
+        engine,
+    )
+ 
+    passed = dupes.empty
+    if passed:
+        details = "No fight is booked more than once on the same card."
+    else:
+        lines = [
+            f"  - event_id={r.event_id} '{r.event_name}': fighters "
+            f"({r.pair_low}, {r.pair_high}) appear in {r.row_count} bouts "
+            f"{r.bout_ids} with statuses {r.statuses}"
+            for r in dupes.itertuples()
+        ]
+        details = (
+            f"Found {len(dupes)} duplicated bout group(s). These must be "
+            f"merged (repoint bout_stats/odds_snapshots/predictions onto "
+            f"the surviving row, then delete the empty one) BEFORE any "
+            f"training snapshot is rebuilt — a duplicated bout double-"
+            f"counts in the feature store and in Elo:\n" + "\n".join(lines)
+        )
+ 
+    return QualityCheckResult(
+        check_name="duplicate_bouts", passed=passed, details=details
+    )
+
 def check_bout_fk_integrity(engine: Engine) -> QualityCheckResult:
     """
     Make sure every bout's fighter/event references point at rows that
@@ -558,6 +632,7 @@ def check_upcoming_events_idempotency(engine: Engine, rerun_fn=None) -> QualityC
 # enough structure to run everything with one command in the meantime.
 ALL_CHECKS = [
     check_duplicate_events,
+    check_duplicate_bouts,
     check_bout_fk_integrity,
     check_no_leaked_results_on_scheduled_bouts,
     check_title_fights_have_five_rounds,

@@ -9,6 +9,11 @@ from dotenv import load_dotenv
 from sqlalchemy import MetaData, Table, create_engine, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
+from data.ingestion.reconciliation import (
+    claim_existing_bouts_for_greco,
+    claim_existing_events_for_greco,
+)
+
 load_dotenv()
 
 def _get_engine():
@@ -112,6 +117,14 @@ def load_events(engine, events_df: pd.DataFrame) -> dict[str, int]:
     df = events_df.copy()
     df["venue"] = None  # not provided by Greco's ufc_events.csv
 
+    # Before upserting: if a Wikipedia-sourced row already exists for one
+    # of these incoming Greco events (same real card, source_url still
+    # NULL), write Greco's source_url onto THAT row. Without this, the
+    # upsert below finds no match on source_url and inserts a brand-new
+    # row instead of updating the existing one — the exact bug that
+    # produced the UFC 330 duplicate (events.id 3129 vs 5390).
+    claim_existing_events_for_greco(engine, df)
+
     insert_cols = ["name", "event_date", "location", "venue", "source_url"]
     return _upsert_by_source_url(engine, events_tbl, df, insert_cols)
 
@@ -132,6 +145,15 @@ def load_bouts(
 
     # card_position and weigh-in columns aren't provided by Greco at all -
     # left unset here, NULL in the DB (both nullable)
+
+    # Same claim step, one level down — MUST run after the remaps above,
+    # since it matches on real database event_id/fighter_red_id/
+    # fighter_blue_id, not the pandas-local ids used earlier in the
+    # pipeline. Finds any pre-existing 'scheduled' bout for this exact
+    # matchup (from the Wikipedia pipeline) and writes Greco's source_url
+    # onto it, so the upsert below updates that row in place instead of
+    # inserting a duplicate bout.
+    claim_existing_bouts_for_greco(engine, df)
 
     metadata = MetaData()
     bouts_tbl = Table("bouts", metadata, autoload_with=engine)
