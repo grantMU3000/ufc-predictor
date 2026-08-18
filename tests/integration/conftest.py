@@ -69,13 +69,19 @@ def sample_fighters(db_engine):
     """
     with db_engine.begin() as conn:
         red_id = conn.execute(
-            text("INSERT INTO fighters (real_name) VALUES ('Test Fighter Red') RETURNING id")
+            text(
+                "INSERT INTO fighters (real_name) VALUES ('Test Fighter Red') RETURNING id"
+            )
         ).scalar_one()
         blue_id = conn.execute(
-            text("INSERT INTO fighters (real_name) VALUES ('Test Fighter Blue') RETURNING id")
+            text(
+                "INSERT INTO fighters (real_name) VALUES ('Test Fighter Blue') RETURNING id"
+            )
         ).scalar_one()
         swap_id = conn.execute(
-            text("INSERT INTO fighters (real_name) VALUES ('Test Fighter Swap-In') RETURNING id")
+            text(
+                "INSERT INTO fighters (real_name) VALUES ('Test Fighter Swap-In') RETURNING id"
+            )
         ).scalar_one()
 
     ids = (red_id, blue_id, swap_id)

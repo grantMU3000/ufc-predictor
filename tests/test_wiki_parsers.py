@@ -35,7 +35,9 @@ def fight_card_wikitext() -> str:
 
 @pytest.fixture
 def scheduled_events_wikitext() -> str:
-    return (FIXTURES_DIR / "scheduled_events_sample.wikitext").read_text(encoding="utf-8")
+    return (FIXTURES_DIR / "scheduled_events_sample.wikitext").read_text(
+        encoding="utf-8"
+    )
 
 
 class TestParseFightCard:
@@ -74,7 +76,9 @@ class TestParseFightCard:
         # otherwise it ends up looking like part of the fighter's name.
         assert "(c)" not in bouts[0]["fighter_red"]
 
-    def test_extracts_link_target_separately_from_display_text(self, fight_card_wikitext):
+    def test_extracts_link_target_separately_from_display_text(
+        self, fight_card_wikitext
+    ):
         # This is bug #7 from the session: a disambiguated Wikipedia
         # link target like "Test Fighter Delta (fighter)" needs to
         # survive separately from the plain display text "Test Fighter
@@ -125,7 +129,9 @@ class TestParseScheduledEvents:
         events = parse_scheduled_events(scheduled_events_wikitext)
         assert len(events) == 2
 
-    def test_uses_link_target_not_display_text_for_event_title(self, scheduled_events_wikitext):
+    def test_uses_link_target_not_display_text_for_event_title(
+        self, scheduled_events_wikitext
+    ):
         # event_title must be the wikilink TARGET (used for the pageid
         # lookup in wiki_api.py), which can differ from what's shown on
         # the page -- the exact "UFC 331" vs. "UFC 331: Ankalaev vs

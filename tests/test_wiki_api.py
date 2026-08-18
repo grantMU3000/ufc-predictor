@@ -30,9 +30,9 @@ from data.scraping import wiki_api
 
 class TestGetPageInfo:
     def test_parses_pageid_and_title(self):
-        fake_response = json.dumps({
-            "query": {"pages": {"12345": {"pageid": 12345, "title": "UFC 330"}}}
-        })
+        fake_response = json.dumps(
+            {"query": {"pages": {"12345": {"pageid": 12345, "title": "UFC 330"}}}}
+        )
         with patch.object(wiki_api, "fetch", return_value=fake_response):
             info = wiki_api.get_page_info("UFC 330")
 
@@ -43,9 +43,9 @@ class TestGetPageInfo:
         # titles=, not action=parse with page=. If this ever regresses,
         # this test fails immediately instead of every real page lookup
         # raising a KeyError in production.
-        fake_response = json.dumps({
-            "query": {"pages": {"1": {"pageid": 1, "title": "Some Page"}}}
-        })
+        fake_response = json.dumps(
+            {"query": {"pages": {"1": {"pageid": 1, "title": "Some Page"}}}}
+        )
         with patch.object(wiki_api, "fetch", return_value=fake_response) as mock_fetch:
             wiki_api.get_page_info("Some Page")
 
@@ -58,9 +58,15 @@ class TestGetPageInfo:
         # headliner changed) should surface the CURRENT title, not the
         # one that was searched for -- this is the whole reason ADR-011
         # uses pageid instead of title as the stable key.
-        fake_response = json.dumps({
-            "query": {"pages": {"999": {"pageid": 999, "title": "UFC Fight Night: New Title"}}}
-        })
+        fake_response = json.dumps(
+            {
+                "query": {
+                    "pages": {
+                        "999": {"pageid": 999, "title": "UFC Fight Night: New Title"}
+                    }
+                }
+            }
+        )
         with patch.object(wiki_api, "fetch", return_value=fake_response):
             info = wiki_api.get_page_info("UFC Fight Night: Old Title")
 
@@ -68,12 +74,16 @@ class TestGetPageInfo:
 
 
 class TestGetSectionIndex:
-    FAKE_SECTIONS = json.dumps({
-        "parse": {"sections": [
-            {"line": "Background", "index": "1"},
-            {"line": "Fight card", "index": "3"},
-        ]}
-    })
+    FAKE_SECTIONS = json.dumps(
+        {
+            "parse": {
+                "sections": [
+                    {"line": "Background", "index": "1"},
+                    {"line": "Fight card", "index": "3"},
+                ]
+            }
+        }
+    )
 
     def test_finds_matching_section(self):
         with patch.object(wiki_api, "fetch", return_value=self.FAKE_SECTIONS):
@@ -86,16 +96,18 @@ class TestGetSectionIndex:
         # card" to "Card") debuggable from the exception text alone.
         with (
             patch.object(wiki_api, "fetch", return_value=self.FAKE_SECTIONS),
-            pytest.raises(wiki_api.SectionNotFoundError, match="Background.*Fight card"),
+            pytest.raises(
+                wiki_api.SectionNotFoundError, match="Background.*Fight card"
+            ),
         ):
             wiki_api.get_section_index("UFC 330", "Nonexistent Section")
 
 
 class TestGetSectionWikitext:
     def test_returns_raw_wikitext(self):
-        fake_response = json.dumps({
-            "parse": {"wikitext": {"*": "{{MMAevent card|Main card}}"}}
-        })
+        fake_response = json.dumps(
+            {"parse": {"wikitext": {"*": "{{MMAevent card|Main card}}"}}}
+        )
         with patch.object(wiki_api, "fetch", return_value=fake_response):
             text = wiki_api.get_section_wikitext("UFC 330", "3")
         assert text == "{{MMAevent card|Main card}}"
@@ -115,9 +127,9 @@ class TestGetSectionWikitext:
 
 class TestResolveEventPageids:
     def test_enriches_events_with_pageid_and_resolved_title(self):
-        fake_response = json.dumps({
-            "query": {"pages": {"1": {"pageid": 1, "title": "UFC 330"}}}
-        })
+        fake_response = json.dumps(
+            {"query": {"pages": {"1": {"pageid": 1, "title": "UFC 330"}}}}
+        )
         with patch.object(wiki_api, "fetch", return_value=fake_response):
             events = wiki_api.resolve_event_pageids([{"event_title": "UFC 330"}])
 
@@ -131,7 +143,9 @@ class TestResolveEventPageids:
         # event in the same batch.
         def flaky_fetch(url, params=None, use_cache=True):
             if params["titles"] == "Good Event":
-                return json.dumps({"query": {"pages": {"1": {"pageid": 1, "title": "Good Event"}}}})
+                return json.dumps(
+                    {"query": {"pages": {"1": {"pageid": 1, "title": "Good Event"}}}}
+                )
             raise requests.exceptions.ConnectionError("simulated network failure")
 
         with patch.object(wiki_api, "fetch", side_effect=flaky_fetch):

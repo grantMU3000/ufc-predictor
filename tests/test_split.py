@@ -40,7 +40,9 @@ REQUIRED_TABLES = ["fighters", "events", "bouts", "bout_stats", "fighter_aliases
 
 def _snapshot_available() -> bool:
     """True only if every table this file needs has a local Parquet file."""
-    return all((SNAPSHOT_DIR / f"{table}.parquet").exists() for table in REQUIRED_TABLES)
+    return all(
+        (SNAPSHOT_DIR / f"{table}.parquet").exists() for table in REQUIRED_TABLES
+    )
 
 
 @pytest.fixture(scope="module")

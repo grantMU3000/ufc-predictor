@@ -33,8 +33,13 @@ from sqlalchemy import text
 from data.ingestion.upcoming_events_loader import load_bout
 
 
-def _bout(weight_class="Lightweight", card_tier="Main card",
-          red_champ=False, blue_champ=False, notes=""):
+def _bout(
+    weight_class="Lightweight",
+    card_tier="Main card",
+    red_champ=False,
+    blue_champ=False,
+    notes="",
+):
     """
     Minimal bout dict with every key load_bout()/infer_bout_details()
     actually reads. Defaults describe a plain, non-title, non-main-event
@@ -64,10 +69,14 @@ def _fetch_scheduled_bout(db_engine, event_id, fighter_red_id, fighter_blue_id):
 
 
 class TestLoadBoutInsertAndUpdate:
-    def test_first_call_inserts_a_scheduled_bout(self, db_engine, sample_event, sample_fighters):
+    def test_first_call_inserts_a_scheduled_bout(
+        self, db_engine, sample_event, sample_fighters
+    ):
         red_id, blue_id, _ = sample_fighters
 
-        load_bout(db_engine, sample_event, _bout(), red_id, blue_id, is_main_event=False)
+        load_bout(
+            db_engine, sample_event, _bout(), red_id, blue_id, is_main_event=False
+        )
 
         row = _fetch_scheduled_bout(db_engine, sample_event, red_id, blue_id)
         assert row is not None
@@ -79,14 +88,18 @@ class TestLoadBoutInsertAndUpdate:
     ):
         red_id, blue_id, _ = sample_fighters
 
-        load_bout(db_engine, sample_event, _bout(), red_id, blue_id, is_main_event=False)
+        load_bout(
+            db_engine, sample_event, _bout(), red_id, blue_id, is_main_event=False
+        )
         first_row = _fetch_scheduled_bout(db_engine, sample_event, red_id, blue_id)
 
         # Rerun with the exact same pairing and details -- this is the
         # idempotency property check_upcoming_events_idempotency (in
         # quality_checks.py) verifies at the whole-pipeline level; this
         # test verifies the same property one function at a time.
-        load_bout(db_engine, sample_event, _bout(), red_id, blue_id, is_main_event=False)
+        load_bout(
+            db_engine, sample_event, _bout(), red_id, blue_id, is_main_event=False
+        )
         second_row = _fetch_scheduled_bout(db_engine, sample_event, red_id, blue_id)
 
         # Same bout id -- an UPDATE happened, not a second INSERT.
@@ -102,7 +115,9 @@ class TestLoadBoutInsertAndUpdate:
         # that correction back to the inferred default.
         red_id, blue_id, _ = sample_fighters
 
-        load_bout(db_engine, sample_event, _bout(), red_id, blue_id, is_main_event=False)
+        load_bout(
+            db_engine, sample_event, _bout(), red_id, blue_id, is_main_event=False
+        )
         row = _fetch_scheduled_bout(db_engine, sample_event, red_id, blue_id)
         assert row.scheduled_rounds == 3  # sanity check before the manual fix
 
@@ -117,7 +132,9 @@ class TestLoadBoutInsertAndUpdate:
 
         # Rerun the exact same ingest call again -- nothing about the
         # source data changed.
-        load_bout(db_engine, sample_event, _bout(), red_id, blue_id, is_main_event=False)
+        load_bout(
+            db_engine, sample_event, _bout(), red_id, blue_id, is_main_event=False
+        )
         row_after = _fetch_scheduled_bout(db_engine, sample_event, red_id, blue_id)
 
         assert row_after.scheduled_rounds == 5  # correction preserved, not reverted
@@ -134,11 +151,15 @@ class TestLoadBoutFighterSwap:
         # the new pairing.
         red_id, blue_id, swap_id = sample_fighters
 
-        load_bout(db_engine, sample_event, _bout(), red_id, blue_id, is_main_event=False)
+        load_bout(
+            db_engine, sample_event, _bout(), red_id, blue_id, is_main_event=False
+        )
         original_row = _fetch_scheduled_bout(db_engine, sample_event, red_id, blue_id)
 
         # Red corner fighter gets swapped out for a late replacement.
-        load_bout(db_engine, sample_event, _bout(), swap_id, blue_id, is_main_event=False)
+        load_bout(
+            db_engine, sample_event, _bout(), swap_id, blue_id, is_main_event=False
+        )
 
         with db_engine.connect() as conn:
             original_status = conn.execute(

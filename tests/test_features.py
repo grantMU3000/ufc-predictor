@@ -2,7 +2,7 @@
 tests/test_features.py
 
 Hand-verified regression tests for Tier 1 / Tier 2 feature functions,
-anchored on two real fighterz (Quillan Salkilld, fighter_id=394, and 
+anchored on two real fighterz (Quillan Salkilld, fighter_id=394, and
 Charles Oliveira, fighter_id=146) whose
 numbers were independently hand-computed against raw SQL queries
 before any assertion here was written. These tests exist to catch a
@@ -80,7 +80,9 @@ SALKILD_LATEST_OPPONENT_ID = 2049  # from bout 34437 — used for stance_matchup
 
 def _snapshot_available() -> bool:
     """True only if every table this file needs has a local Parquet file."""
-    return all((SNAPSHOT_DIR / f"{table}.parquet").exists() for table in REQUIRED_TABLES)
+    return all(
+        (SNAPSHOT_DIR / f"{table}.parquet").exists() for table in REQUIRED_TABLES
+    )
 
 
 @pytest.fixture(scope="module")
@@ -204,10 +206,14 @@ class TestSalkildHandVerified:
     # --- Tier 1: physical/stance, straight DB lookups ---
 
     def test_height_at_fight(self, con):
-        assert height_at_fight(con, SALKILD_FIGHTER_ID, AS_OF_DATE) == pytest.approx(182.9)
+        assert height_at_fight(con, SALKILD_FIGHTER_ID, AS_OF_DATE) == pytest.approx(
+            182.9
+        )
 
     def test_reach_at_fight(self, con):
-        assert reach_at_fight(con, SALKILD_FIGHTER_ID, AS_OF_DATE) == pytest.approx(190.5)
+        assert reach_at_fight(con, SALKILD_FIGHTER_ID, AS_OF_DATE) == pytest.approx(
+            190.5
+        )
 
     def test_reach_to_height_ratio(self, con):
         """190.5 / 182.9 ≈ 1.04155 (long division verified by hand)."""
@@ -251,7 +257,9 @@ class TestSalkildHandVerified:
         assert result == pytest.approx(1725.0)
 
     def test_average_fight_time_seconds(self, con):
-        assert average_fight_time_seconds(con, SALKILD_FIGHTER_ID, AS_OF_DATE) == pytest.approx(287.5)
+        assert average_fight_time_seconds(
+            con, SALKILD_FIGHTER_ID, AS_OF_DATE
+        ) == pytest.approx(287.5)
 
     # --- Tier 2: per-time-window rates ---
 
@@ -344,7 +352,10 @@ class TestSalkildHandVerified:
         result = takedown_output_decay(con, SALKILD_FIGHTER_ID, AS_OF_DATE)
         assert result == pytest.approx(-0.4286, abs=0.001)
 
+
 OLIVEIRA_FIGHTER_ID = 146
+
+
 class TestOliveiraHandVerified:
     """
     Second hand-verification anchor, specifically to get REAL numeric

@@ -30,14 +30,16 @@ def test_accuracy_hand_computed():
 
 def test_log_loss_hand_computed():
     # -log(0.9) - log(0.9) - log(0.6) - log(0.4) - log(0.5) - log(0.8), /6
-    expected = -np.mean([
-        np.log(0.9),  # y=1, p=0.9
-        np.log(0.9),  # y=0, p=0.1 -> 1-p=0.9
-        np.log(0.6),  # y=1, p=0.6
-        np.log(0.4),  # y=1, p=0.4
-        np.log(0.5),  # y=0, p=0.5 -> 1-p=0.5
-        np.log(0.8),  # y=0, p=0.2 -> 1-p=0.8
-    ])
+    expected = -np.mean(
+        [
+            np.log(0.9),  # y=1, p=0.9
+            np.log(0.9),  # y=0, p=0.1 -> 1-p=0.9
+            np.log(0.6),  # y=1, p=0.6
+            np.log(0.4),  # y=1, p=0.4
+            np.log(0.5),  # y=0, p=0.5 -> 1-p=0.5
+            np.log(0.8),  # y=0, p=0.2 -> 1-p=0.8
+        ]
+    )
     result = evaluate(Y_TRUE, Y_PROB, name="test")
     assert result["log_loss"] == pytest.approx(expected)
 

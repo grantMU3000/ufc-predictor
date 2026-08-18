@@ -53,7 +53,9 @@ class TestInferBoutDetails:
     def test_title_fight_detected_from_notes_text(self):
         # Interim titles etc. sometimes show up only in freeform notes
         # text, not a champion marker on either fighter.
-        result = infer_bout_details(_bout(notes="Interim title bout"), is_main_event=False)
+        result = infer_bout_details(
+            _bout(notes="Interim title bout"), is_main_event=False
+        )
         assert result["is_title_fight"] is True
         assert result["scheduled_rounds"] == 5
 
