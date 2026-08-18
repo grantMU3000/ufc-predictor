@@ -1,4 +1,4 @@
-# Research — 2026-08-17: Ranking Systems (Elo)
+# Research — 2026-08-17: Ranking Systems (Elo/Glicko)
 
 **Week:** 2 · **Curriculum area:** Elo/Glicko math
 **Time spent:** 30 min
