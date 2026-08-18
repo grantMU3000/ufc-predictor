@@ -34,6 +34,185 @@ The actual reasoning. Be specific about tradeoffs accepted, not just benefits ga
 What this makes easier, what this makes harder, what it forecloses or defers.
 ```
 ---
+## [ADR-014] Elo rating system: experience-based K-factor over constant K, Glicko-2 deferred to Week 3
+
+**Date:** 2026-08-14
+**Status:** Accepted
+
+### Context
+
+Per `docs/PLAN.md` §3, Week 2 Friday's deliverable is Elo/Glicko
+implementation plus K-factor and weight-class-prior tuning.
+`features/elo.py`'s `compute_elo_ratings` was built as a global,
+weight-class-blind, sequential rating system — every fighter starts
+at 1500, ratings update fight-by-fight in strict chronological
+order, and each bout's pre-fight ratings are recorded before any
+update touches them (the leakage-safety mechanism: a fight's own
+result can never influence its own prediction).
+
+Three real design questions had to be settled before this could be
+evaluated as a baseline: Elo vs. Glicko-2, weight-class handling,
+and constant vs. experience-based K. None were assumed going in.
+
+### Options considered
+
+**Elo vs. Glicko-2.** Glicko-2 models rating uncertainty (a rating
+deviation, RD, alongside skill) and volatility — theoretically
+well-suited to a sport with irregular activity and layoffs, but
+structurally more complex to implement (rating periods, an iterative
+volatility solve, not closed-form), and there was no measured
+evidence yet that plain Elo's calibration was actually failing in a
+way Glicko would fix. Plain Elo was simpler and directly testable
+through the same `models/metrics.evaluate()` harness every other
+baseline uses.
+
+**Weight class.** Global rating per fighter vs. a separate rating
+per weight class. The latter is more correct in principle, but adds
+real complexity for fighters who move classes, with no evidence yet
+that the global version is actually mispriced by weight-class
+mixing.
+
+**K-factor.** Constant K for every fighter/fight (simplest, one
+number to tune) vs. experience-based K (higher for low-fight-count
+fighters, who carry more uncertainty; lower for established
+fighters, where a single result is mostly noise). Two decay shapes
+considered for the latter: a step function (flat K_new for the first
+N fights, then flat K_veteran — simple, precedented in chess
+federations) vs. smooth decay (K decreases continuously with fight
+count, no hard cutoff).
+
+Started with constant K deliberately — "start constant, revisit if
+tuning says it's not enough" — the same instinct as ADR-001's
+LightGBM-over-neural-net reasoning: don't reach for the more complex
+tool until the simpler one is shown to fall short.
+
+### Decision
+
+- **Plain Elo**, not Glicko-2, for now. Glicko-2 is deferred to
+  Week 3, not dropped — see "Deferred: Glicko-2 in Week 3" below.
+- **Global rating**, weight class ignored. Flagged as a long-term
+  revisit (`docs/PLAN.md` §2 already lists a weight-class-adjusted
+  variant as a real Tier 3 idea), not a permanent decision.
+- **Experience-based K, smooth decay:** K = k_veteran + (k_new - k_veteran) * e^(-fight_count / decay_scale)
+Final tuned parameters: **k_new=80, k_veteran=24, decay_scale=3.**
+
+### Why
+
+**The constant-K sweep is what forced the move to experience-based
+K.** A grid over K ∈ {8, 16, 24, 32, 40, 48, 64, 80, 96, 128} showed
+log loss and Brier improving nearly monotonically through K=80–96
+before reversing by K=128, while ECE bottomed out cleanly at K=32
+and then degraded continuously — 11.7x worse by K=64, and by K=128
+it *breached* the plan's own ≤0.05 ECE target (§0.1) on the
+odds-covered subset (0.0553). Log loss wanting a high K while ECE
+wanted a low K, with no single value serving both, was itself
+evidence that one global K is the wrong shape for the population.
+
+This was corroborated independently, before any tuning happened, by
+hand-verifying two real fighters under constant K: Islam Makhachev
+(16 fights, ~13.5 rating points gained per fight on average) vs.
+Neil Magny (33 fights, ~5.9 points/fight average) — Magny's rating
+closed to within ~50 points of Makhachev's peak almost entirely
+through fight *volume* compounding a smaller average return, not
+comparable win quality. A textbook case for K that decays with
+experience rather than treating a prolific journeyman's 26th fight
+the same as a rising contender's 3rd.
+
+**Smooth decay over a step function:** a more realistic "cooling"
+shape with no cliff at an arbitrary fight-count threshold, at the
+cost of one more parameter (`decay_scale`) to tune — accepted since
+the tuning infrastructure already existed and reusing it was cheap.
+
+**Final parameters, two grid rounds, 60 combinations total.** Round
+1 found log-loss and ECE optima disagreeing sharply (best log loss
+at k_new=96, best ECE at k_new=64), with k_new=96 costing 7–10x the
+calibration for the last ~0.001–0.0013 of log-loss gain past
+k_new=80 — the same cliff shape as the constant-K K=128 case, one
+level down. Round 2 narrowed to k_new∈{64,72,80}, k_veteran∈{16,24,32},
+decay_scale∈{1,2,3,5} — decay_scale=1 was worse on both metrics than
+2/3/5 (didn't place in either top-10, closing the "extend downward"
+question), and `(80, 24, 3)` emerged **Pareto-optimal**: nothing
+tested beat it on both log loss and ECE at once. Its log loss
+(0.6788, odds-covered) beats flat K=32's (0.6864) by 0.0076 — a real
+gain — at a small calibration cost (ECE 0.0041 vs. flat K=32's
+0.0023, both comfortably inside target).
+
+Tuning stopped after two rounds: remaining differences between top
+candidates were ~0.001–0.002, close to noise, and further narrowing
+risked tuning to this specific val window rather than finding real
+signal — the same "any 3+ point jump is a leak until proven
+otherwise" discipline from §0.2, applied to hyperparameters instead
+of features.
+
+### Consequences
+
+**Easier:** `compute_elo_ratings` accepts either a constant float or
+a callable `k_factor` — the constant path is untouched (every
+existing test and the Step 5 constant-K script still work
+unmodified), the experience-based path is additive. `elo_baseline()`
+reuses `k_factor_by_experience`'s defaults, so a future re-tune only
+means editing default arguments, not call sites.
+
+**Standalone Elo is the weakest of the three Week 2 baselines on
+accuracy/log loss (56.1% / 0.6788, odds-covered) — expected, not a
+regression.** One accumulated rating vs. LR's ~30 stat-differential
+features, or the market, was never going to win alone. Elo's real
+test is as one input among several in Week 3's LightGBM model. Its
+best ECE of the day (0.0041) should be read with the same skepticism
+already applied to LR's ECE in `docs/RESULTS.md` — a low-signal
+model hedging toward 50/50 has less room to be badly wrong, which
+isn't the same as being sharp.
+
+**Requires care going forward:** different fighters in the same bout
+can now carry different K's, so the system is no longer perfectly
+zero-sum in aggregate (a debutant losing to a veteran can lose more
+points than the veteran gains) — an accepted, known property of
+experience-adjusted Elo, worth remembering if a future check assumes
+strict zero-sum behavior the way the original constant-K version had.
+
+**Forecloses, for now:** weight-class-adjusted Elo (long-term per
+§2) and a step-function K-factor (smooth decay was chosen; only
+revisit if the smooth version shows a specific failure a hard cutoff
+would fix).
+
+---
+
+### Deferred: Glicko-2 in Week 3
+
+Not a "maybe someday" note — a specific, evidence-gated plan, written
+down now so it survives past today.
+
+**What Glicko-2 actually adds that Elo can't:** not a better skill
+estimate — its rating deviation (RD) is the piece with no Elo
+equivalent. RD tracks *how much is actually known* about a fighter's
+true skill right now, growing during inactivity and shrinking with
+consistent activity. The promising use isn't replacing Elo's rating
+with Glicko's; it's adding **RD as its own standalone feature**
+(`self_rd`, `opp_rd`, or their difference) alongside the existing Elo
+rating — a genuinely non-redundant signal, not two versions of the
+same number.
+
+**The trigger, not immediate action:** once Week 3's Tier 3 features
+are built and LightGBM is trained, bucket ECE by `total_ufc_fights`
+and by `days_since_last_fight` (both already-built Tier 2 features).
+If the model is measurably worse-calibrated for low-fight-count
+fighters or fighters returning from a long layoff — exactly the
+populations Elo's rating can't distinguish from a well-established,
+active fighter sitting at the same number — that's the concrete,
+data-backed signal to build Glicko-2's RD as a Week 3 ablation. If
+that bucketed check doesn't show a real gap, Glicko-2 stays a
+documented idea in `IDEAS.md`, not a rebuild.
+
+**Why this is the right order:** it's the same discipline this
+entire ADR is built on — plain Elo before Glicko, constant K before
+experience-based, and RD-as-a-feature only once there's measured
+evidence of a gap, not because it sounds more sophisticated going
+in. Today's K-factor journey is the case study: every piece of added
+complexity (experience-based K, the decay shape, the final
+parameters) was earned by a measured finding, not intuition — Glicko
+should clear the same bar before it gets built.
+
+---
 [ADR-013] Greco↔Wikipedia event/bout reconciliation — claim existing rows by writing Greco's source_url onto them
 
 Date: 2026-08-17
