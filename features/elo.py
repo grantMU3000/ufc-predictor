@@ -29,6 +29,8 @@ every time this gets called before Week 3.
 """
 
 import pandas as pd
+import math
+from typing import Callable
 
 
 def expected_score(rating_a: float, rating_b: float) -> float:
@@ -45,7 +47,9 @@ def expected_score(rating_a: float, rating_b: float) -> float:
 
 
 def compute_elo_ratings(
-    bouts: pd.DataFrame, k_factor: float = 32.0, initial_rating: float = 1500.0
+    bouts: pd.DataFrame, 
+    k_factor: float | Callable[[int], float] = 32.0, 
+    initial_rating: float = 1500.0
 ) -> pd.DataFrame:
     """
     Walks every bout in `bouts`, oldest first, and records each
@@ -112,6 +116,7 @@ def compute_elo_ratings(
         )
 
     ratings: dict[int, float] = {}
+    fight_counts: dict[int, int] = {}
     rows = []
 
     for bout in bouts.itertuples(index=False):
@@ -120,6 +125,8 @@ def compute_elo_ratings(
 
         red_rating = ratings.get(red_id, initial_rating)
         blue_rating = ratings.get(blue_id, initial_rating)
+        red_fight_count = fight_counts.get(red_id, 0)
+        blue_fight_count = fight_counts.get(blue_id, 0)
 
         # Record BEFORE any update touches these numbers.
         rows.append(
@@ -136,7 +143,66 @@ def compute_elo_ratings(
         red_actual = 1.0 if bout.winner_id == red_id else 0.0
         blue_actual = 1.0 - red_actual
 
-        ratings[red_id] = red_rating + k_factor * (red_actual - red_expected)
-        ratings[blue_id] = blue_rating + k_factor * (blue_actual - blue_expected)
+        k_red = _resolve_k(k_factor, red_fight_count)
+        k_blue = _resolve_k(k_factor, blue_fight_count)
+
+        ratings[red_id] = red_rating + k_red * (red_actual - red_expected)
+        ratings[blue_id] = blue_rating + k_blue * (blue_actual - blue_expected)
+
+        fight_counts[red_id] = red_fight_count + 1
+        fight_counts[blue_id] = blue_fight_count + 1
 
     return pd.DataFrame(rows)
+
+def k_factor_by_experience(
+    fight_count: int,
+    k_new: float = 64.0,
+    k_veteran: float = 24.0,
+    decay_scale: float = 10.0,
+) -> float:
+    """
+    A fighter's K-factor as a function of how many fights they've
+    already had — the smooth-decay design, built after the constant-K
+    grid search showed log loss wanting a high K (~64-96) while ECE
+    wanted a low K (~32) and got dramatically worse past it. Two
+    metrics disagreeing about the "best" single number is evidence
+    that one number is the wrong shape for this problem — a
+    debutant's rating should swing hard (we know nothing about them
+    yet); a 30-fight veteran's rating swinging just as hard on one
+    result is mostly noise.
+
+    Simple version: like a fresh cup of coffee cooling down. Right
+    when it's poured (fight_count=0), it's at its hottest — K equals
+    k_new exactly. As fights pile up, K cools toward k_veteran and
+    levels off there, same way a cooling cup approaches room
+    temperature without ever quite reaching it.
+
+    Formula: k_veteran + (k_new - k_veteran) * e^(-fight_count / decay_scale)
+      - fight_count=0            -> exactly k_new
+      - fight_count -> infinity  -> approaches k_veteran
+      - decay_scale              -> how many fights it takes to cool
+        down. At the defaults below, a fighter is already more than
+        halfway cooled by fight #7 or so.
+
+    Parameters
+    ----------
+    fight_count : int
+        Prior completed fights this fighter has going into the
+        current one. 0 for a debut.
+    k_new, k_veteran, decay_scale : float
+        Ceiling, floor, and decay speed — all three get grid-searched
+        together next, same discipline as the constant-K sweep.
+    """
+    return k_veteran + (k_new - k_veteran) * math.exp(-fight_count / decay_scale)
+
+
+def _resolve_k(k_factor, fight_count: int) -> float:
+    """
+    Small dispatcher: k_factor can be a plain constant (the original
+    design) or a callable like k_factor_by_experience (this
+    addition). Keeps compute_elo_ratings's main loop from needing an
+    if/else every iteration — it just always calls this.
+    """
+    if callable(k_factor):
+        return k_factor(fight_count)
+    return k_factor

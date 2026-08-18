@@ -7,7 +7,7 @@ same discipline as test_symmetrize.py / test_metrics.py.
 import pandas as pd
 import pytest
 
-from features.elo import compute_elo_ratings, expected_score
+from features.elo import compute_elo_ratings, expected_score, k_factor_by_experience
 
 
 def test_expected_score_equal_ratings_is_fifty_fifty():
@@ -83,3 +83,64 @@ def test_custom_initial_rating_applied_to_debutants():
     row = result[result["bout_id"] == 101].iloc[0]
     assert row["red_elo_pre"] == pytest.approx(1000.0)
     assert row["blue_elo_pre"] == pytest.approx(1000.0)
+
+def test_k_factor_by_experience_starts_at_k_new():
+    assert k_factor_by_experience(0, k_new=64.0, k_veteran=24.0, decay_scale=10.0) == pytest.approx(64.0)
+
+
+def test_k_factor_by_experience_decays_toward_k_veteran():
+    result = k_factor_by_experience(10, k_new=64.0, k_veteran=24.0, decay_scale=10.0)
+    assert result == pytest.approx(38.715178, abs=1e-4)
+
+
+def test_k_factor_by_experience_approaches_floor_for_veteran():
+    result = k_factor_by_experience(1000, k_new=64.0, k_veteran=24.0, decay_scale=10.0)
+    assert result == pytest.approx(24.0, abs=1e-3)
+
+
+def test_k_factor_by_experience_monotonically_non_increasing():
+    values = [k_factor_by_experience(n) for n in range(100)]
+    assert all(values[i] >= values[i + 1] for i in range(len(values) - 1))
+
+
+def test_compute_elo_ratings_constant_k_unchanged():
+    # Backward-compat guard: same assertion as
+    # test_first_fight_both_fighters_at_initial_rating, re-run to
+    # prove the new callable-dispatch code didn't quietly change the
+    # old constant-K path.
+    result = compute_elo_ratings(_synthetic_bouts(), k_factor=32.0)
+    row = result[result["bout_id"] == 101].iloc[0]
+    assert row["red_elo_pre"] == pytest.approx(1500.0)
+    assert row["blue_elo_pre"] == pytest.approx(1500.0)
+
+
+def test_compute_elo_ratings_with_experience_based_k():
+    """
+    Same 3-fighter, 3-fight sequence as before, but k_factor is now
+    k_factor_by_experience (k_new=64, k_veteran=24, decay_scale=10).
+    Hand-computed via a standalone script mirroring the real update
+    loop (not derived from the implementation under test):
+
+        bout 101 (A beats B, both debuts, both K=64):
+            red_pre=1500.0   blue_pre=1500.0
+        bout 102 (B beats C; B has 1 prior fight, C is a debut):
+            red_pre=1468.0   blue_pre=1500.0
+        bout 103 (C beats A; A has 1 prior fight, C has 1 prior fight):
+            red_pre=1532.0   blue_pre=1465.060997
+    """
+    def k_fn(n):
+        return k_factor_by_experience(n, k_new=64.0, k_veteran=24.0, decay_scale=10.0)
+
+    result = compute_elo_ratings(_synthetic_bouts(), k_factor=k_fn)
+
+    row1 = result[result["bout_id"] == 101].iloc[0]
+    assert row1["red_elo_pre"] == pytest.approx(1500.0)
+    assert row1["blue_elo_pre"] == pytest.approx(1500.0)
+
+    row2 = result[result["bout_id"] == 102].iloc[0]
+    assert row2["red_elo_pre"] == pytest.approx(1468.0)
+    assert row2["blue_elo_pre"] == pytest.approx(1500.0)
+
+    row3 = result[result["bout_id"] == 103].iloc[0]
+    assert row3["red_elo_pre"] == pytest.approx(1532.0)
+    assert row3["blue_elo_pre"] == pytest.approx(1465.060997, abs=1e-4)
