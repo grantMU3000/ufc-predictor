@@ -20,6 +20,9 @@ from sklearn.preprocessing import StandardScaler
 
 from features.differential import to_differential
 from features.odds import get_closing_lines
+from features.elo import compute_elo_ratings, expected_score, k_factor_by_experience
+from features.labels import get_completed_decided_bouts
+from features.split import TEST_START
 
 
 def market_baseline(
@@ -212,6 +215,95 @@ def _odds_covered_mask(df: pd.DataFrame, closing: pd.DataFrame) -> pd.Series:
     row_keys = list(zip(df["bout_id"], df["self_fighter_id"]))
     return pd.Series([k in covered_keys for k in row_keys], index=df.index)
 
+def _load_labels_and_val() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Loads train+val-era bout history (compute_elo_ratings' input) and
+    the symmetrized val split (what gets scored) — the two things
+    elo_baseline needs.
+
+    Filtered to event_date < TEST_START HERE, not inside
+    compute_elo_ratings — same rule as features/elo.py's own module
+    docstring: the ratings function doesn't decide what it's allowed
+    to see, the caller does, every single time it's called.
+    """
+    con = duckdb.connect()
+    for table in ["fighters", "events", "bouts"]:
+        con.execute(
+            f"CREATE VIEW {table} AS SELECT * FROM read_parquet('data/processed/{table}.parquet')"
+        )
+
+    labels = get_completed_decided_bouts(con)
+    labels = labels[pd.to_datetime(labels["event_date"]) < TEST_START].reset_index(drop=True)
+
+    val = pd.read_parquet("data/processed/val.parquet")
+    con.close()
+
+    return labels, val
+
+def elo_baseline(
+    labels: pd.DataFrame,
+    val: pd.DataFrame,
+    k_new: float = 80.0,
+    k_veteran: float = 24.0,
+    decay_scale: float = 3.0,
+) -> tuple[np.ndarray, np.ndarray, pd.DataFrame]:
+    """
+    Turns each fighter's pre-fight Elo rating into a win probability
+    for val — the "does fight-history-derived skill alone predict
+    this outcome" baseline, no other features involved.
+
+    Defaults are today's winning combo from the (k_new, k_veteran,
+    decay_scale) grid search — Pareto-optimal against everything else
+    tested, log loss 0.0076 better than flat K=32 at a small,
+    within-target calibration cost. Left as parameters, not
+    hardcoded, so a future re-tune doesn't require editing this
+    function's body.
+
+    Simple version: same idea as market_baseline, just with a
+    different source of "belief." The market's belief comes from
+    what bettors are willing to wager; Elo's belief comes from who's
+    beaten whom, weighted by how much history each fighter has.
+    Both get converted to a probability and handed to the exact same
+    models.metrics.evaluate() call — no baseline is scored any
+    differently than any other.
+
+    Parameters
+    ----------
+    labels : pd.DataFrame
+        Train+val-era decided bouts, sorted oldest-first — output of
+        features.labels.get_completed_decided_bouts, already filtered
+        to event_date < TEST_START by the caller (_load_labels_and_val
+        does this). Feeds compute_elo_ratings.
+    val : pd.DataFrame
+        The symmetrized val split. Needs bout_id, self_fighter_id,
+        self_won, source_corner.
+    k_new, k_veteran, decay_scale : float
+        Passed straight through to k_factor_by_experience.
+
+    Returns
+    -------
+    (y_true, y_prob, merged) — same shape as market_baseline and
+    logistic_regression_baseline's returns, so all three plug into
+    models.metrics.evaluate() identically. merged kept around for
+    debugging, same reason market_baseline keeps its merged frame.
+    """
+    def k_fn(fight_count: int) -> float:
+        return k_factor_by_experience(
+            fight_count, k_new=k_new, k_veteran=k_veteran, decay_scale=decay_scale
+        )
+
+    elo = compute_elo_ratings(labels, k_factor=k_fn)
+
+    merged = val.merge(elo, on="bout_id", how="inner")
+    is_red = merged["source_corner"] == "red"
+    self_elo = np.where(is_red, merged["red_elo_pre"], merged["blue_elo_pre"])
+    opp_elo = np.where(is_red, merged["blue_elo_pre"], merged["red_elo_pre"])
+
+    y_true = merged["self_won"].astype(int).to_numpy()
+    y_prob = expected_score(self_elo, opp_elo)
+
+    return y_true, y_prob, merged
+
 if __name__ == "__main__":
     from models.metrics import evaluate
 
@@ -246,3 +338,12 @@ if __name__ == "__main__":
     # --- Interpretability / leakage smell-test ---
     X_train_cols = to_differential(train, verbose=False)[0].columns.tolist()
     print(top_features(pipeline, X_train_cols))
+
+    # --- Elo baseline, full val ---
+    labels, val_for_elo = _load_labels_and_val()
+    y_true_elo, y_prob_elo, elo_merged = elo_baseline(labels, val_for_elo)
+    print(evaluate(y_true_elo, y_prob_elo, name="elo_full_val"))
+
+    # --- Elo baseline, odds-covered subset (apples-to-apples vs. market) ---
+    elo_covered_mask = _odds_covered_mask(elo_merged, closing).to_numpy()
+    print(evaluate(y_true_elo[elo_covered_mask], y_prob_elo[elo_covered_mask], name="elo_odds_covered"))

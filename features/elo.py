@@ -156,9 +156,9 @@ def compute_elo_ratings(
 
 def k_factor_by_experience(
     fight_count: int,
-    k_new: float = 64.0,
+    k_new: float = 80.0,
     k_veteran: float = 24.0,
-    decay_scale: float = 10.0,
+    decay_scale: float = 3.0,
 ) -> float:
     """
     A fighter's K-factor as a function of how many fights they've
