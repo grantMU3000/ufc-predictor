@@ -13,6 +13,12 @@ import duckdb
 import numpy as np
 import pandas as pd
 
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
+from features.differential import to_differential
 from features.odds import get_closing_lines
 
 
@@ -93,21 +99,150 @@ def _load_val_and_odds() -> tuple[pd.DataFrame, pd.DataFrame]:
 
     return val, closing
 
+def build_logreg_pipeline() -> Pipeline:
+    """
+    The LR baseline's full preprocessing + model chain, in one object
+    so train and val always get treated identically.
+
+    Three steps, three different jobs:
+      1. SimpleImputer(strategy="median), add_indicator=True - the
+         feature store returns real NaN for undefined values on
+         purpose (a debutant has no prior-fight stats to compute a
+         rate from). LightGBM eats NaN natively; sklearn's
+         LogisticRegression does not, so it needs a real number here.
+         Median, not mean, since these are skewed rate/count stats
+         where a few outlier fighters (extreme layoffs, tiny sample
+         sizes) would drag a mean off-center. add_indicator=True keeps
+         "this was missing" as its own 0/1 column instead of silently 
+         hiding it - a debutant flag is itself real signal, not noise 
+         to erase by filling in a plausible-looking number.
+      2. StandardScaler() - matters for LR in a way it never will for
+         LightGBM. reach_diff lives in centimeters, slpm_diff in 
+         strikes-per-minute; unscaled, LR's regularization punishes
+         small-magnitude features just for being small-magnitude, not 
+         because they're actually weak signal.
+      3. LogisticRegression(fit_intercept=False) - the deliberate
+         choice from Step 5's docstring. With PURE diff_ features (no
+         intercept to break the symmetry), P(self wins) is
+         mathematically guaranteed to equal 1 - P(opp wins) for every
+         bout's flipped pair. That's not something to hope the model
+         learned - it's structural, checked directly in __main__ below.
+    """
+    return Pipeline([
+        ("impute", SimpleImputer(strategy="median", add_indicator=True)),
+        ("scale", StandardScaler()),
+        ("clf", LogisticRegression(fit_intercept=False, max_iter=1000)),
+    ])
+
+def logistic_regression_baseline(
+    train: pd.DataFrame, val: pd.DataFrame
+) -> tuple[np.ndarray, np.ndarray, Pipeline]:
+    """
+    Fits the LR baseline on train, scores it on val.
+
+    Imputer and scaler are fit on TRAIN ONLY (via pipeline.fit, called
+    once on X_train) then applied to val with .predict_proba - never
+    refit on val. Fitting on the combined set would mean val's own
+    distribution leaks into how train gets centered/scaled, which is
+    the same temporal-leakage family docs/PLAN.md Section 0.2 already
+    warns about, just at the preprocessing layer instead of the
+    feature layer.
+
+    Parameters
+    ----------
+    train, val : pd.DataFrame
+        The symmetrized splits (data/processed/{train,val}.parquet).
+
+    Returns
+    -------
+    (y_true, y_prob, pipeline) — same shape as market_baseline's
+    return, so both feed models.metrics.evaluate identically. pipeline
+    is returned too, for top_features() below.
+    """
+    X_train, y_train = to_differential(train, verbose=False)
+    X_val, y_val = to_differential(val, verbose=False)
+
+    pipeline = build_logreg_pipeline()
+    pipeline.fit(X_train, y_train)
+
+    y_prob = pipeline.predict_proba(X_val)[:, 1]
+    return y_val.to_numpy(), y_prob, pipeline
+
+def top_features(pipeline: Pipeline, feature_names: list, n: int = 10) -> pd.DataFrame:
+    """
+    Ranks fitted LR coefficients by |magnitude| - a quick
+    interprability check and a leakage smell-test in one. If a
+    missingness INDICATOR column (e.g. "missingIndicator_diff_slpm")
+    outranks the real stats, or if some feature you can't explain
+    domain-wise dominates the list, that's worth investigating before
+    trusting the number, the same instinct behind the plan's "any 3+
+    point jump is a leak until proven otherwise" rule.
+
+    Parameters
+    ----------
+    pipeline : Pipeline
+        A fitted pipeline from logistic_regression_baseline.
+    feature_names : list
+        Column names of X BEFORE the pipeline (i.e. X_train.columns) —
+        the imputer expands this list (adds indicator columns), so raw
+        column names alone won't line up with pipeline.coef_ without
+        this step.
+    Returns
+    -------
+    pd.DataFrame: feature, coef, abs_coef — top n by abs_coef, sorted descending.
+    """
+    all_names = pipeline[:-1].get_feature_names_out(feature_names)
+    coefs = pipeline.named_steps["clf"].coef_[0]
+    result = pd.DataFrame({"feature": all_names, "coef": coefs})
+    result["abs_coef"] = result["coef"].abs()
+    return result.sort_values("abs_coef", ascending=False).head(n).reset_index(drop=True)
+
+def _odds_covered_mask(df: pd.DataFrame, closing: pd.DataFrame) -> pd.Series:
+    """
+    Boolean mask (same index/order as df) marking which rows have a
+    market_prob available. Used to restrict the LR baseline to the 
+    SAME odds-covered subset the market baseline was scored on
+    (Step 4's 1870 rows), so the two accuracy numbers are being
+    compared on identical footing - comparing LR's full-2,034-row
+    accuracy against the market's 1,870-row accuracy would be
+    comparing two different denominators and drawing a conclusion
+    neither number actually supports.
+    """
+    covered_keys = set(zip(closing["bout_id"], closing["fighter_id"]))
+    row_keys = list(zip(df["bout_id"], df["self_fighter_id"]))
+    return pd.Series([k in covered_keys for k in row_keys], index=df.index)
 
 if __name__ == "__main__":
     from models.metrics import evaluate
 
+    train = pd.read_parquet("data/processed/train.parquet")
     val, closing = _load_val_and_odds()
-    y_true, y_prob, merged = market_baseline(val, closing)
 
-    # Coverage check — reports what fraction of val actually got
-    # scored, since the inner join silently drops uncovered bouts.
-    # val is symmetrized (2 rows/bout), so compare row counts, not
-    # bout counts, to match what evaluate() actually sees.
-    print(
-        f"val rows: {len(val)} | scored rows: {len(merged)} "
-        f"({len(merged) / len(val):.1%} coverage)"
+    # --- Market baseline (Step 4, reprinted here for a side-by-side view) ---
+    y_true_mkt, y_prob_mkt, _ = market_baseline(val, closing)
+    print(evaluate(y_true_mkt, y_prob_mkt, name="market_baseline"))
+
+    # --- LR baseline, full val ---
+    y_val, y_prob_lr, pipeline = logistic_regression_baseline(train, val)
+    print(evaluate(y_val, y_prob_lr, name="logreg_full_val"))
+
+    # --- LR baseline, odds-covered subset only (apples-to-apples vs. market) ---
+    covered_mask = _odds_covered_mask(val, closing).to_numpy()
+    print(evaluate(y_val[covered_mask], y_prob_lr[covered_mask], name="logreg_odds_covered_subset"))
+
+    # --- Structural symmetry check ---
+    # With pure diff_ features + fit_intercept=False, every bout's two
+    # flipped rows should predict probabilities summing to ~1.0. This
+    # SHOULD be true by construction — checking it directly rather
+    # than assuming the math worked.
+    pair_sums = (
+        pd.DataFrame({"bout_id": val["bout_id"].to_numpy(), "y_prob": y_prob_lr})
+        .groupby("bout_id")["y_prob"]
+        .sum()
     )
+    max_deviation = (pair_sums - 1.0).abs().max()
+    print(f"max deviation from symmetric pair sum (expect ~0): {max_deviation:.8f}")
 
-    result = evaluate(y_true, y_prob, name="market_baseline")
-    print(result)
+    # --- Interpretability / leakage smell-test ---
+    X_train_cols = to_differential(train, verbose=False)[0].columns.tolist()
+    print(top_features(pipeline, X_train_cols))
