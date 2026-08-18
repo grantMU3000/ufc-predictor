@@ -7,6 +7,7 @@ at all -- every name is a freeform string ("Conor McGregor") with nothing
 to key against except the string itself. Fuzzy matching is the only
 option here, not a fallback for edge cases.
 """
+
 from datetime import datetime
 
 from rapidfuzz import fuzz, process
@@ -17,6 +18,7 @@ from rapidfuzz import fuzz, process
 # by accident, and a bad auto-match here would silently attach the wrong
 # fighter's odds to a bout.
 FUZZY_MATCH_THRESHOLD = 90
+
 
 def resolve_fighter_name(
     name: str,
@@ -63,6 +65,7 @@ def resolve_fighter_name(
 
     return None, "unresolved"
 
+
 def resolve_odds_entries(
     odds_entries: list[dict],
     real_name_lookup: dict[str, int | list[int]],
@@ -76,15 +79,20 @@ def resolve_odds_entries(
     results = []
     for entry in odds_entries:
         for side, name in [("home", entry["home_team"]), ("away", entry["away_team"])]:
-            fighter_id, method = resolve_fighter_name(name, real_name_lookup, alias_lookup)
-            results.append({
-                "commence_time": entry["commence_time"],
-                "side": side,
-                "raw_name": name,
-                "fighter_id": fighter_id,
-                "match_method": method,
-            })
+            fighter_id, method = resolve_fighter_name(
+                name, real_name_lookup, alias_lookup
+            )
+            results.append(
+                {
+                    "commence_time": entry["commence_time"],
+                    "side": side,
+                    "raw_name": name,
+                    "fighter_id": fighter_id,
+                    "match_method": method,
+                }
+            )
     return results
+
 
 def build_bout_lookup(bouts_events_rows: list[dict]) -> dict[frozenset, list[dict]]:
     """
@@ -104,8 +112,11 @@ def build_bout_lookup(bouts_events_rows: list[dict]) -> dict[frozenset, list[dic
 
 
 def match_to_bout(
-    fighter_a_id: int, fighter_b_id: int, commence_time: str,
-    bout_lookup: dict[frozenset, list[dict]], max_days_diff: int = 2,
+    fighter_a_id: int,
+    fighter_b_id: int,
+    commence_time: str,
+    bout_lookup: dict[frozenset, list[dict]],
+    max_days_diff: int = 2,
 ) -> int | None:
     """
     Resolve a resolved fighter pair + commence_time to a real bout_id.

@@ -21,21 +21,21 @@ def read_events() -> pd.DataFrame:
     # Rename directly to your schema's column names now, rather than doing
     # a generic snake_case pass — since we already know the real headers,
     # there's no reason to add a translation step later in transform.py.
-    df = df.rename(columns={
-        "EVENT": "name",
-        "URL": "source_url",
-        "DATE": "event_date",
-        "LOCATION": "location",
-    })
+    df = df.rename(
+        columns={
+            "EVENT": "name",
+            "URL": "source_url",
+            "DATE": "event_date",
+            "LOCATION": "location",
+        }
+    )
 
     # Stripping whitespace to avoid future mismatches
     string_cols = df.select_dtypes(include="object").columns
     df[string_cols] = df[string_cols].apply(lambda col: col.str.strip())
 
-    # Parse "August 01, 2026" into an actual date type. 
-    df["event_date"] = pd.to_datetime(
-        df["event_date"], format="%B %d, %Y"
-    ).dt.date
+    # Parse "August 01, 2026" into an actual date type.
+    df["event_date"] = pd.to_datetime(df["event_date"], format="%B %d, %Y").dt.date
 
     return df
 
@@ -135,6 +135,7 @@ def read_fighters() -> pd.DataFrame:
 
     return fighters
 
+
 def _parse_landed_attempted(value: str) -> tuple[int | None, int | None]:
     """Convert '11 of 14' into (11, 14). Returns (None, None) if unparseable."""
     if not isinstance(value, str):
@@ -216,19 +217,28 @@ def read_fight_stats() -> pd.DataFrame:
         df[landed_col] = parsed.apply(lambda t: t[0])
         df[attempted_col] = parsed.apply(lambda t: t[1])
 
-    df = df.rename(columns={
-        "EVENT": "event_name",
-        "BOUT": "bout_matchup",
-        "FIGHTER": "fighter_name",
-    })
+    df = df.rename(
+        columns={
+            "EVENT": "event_name",
+            "BOUT": "bout_matchup",
+            "FIGHTER": "fighter_name",
+        }
+    )
 
     keep_cols = [
-        "event_name", "bout_matchup", "round_number", "fighter_name",
-        "knockdowns", "sub_attempts", "reversals", "control_time_seconds",
+        "event_name",
+        "bout_matchup",
+        "round_number",
+        "fighter_name",
+        "knockdowns",
+        "sub_attempts",
+        "reversals",
+        "control_time_seconds",
     ]
     keep_cols += [col for pair in LANDED_ATTEMPTED_COLUMNS.values() for col in pair]
 
     return df[keep_cols]
+
 
 def _parse_scheduled_rounds(value: str) -> int | None:
     """
@@ -241,17 +251,20 @@ def _parse_scheduled_rounds(value: str) -> int | None:
     match = re.match(r"(\d+)\s*Rnd", value.strip())
     return int(match.group(1)) if match else None
 
+
 def _parse_weight_class(value: str) -> str:
     """Strip the trailing 'Bout' / tournament naming noise, keep it simple."""
     if not isinstance(value, str):
         return value
     return value.strip()
 
+
 def _is_title_fight(weightclass_raw: str) -> bool:
     """Detect title/championship bouts across historical naming variants."""
     if not isinstance(weightclass_raw, str):
         return False
     return bool(re.search(r"title|championship", weightclass_raw, re.IGNORECASE))
+
 
 VALID_SCHEDULED_ROUNDS = {3, 5}
 
@@ -317,9 +330,11 @@ def read_fight_results() -> pd.DataFrame:
     before_count = len(df)
     df = df[df["scheduled_rounds"].isin(VALID_SCHEDULED_ROUNDS)]
     dropped_count = before_count - len(df)
-    print(f"read_fight_results: dropped {dropped_count} rows with "
-          f"scheduled_rounds outside {VALID_SCHEDULED_ROUNDS} "
-          f"({before_count} -> {len(df)})")
+    print(
+        f"read_fight_results: dropped {dropped_count} rows with "
+        f"scheduled_rounds outside {VALID_SCHEDULED_ROUNDS} "
+        f"({before_count} -> {len(df)})"
+    )
 
     # Filter out non-roster contract/prospect shows (e.g. "Road to UFC") —
     # these are eliminatory fights for a UFC contract, not fights involving
@@ -330,17 +345,30 @@ def read_fight_results() -> pd.DataFrame:
     before_count = len(df)
     df = df[~df["event_name"].str.contains("Road to UFC", case=False, na=False)]
     dropped_count = before_count - len(df)
-    print(f"read_fight_results: dropped {dropped_count} non-roster "
-          f"('Road to UFC') rows ({before_count} -> {len(df)})")
+    print(
+        f"read_fight_results: dropped {dropped_count} non-roster "
+        f"('Road to UFC') rows ({before_count} -> {len(df)})"
+    )
 
     df["bout_matchup"] = df["BOUT"]
     keep_cols = [
-        "event_name", "fighter_red_name", "fighter_blue_name", "winner_side",
-        "weight_class", "is_title_fight", "method", "method_detail",
-        "ending_round", "ending_time_seconds", "scheduled_rounds",
-        "source_url", "status", "bout_matchup"
+        "event_name",
+        "fighter_red_name",
+        "fighter_blue_name",
+        "winner_side",
+        "weight_class",
+        "is_title_fight",
+        "method",
+        "method_detail",
+        "ending_round",
+        "ending_time_seconds",
+        "scheduled_rounds",
+        "source_url",
+        "status",
+        "bout_matchup",
     ]
 
     return df[keep_cols]
+
 
 read_fight_results()

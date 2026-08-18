@@ -33,9 +33,11 @@ class QualityCheckResult:
     details: human-readable explanation, useful in a terminal or a
              GitHub Actions log
     """
+
     check_name: str
     passed: bool
     details: str
+
 
 def check_duplicate_events(
     engine: Engine,
@@ -97,7 +99,9 @@ def check_duplicate_events(
 
     suspects = []
     for _, wiki_row in wiki_only.iterrows():
-        date_diff_days = (greco_rows["event_date"] - wiki_row["event_date"]).abs().dt.days
+        date_diff_days = (
+            (greco_rows["event_date"] - wiki_row["event_date"]).abs().dt.days
+        )
         nearby_greco = greco_rows[date_diff_days <= date_window_days]
 
         for _, greco_row in nearby_greco.iterrows():
@@ -144,15 +148,16 @@ def check_duplicate_events(
         details=details,
     )
 
+
 def check_duplicate_bouts(engine: Engine) -> QualityCheckResult:
     """
     Look for two `bouts` rows describing the same fight on the same card.
- 
+
     ELI5: on a real UFC card, a given pair of fighters appears exactly
     once. If the database says Makhachev vs. Garry happened twice on
     UFC 330, something duplicated a row — this is the check that would
     have caught that before it reached the feature store.
- 
+
     Why this matters more than it looks: this is a leakage-class bug, not
     just untidiness. A duplicated bout means the feature store's
     `get_prior_bouts` counts that fight twice toward both fighters'
@@ -160,7 +165,7 @@ def check_duplicate_bouts(engine: Engine) -> QualityCheckResult:
     the same fight as four training rows instead of two. Any of those
     quietly shifts metrics without ever throwing an error — exactly the
     failure mode PLAN.md §0.2 warns about.
- 
+
     Detection is on (event_id, unordered fighter pair) rather than on
     source_url, because the duplicated row is precisely the one whose
     source_url started out NULL — keying on source_url would miss it by
@@ -169,11 +174,11 @@ def check_duplicate_bouts(engine: Engine) -> QualityCheckResult:
     first place; this check is the second line of defense in case that
     prevention step ever misses a case (e.g. a stub-fighter row on one side
     that never got reconciled to the real fighter).
- 
+
     'cancelled' bouts are excluded: a cancelled row plus its replacement is
     the *intended* result of the ADR-010 fighter-swap logic, not a
     duplicate.
- 
+
     Returns QualityCheckResult — passed=True means no fight is booked
     twice on any card.
     """
@@ -195,7 +200,7 @@ def check_duplicate_bouts(engine: Engine) -> QualityCheckResult:
         """,
         engine,
     )
- 
+
     passed = dupes.empty
     if passed:
         details = "No fight is booked more than once on the same card."
@@ -213,10 +218,11 @@ def check_duplicate_bouts(engine: Engine) -> QualityCheckResult:
             f"training snapshot is rebuilt — a duplicated bout double-"
             f"counts in the feature store and in Elo:\n" + "\n".join(lines)
         )
- 
+
     return QualityCheckResult(
         check_name="duplicate_bouts", passed=passed, details=details
     )
+
 
 def check_bout_fk_integrity(engine: Engine) -> QualityCheckResult:
     """
@@ -439,9 +445,7 @@ def check_orphaned_fighter_aliases(engine: Engine) -> QualityCheckResult:
             f"fighter_id={row.fighter_id}, which does not exist"
             for row in orphans
         ]
-        details = (
-            f"Found {len(orphans)} orphaned alias row(s):\n" + "\n".join(lines)
-        )
+        details = f"Found {len(orphans)} orphaned alias row(s):\n" + "\n".join(lines)
 
     return QualityCheckResult(
         check_name="orphaned_fighter_aliases", passed=passed, details=details
@@ -454,32 +458,34 @@ def _diff_snapshots(
     """
     Compare two "before / after" snapshots of the same table and describe,
     in plain English, exactly what changed.
- 
+
     ELI5: imagine photographing your fridge, then photographing it again
     five minutes later. This function is the friend who looks at both
     photos and tells you exactly what's different — "the milk moved,"
     "a new yogurt showed up" — instead of just shrugging and saying
     "something's off."
- 
+
     key_col: the column that uniquely identifies a row (e.g. "id"), used
         to match rows up between the two snapshots.
     compare_cols: which columns to check for value changes on rows that
         exist in both snapshots.
- 
+
     Returns a list of human-readable diff lines. Empty list = no
     differences found.
     """
     before_ids = set(before[key_col])
     after_ids = set(after[key_col])
- 
+
     lines = []
- 
+
     for missing_id in sorted(before_ids - after_ids):
-        lines.append(f"{key_col}={missing_id} was present before the rerun, missing after")
- 
+        lines.append(
+            f"{key_col}={missing_id} was present before the rerun, missing after"
+        )
+
     for new_id in sorted(after_ids - before_ids):
         lines.append(f"{key_col}={new_id} is new — wasn't present before the rerun")
- 
+
     before_indexed = before.set_index(key_col)
     after_indexed = after.set_index(key_col)
     for shared_id in sorted(before_ids & after_ids):
@@ -492,10 +498,10 @@ def _diff_snapshots(
                     f"{key_col}={shared_id}: {col} changed from "
                     f"{before_row[col]!r} to {after_row[col]!r}"
                 )
- 
+
     return lines
- 
- 
+
+
 def _snapshot_wikipedia_events(engine: Engine) -> pd.DataFrame:
     """
     Wikipedia-origin events only (wikipedia_pageid IS NOT NULL). Greco-
@@ -512,8 +518,8 @@ def _snapshot_wikipedia_events(engine: Engine) -> pd.DataFrame:
         """,
         engine,
     )
- 
- 
+
+
 def _snapshot_wikipedia_bouts(engine: Engine) -> pd.DataFrame:
     """
     Bouts belonging to a Wikipedia-origin event, including 'cancelled'
@@ -534,18 +540,20 @@ def _snapshot_wikipedia_bouts(engine: Engine) -> pd.DataFrame:
         """,
         engine,
     )
- 
- 
-def check_upcoming_events_idempotency(engine: Engine, rerun_fn=None) -> QualityCheckResult:
+
+
+def check_upcoming_events_idempotency(
+    engine: Engine, rerun_fn=None
+) -> QualityCheckResult:
     """
     Rerun the Wikipedia upcoming-events ingestion pipeline and confirm it
     doesn't change anything that shouldn't have changed.
- 
+
     ELI5: "idempotent" just means "pressing the button twice does the
     same thing as pressing it once." This check presses the ingestion
     button twice, a few seconds apart, with nothing else going on in
     between, and checks that nothing moved that shouldn't have.
- 
+
     IMPORTANT — how this check is different from every other one above:
       1. It is NOT read-only. It actually re-runs the real ingestion
          pipeline (`data.scraping.ingest_upcoming_events.run`), which
@@ -561,49 +569,55 @@ def check_upcoming_events_idempotency(engine: Engine, rerun_fn=None) -> QualityC
          are written to be read, not just trusted blindly on a failure —
          they show exactly what changed, so you can judge "real edit"
          vs. "bug" yourself.
- 
+
     Because of points 1 and 2, this check is deliberately left OUT of
     `ALL_CHECKS` below — it doesn't belong in a quick, frequent,
     read-only pass/fail loop. Run it deliberately, on its own, whenever
     you've touched the ingestion pipeline and want to confirm reruns are
     still safe — e.g.
     `check_upcoming_events_idempotency(engine)` from a script or REPL.
- 
+
     Args:
         engine: SQLAlchemy engine.
         rerun_fn: the function to call between snapshots. Defaults to
             the real ingestion pipeline's `run()`. Overridable so this
             can be unit-tested with a no-op instead of hitting the live
             network and a real database.
- 
+
     Returns QualityCheckResult — passed=True means the second run
     produced identical events/bouts data to the first.
     """
     if rerun_fn is None:
         from data.scraping.ingest_upcoming_events import run as rerun_fn
- 
+
     events_before = _snapshot_wikipedia_events(engine)
     bouts_before = _snapshot_wikipedia_bouts(engine)
- 
+
     rerun_fn()
- 
+
     events_after = _snapshot_wikipedia_events(engine)
     bouts_after = _snapshot_wikipedia_bouts(engine)
- 
+
     event_compare_cols = ["name", "event_date", "venue", "location"]
     bout_compare_cols = [
-        "event_id", "fighter_red_id", "fighter_blue_id", "weight_class",
-        "is_title_fight", "scheduled_rounds", "status", "card_position",
+        "event_id",
+        "fighter_red_id",
+        "fighter_blue_id",
+        "weight_class",
+        "is_title_fight",
+        "scheduled_rounds",
+        "status",
+        "card_position",
         "rounds_confirmed",
     ]
- 
+
     event_diffs = _diff_snapshots(events_before, events_after, "id", event_compare_cols)
     bout_diffs = _diff_snapshots(bouts_before, bouts_after, "id", bout_compare_cols)
- 
-    all_diffs = (
-        [f"events: {d}" for d in event_diffs] + [f"bouts: {d}" for d in bout_diffs]
-    )
- 
+
+    all_diffs = [f"events: {d}" for d in event_diffs] + [
+        f"bouts: {d}" for d in bout_diffs
+    ]
+
     passed = len(all_diffs) == 0
     if passed:
         details = (
@@ -620,7 +634,7 @@ def check_upcoming_events_idempotency(engine: Engine, rerun_fn=None) -> QualityC
             f"class as bug #6 from the Wikipedia-ingestion session):\n"
             + "\n".join(lines)
         )
- 
+
     return QualityCheckResult(
         check_name="upcoming_events_idempotency", passed=passed, details=details
     )

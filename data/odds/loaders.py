@@ -18,6 +18,7 @@ def _moneyline_to_implied_prob(price: int) -> float:
         return abs(price) / (abs(price) + 100)
     return 100 / (price + 100)
 
+
 def build_real_name_lookup(engine) -> dict[str, int | list[int]]:
     """
     Map real_name -> fighter_id, collision-safe.
@@ -43,25 +44,29 @@ def build_real_name_lookup(engine) -> dict[str, int | list[int]]:
     for row in rows:
         grouped.setdefault(row.real_name, []).append(row.id)
 
-    return {
-        name: ids[0] if len(ids) == 1 else ids
-        for name, ids in grouped.items()
-    }
+    return {name: ids[0] if len(ids) == 1 else ids for name, ids in grouped.items()}
+
 
 def build_alias_lookup(engine) -> dict[str, int]:
     with engine.begin() as conn:
-        rows = conn.execute(text("SELECT fighter_id, alias_name FROM fighter_aliases")).fetchall()
+        rows = conn.execute(
+            text("SELECT fighter_id, alias_name FROM fighter_aliases")
+        ).fetchall()
     return {row.alias_name: row.fighter_id for row in rows}
+
 
 def build_bout_lookup_from_db(engine) -> dict[frozenset, list[dict]]:
     with engine.begin() as conn:
         # Could this statement have a WHERE clause that only gets fights from 2020 & later?
-        rows = conn.execute(text("""
+        rows = conn.execute(
+            text("""
             SELECT b.id AS bout_id, b.fighter_red_id, b.fighter_blue_id, e.event_date
             FROM bouts b JOIN events e ON b.event_id = e.id
              WHERE e.event_date >= '2020-06-06'
-        """)).fetchall()
+        """)
+        ).fetchall()
     return build_bout_lookup([dict(r._mapping) for r in rows])
+
 
 def resolve_and_prepare_snapshot_rows(
     filtered_odds_data: list[dict],
@@ -72,11 +77,23 @@ def resolve_and_prepare_snapshot_rows(
     ready_rows, new_aliases, unresolved_log = [], [], []
 
     for entry in filtered_odds_data:
-        home_result, home_method = resolve_fighter_name(entry["home_team"], real_name_lookup, alias_lookup)
-        away_result, away_method = resolve_fighter_name(entry["away_team"], real_name_lookup, alias_lookup)
+        home_result, home_method = resolve_fighter_name(
+            entry["home_team"], real_name_lookup, alias_lookup
+        )
+        away_result, away_method = resolve_fighter_name(
+            entry["away_team"], real_name_lookup, alias_lookup
+        )
 
-        home_candidates = home_result if isinstance(home_result, list) else ([home_result] if home_result is not None else [])
-        away_candidates = away_result if isinstance(away_result, list) else ([away_result] if away_result is not None else [])
+        home_candidates = (
+            home_result
+            if isinstance(home_result, list)
+            else ([home_result] if home_result is not None else [])
+        )
+        away_candidates = (
+            away_result
+            if isinstance(away_result, list)
+            else ([away_result] if away_result is not None else [])
+        )
 
         # Try every (home, away) candidate pair against real bouts -- for
         # non-ambiguous names this is just one pair, same as before. For
@@ -94,11 +111,15 @@ def resolve_and_prepare_snapshot_rows(
                 break
 
         if bout_id is None:
-            unresolved_log.append({
-                "commence_time": entry["commence_time"],
-                "home_team": entry["home_team"], "away_team": entry["away_team"],
-                "home_resolved": len(home_candidates) > 0, "away_resolved": len(away_candidates) > 0,
-            })
+            unresolved_log.append(
+                {
+                    "commence_time": entry["commence_time"],
+                    "home_team": entry["home_team"],
+                    "away_team": entry["away_team"],
+                    "home_resolved": len(home_candidates) > 0,
+                    "away_resolved": len(away_candidates) > 0,
+                }
+            )
             continue
 
         # Only an UNAMBIGUOUS fuzzy match is safe to alias. An ambiguous
@@ -124,16 +145,19 @@ def resolve_and_prepare_snapshot_rows(
                     if fighter_id is None:
                         continue
                     moneyline = outcome["price"]
-                    ready_rows.append({
-                        "bout_id": bout_id,
-                        "fighter_id": fighter_id,
-                        "sportsbook": bookmaker["title"],
-                        "moneyline": moneyline,
-                        "implied_prob": _moneyline_to_implied_prob(moneyline),
-                        "collected_at": collected_at,
-                    })
+                    ready_rows.append(
+                        {
+                            "bout_id": bout_id,
+                            "fighter_id": fighter_id,
+                            "sportsbook": bookmaker["title"],
+                            "moneyline": moneyline,
+                            "implied_prob": _moneyline_to_implied_prob(moneyline),
+                            "collected_at": collected_at,
+                        }
+                    )
 
     return ready_rows, new_aliases, unresolved_log
+
 
 def write_fighter_aliases(engine, new_aliases: list[dict]) -> int:
     """Upserts on (fighter_id, alias_name) -- the constraint already exists
@@ -153,6 +177,7 @@ def write_fighter_aliases(engine, new_aliases: list[dict]) -> int:
         result = conn.execute(stmt)
         return result.rowcount
 
+
 def load_odds_snapshots(engine, ready_rows: list[dict]) -> int:
     if not ready_rows:
         return 0
@@ -168,15 +193,24 @@ def load_odds_snapshots(engine, ready_rows: list[dict]) -> int:
     for row in ready_rows:
         key = tuple(row[c] for c in key_cols)
         if key in seen and seen[key]["moneyline"] != row["moneyline"]:
-            print(f"load_odds_snapshots: conflicting duplicate for {key} -- "
-                  f"{seen[key]['moneyline']} vs {row['moneyline']}, keeping latest")
+            print(
+                f"load_odds_snapshots: conflicting duplicate for {key} -- "
+                f"{seen[key]['moneyline']} vs {row['moneyline']}, keeping latest"
+            )
         seen[key] = row
     ready_rows = list(seen.values())
 
     metadata = MetaData()
     snapshots_tbl = Table("odds_snapshots", metadata, autoload_with=engine)
 
-    insert_cols = ["bout_id", "fighter_id", "sportsbook", "moneyline", "implied_prob", "collected_at"]
+    insert_cols = [
+        "bout_id",
+        "fighter_id",
+        "sportsbook",
+        "moneyline",
+        "implied_prob",
+        "collected_at",
+    ]
     records = _clean_for_insert(pd.DataFrame(ready_rows), insert_cols)
 
     stmt = pg_insert(snapshots_tbl).values(records)

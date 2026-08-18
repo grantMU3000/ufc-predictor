@@ -4,6 +4,7 @@ matched to real bouts, loaded into odds_snapshots.
 
 Run with: uv run python -m data.odds.run_backfill
 """
+
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -53,9 +54,11 @@ def run():
     unresolved_log_rows = []
 
     for i, event in enumerate(events, 1):
-        query_date = datetime.combine(
-            event["event_date"], datetime.min.time(), tzinfo=UTC
-        ).replace(hour=12).strftime("%Y-%m-%dT%H:%M:%SZ")
+        query_date = (
+            datetime.combine(event["event_date"], datetime.min.time(), tzinfo=UTC)
+            .replace(hour=12)
+            .strftime("%Y-%m-%dT%H:%M:%SZ")
+        )
 
         print(f"[{i}/{len(events)}] {event['name']} ({query_date})...", end=" ")
 
@@ -86,12 +89,16 @@ def run():
         totals["aliases"] += len(new_aliases)
         totals["unresolved"] += len(unresolved)
 
-        print(f"{snapshots_written} snapshots, {len(new_aliases)} new aliases, "
-              f"{len(unresolved)} unresolved")
+        print(
+            f"{snapshots_written} snapshots, {len(new_aliases)} new aliases, "
+            f"{len(unresolved)} unresolved"
+        )
 
-    print(f"\nDone. {totals['snapshots']} snapshots loaded, "
-          f"{totals['aliases']} aliases confirmed, "
-          f"{totals['unresolved']} unresolved.")
+    print(
+        f"\nDone. {totals['snapshots']} snapshots loaded, "
+        f"{totals['aliases']} aliases confirmed, "
+        f"{totals['unresolved']} unresolved."
+    )
 
     if unresolved_log_rows:
         LOG_PATH.parent.mkdir(parents=True, exist_ok=True)

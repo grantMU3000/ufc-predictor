@@ -32,24 +32,24 @@ NAME_OVERRIDES = {
 # early-career bout before he settled into his current division.
 COLLISION_RESOLUTIONS: dict[str, dict[str, str]] = {
     "Bruno Silva": {
-        "Flyweight Bout": "http://ufcstats.com/fighter-details/294aa73dbf37d281",      # Bulldog
-        "Middleweight Bout": "http://ufcstats.com/fighter-details/12ebd7d157e91701",   # Blindado
-        "Bantamweight Bout": "http://ufcstats.com/fighter-details/294aa73dbf37d281",   # Bulldog — early-career judgment call
+        "Flyweight Bout": "http://ufcstats.com/fighter-details/294aa73dbf37d281",  # Bulldog
+        "Middleweight Bout": "http://ufcstats.com/fighter-details/12ebd7d157e91701",  # Blindado
+        "Bantamweight Bout": "http://ufcstats.com/fighter-details/294aa73dbf37d281",  # Bulldog — early-career judgment call
     },
     "Jean Silva": {
-        "__default__": "http://ufcstats.com/fighter-details/52ef95b5860fb28c",          # Lord
+        "__default__": "http://ufcstats.com/fighter-details/52ef95b5860fb28c",  # Lord
     },
     "Mike Davis": {
-        "__default__": "http://ufcstats.com/fighter-details/fb3e61720be4690c",         # Beast Boy
+        "__default__": "http://ufcstats.com/fighter-details/fb3e61720be4690c",  # Beast Boy
     },
     "Michael McDonald": {
-        "__default__": "http://ufcstats.com/fighter-details/d0314416a7f26527",         # Mayday
+        "__default__": "http://ufcstats.com/fighter-details/d0314416a7f26527",  # Mayday
     },
     "Victor Valenzuela": {
-        "__default__": "http://ufcstats.com/fighter-details/078695e385ec2f57",         # Psicosis
+        "__default__": "http://ufcstats.com/fighter-details/078695e385ec2f57",  # Psicosis
     },
     "Joey Gomez": {
-        "__default__": "http://ufcstats.com/fighter-details/0778f94eb5d588a5",         # KO King
+        "__default__": "http://ufcstats.com/fighter-details/0778f94eb5d588a5",  # KO King
     },
 }
 
@@ -80,6 +80,7 @@ def _resolve_collision(
 
     return source_url_lookup.get(source_url)
 
+
 def _build_fighter_lookup(fighters_df: pd.DataFrame) -> dict[str, int | None]:
     """
     Map real_name -> fighter_id for names that appear exactly once. The 8
@@ -90,10 +91,12 @@ def _build_fighter_lookup(fighters_df: pd.DataFrame) -> dict[str, int | None]:
     counts = fighters_df["real_name"].value_counts()
     unique_names = counts[counts == 1].index
 
-    lookup = dict(zip(
-        fighters_df.loc[fighters_df["real_name"].isin(unique_names), "real_name"],
-        fighters_df.loc[fighters_df["real_name"].isin(unique_names), "fighter_id"],
-    ))
+    lookup = dict(
+        zip(
+            fighters_df.loc[fighters_df["real_name"].isin(unique_names), "real_name"],
+            fighters_df.loc[fighters_df["real_name"].isin(unique_names), "fighter_id"],
+        )
+    )
     for name in counts[counts > 1].index:
         lookup[name] = None  # ambiguous, on purpose
 
@@ -119,7 +122,9 @@ def build_events_table() -> pd.DataFrame:
     return events
 
 
-def build_bouts_table(events: pd.DataFrame, fighter_lookup, source_url_lookup: dict) -> pd.DataFrame:
+def build_bouts_table(
+    events: pd.DataFrame, fighter_lookup, source_url_lookup: dict
+) -> pd.DataFrame:
     """
     Resolve fight_results.csv's free-text names into real FKs. Checks
     known collision resolutions (weight-class-based) before falling back
@@ -158,15 +163,21 @@ def build_bouts_table(events: pd.DataFrame, fighter_lookup, source_url_lookup: d
         bouts[unresolved_mask].to_csv(
             LOG_DIR / "unresolved_bout_fighters.csv", index=False
         )
-        print(f"build_bouts_table: {unresolved_mask.sum()} rows unresolved "
-              f"(ambiguous/unmatched name) — logged, excluded from load.")
+        print(
+            f"build_bouts_table: {unresolved_mask.sum()} rows unresolved "
+            f"(ambiguous/unmatched name) — logged, excluded from load."
+        )
 
     bouts = bouts[~unresolved_mask].reset_index(drop=True)
 
     bouts["winner_id"] = bouts.apply(
-        lambda row: row["fighter_red_id"] if row["winner_side"] == "red"
-        else row["fighter_blue_id"] if row["winner_side"] == "blue"
-        else None,
+        lambda row: (
+            row["fighter_red_id"]
+            if row["winner_side"] == "red"
+            else row["fighter_blue_id"]
+            if row["winner_side"] == "blue"
+            else None
+        ),
         axis=1,
     )
 
@@ -175,16 +186,29 @@ def build_bouts_table(events: pd.DataFrame, fighter_lookup, source_url_lookup: d
     # event_name/bout_matchup kept for the bout_stats join below — not
     # real schema columns, loaders.py should drop them before inserting.
     keep_cols = [
-        "bout_id", "event_id", "fighter_red_id", "fighter_blue_id",
-        "weight_class", "is_title_fight", "scheduled_rounds", "status",
-        "winner_id", "method", "method_detail", "ending_round",
-        "ending_time_seconds", "source_url",
-        "event_name", "bout_matchup",
+        "bout_id",
+        "event_id",
+        "fighter_red_id",
+        "fighter_blue_id",
+        "weight_class",
+        "is_title_fight",
+        "scheduled_rounds",
+        "status",
+        "winner_id",
+        "method",
+        "method_detail",
+        "ending_round",
+        "ending_time_seconds",
+        "source_url",
+        "event_name",
+        "bout_matchup",
     ]
     return bouts[keep_cols]
 
 
-def build_bout_stats_table(bouts: pd.DataFrame, fighter_lookup, source_url_lookup: dict) -> pd.DataFrame:
+def build_bout_stats_table(
+    bouts: pd.DataFrame, fighter_lookup, source_url_lookup: dict
+) -> pd.DataFrame:
     """
     Resolve fight_stats.csv rows to real bout_id/fighter_id FKs. INNER
     join to bouts happens FIRST now (not after fighter resolution, as
@@ -216,13 +240,16 @@ def build_bout_stats_table(bouts: pd.DataFrame, fighter_lookup, source_url_looku
         merged[unresolved_mask].to_csv(
             LOG_DIR / "unresolved_bout_stats_fighters.csv", index=False
         )
-        print(f"build_bout_stats_table: {unresolved_mask.sum()} rows "
-              f"unresolved — logged, excluded.")
+        print(
+            f"build_bout_stats_table: {unresolved_mask.sum()} rows "
+            f"unresolved — logged, excluded."
+        )
 
     merged = merged[~unresolved_mask].reset_index(drop=True)
 
     landed_attempted_cols = [
-        col for pair in [
+        col
+        for pair in [
             ("sig_strikes_landed", "sig_strikes_attempted"),
             ("total_strikes_landed", "total_strikes_attempted"),
             ("takedowns_landed", "takedowns_attempted"),
@@ -232,11 +259,17 @@ def build_bout_stats_table(bouts: pd.DataFrame, fighter_lookup, source_url_looku
             ("distance_strikes_landed", "distance_strikes_attempted"),
             ("clinch_strikes_landed", "clinch_strikes_attempted"),
             ("ground_strikes_landed", "ground_strikes_attempted"),
-        ] for col in pair
+        ]
+        for col in pair
     ]
     keep_cols = [
-        "bout_id", "fighter_id", "round_number", "knockdowns",
-        "sub_attempts", "reversals", "control_time_seconds",
+        "bout_id",
+        "fighter_id",
+        "round_number",
+        "knockdowns",
+        "sub_attempts",
+        "reversals",
+        "control_time_seconds",
     ] + landed_attempted_cols
 
     return merged[keep_cols]

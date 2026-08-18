@@ -8,7 +8,7 @@ events = parse_scheduled_events(wikitext)
 print(f"Parsed {len(events)} scheduled events")
 assert len(events) == 11, f"expected 11, got {len(events)}"
 
-'''
+"""
 # spot-check the two piped-link rows specifically
 by_title = {e["event_title"]: e for e in events}
 assert by_title["UFC 331"]["event_display_name"] == "UFC 331: Van vs. Pantoja 2"
@@ -29,7 +29,7 @@ assert bouts[0]["fighter_red"] == "Islam Makhachev"
 assert bouts[0]["fighter_red_is_champion"] is True
 
 print("All checks passed")
-'''
+"""
 events = parse_scheduled_events(wikitext)
 enriched = resolve_event_pageids(events, use_cache=False)
 

@@ -34,6 +34,48 @@ The actual reasoning. Be specific about tradeoffs accepted, not just benefits ga
 What this makes easier, what this makes harder, what it forecloses or defers.
 ```
 ---
+[ADR-013] Greco↔Wikipedia event/bout reconciliation — claim existing rows by writing Greco's source_url onto them
+
+Date: 2026-08-17
+Status: Accepted
+Supersedes: The "not yet built" follow-up flagged in ADR-011's Consequences section.
+
+Context
+
+ADR-011 anticipated that Greco ingesting a real result for an event that already has a Wikipedia-sourced row (source_url IS NULL, wikipedia_pageid set) would need a reconciliation step, and left it unbuilt. That gap surfaced for real on UFC 330: Greco's ingest ran, found no events row with a matching source_url (because the existing row's source_url was still NULL), and inserted a second events row instead of updating the first. This cascaded — the new event got its own set of bouts rows, so the same card existed twice, with bout_stats and results attached only to the new, duplicate side. odds_snapshots collected pre-fight remained attached to the original (now orphaned-in-spirit) bout rows.
+
+This was diagnosed and manually repaired via a one-off script (scripts/one_off/2026-08-17_merge_duplicate_event_ufc330.sql): the surviving row kept the Greco-sourced event's id (since it already owned bout_stats), with wikipedia_pageid/venue/location grafted onto it and all child rows (odds_snapshots, predictions) repointed before the duplicate was deleted.
+
+The one-off fix and the systemic fix pull in different directions, which is the part worth writing down clearly:
+
+The one-off fix kept the Greco row's id, because by the time it was discovered, the Greco row already owned bout_stats and repointing those would have been more invasive than repointing the handful of odds_snapshots rows the other way.
+The systemic fix (this ADR) keeps the Wikipedia row's id going forward. Once this is running, Greco will never again get a multi-day head start on a completed event before reconciliation happens — so the Wikipedia row will always still be the one predictions/odds already point at, and identity should flow toward it rather than away from it.
+Options considered
+Do nothing; treat this as a one-time fluke. Rejected — it isn't a fluke, it's the direct, guaranteed consequence of two pipelines writing into the same tables keyed on two different columns, exactly as ADR-011 predicted. It will recur on every future card that goes: Wikipedia-sourced upcoming event → event happens → Greco ingests the result, unless something bridges the two keys before Greco's upsert runs.
+Change loaders.py's upsert to match on (event_date, fuzzy name) instead of source_url when source_url match fails. Would work, but conflates two different jobs in one query — "find the row to update" is currently a simple, fast, unambiguous equality lookup; adding fuzzy fallback logic directly into the upsert path makes every future Greco load pay a fuzzy-matching cost and makes the upsert function harder to reason about and test in isolation.
+A separate reconciliation pre-pass (data/ingestion/reconciliation.py) that runs immediately before each upsert, finds any unreconciled Wikipedia-sourced row for the same real card, and writes Greco's source_url onto it — so the existing, unmodified upsert logic in loaders.py then finds a matching source_url and updates in place instead of inserting.
+Decision
+
+Option 3. Two functions, claim_existing_events_for_greco and claim_existing_bouts_for_greco, called from load_events and load_bouts respectively, immediately before each function's existing upsert call.
+
+Events are matched on event date (±1 day, to absorb UTC/local-date boundary cases for cards outside the US) plus a name-compatibility check: for numbered cards ("UFC 330"), the number must match exactly — a plain fuzzy score was rejected here specifically because it's unreliable when one name is a strict prefix of the other, which is exactly the UFC 330 case that broke. For Fight Nights (no number on either side), falls back to token_set_ratio fuzzy matching at a low threshold, since the date-plus-numbered-event check already does most of the filtering and this is only a last-resort tripwire.
+Bouts are matched on (event_id, unordered fighter pair) rather than (event_id, fighter_red_id, fighter_blue_id) in order, since Wikipedia and Greco don't always agree on which fighter is in which corner.
+Both are additive and non-destructive: they only ever touch rows where source_url IS NULL, so a second run finds nothing left to claim (idempotent by construction), and ambiguous matches (one Wikipedia row plausibly matching more than one incoming Greco event) are left alone and logged rather than guessed — check_duplicate_bouts (new, alongside the existing check_duplicate_events) will then keep flagging the case until it's resolved by hand, which is the intended outcome: a visible unresolved duplicate over a silent wrong merge.
+Why
+
+This keeps the direction of the fix aligned with why wikipedia_pageid exists as a separate column in the first place (ADR-011): the two pipelines shouldn't have to agree on identity ahead of time, and neither should have to change what it considers "the" key. Reconciliation instead runs as a bridge step that translates one pipeline's identity onto the other's key, right before the existing upsert logic needs it — the upsert itself never has to know reconciliation happened.
+
+The identity-direction rule this settles for the future: whichever source's row got there first keeps its id; the later source contributes data, not identity. In steady state that will always mean the Wikipedia-sourced row survives, because Wikipedia ingestion runs continuously against the upcoming schedule while Greco only picks up a card after it's over — so Wikipedia will structurally always have the head start. The one-off UFC 330 fix went the other way only because reconciliation didn't exist yet when that gap opened, letting Greco's row accumulate bout_stats before anyone noticed there were two rows to merge.
+
+Consequences
+
+Easier: Future Greco ingests of a previously Wikipedia-sourced card update the existing row in place — no duplicate events/bouts rows, no orphaned odds_snapshots/predictions, no manual SQL merge required. check_duplicate_bouts gives a standing, automated signal if this ever fails silently (e.g. a stub-fighter row on one side never got reconciled to the real fighter, so the unordered-pair match misses).
+
+Requires care going forward: if a fighter's corner flips between the Wikipedia-sourced pre-fight listing and Greco's post-fight result (rare, but possible when a late-notice replacement swaps who's "red"), claim_existing_bouts_for_greco logs a warning rather than silently accepting it, because it invalidates predicted_prob_red on any prediction already logged against that bout pre-fight. Settlement logic (Week 4) must key on predicted_winner_id, not corner position, for exactly this reason — that's now a hard requirement, not just a convenience.
+
+Forecloses: Nothing schema-level. This is pure ingestion-time logic; no migration was needed, since it only changes what gets written into source_url before the existing upsert runs, not the shape of any table.
+
+---
 ## [ADR-012] Reuse `rounds_confirmed` to suppress quality-check false positives on legitimate 3-round title fights
 
 **Date:** 2026-08-13

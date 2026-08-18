@@ -3,6 +3,7 @@ Orchestrates the Greco1899 ingestion pipeline: parse -> transform -> load.
 
 Run with: uv run python -m data.ingestion.run_ingest
 """
+
 import shutil
 
 from data.ingestion.loaders import load_all
@@ -19,7 +20,7 @@ from data.ingestion.transform import (
 
 def run() -> tuple:
     if LOG_DIR.exists():
-            shutil.rmtree(LOG_DIR)
+        shutil.rmtree(LOG_DIR)
 
     print("=== Step 1: fighters ===")
     fighters = build_fighters_table()
@@ -44,8 +45,6 @@ def run() -> tuple:
     load_all(fighters, events, bouts, bout_stats)
 
     return fighters, events, bouts, bout_stats
-
-
 
 
 if __name__ == "__main__":

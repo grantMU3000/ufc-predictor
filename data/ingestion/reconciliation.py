@@ -36,6 +36,7 @@ Both functions are idempotent: they only ever touch rows where
 
 import re
 import unicodedata
+from typing import SupportsInt, cast
 
 import pandas as pd
 from rapidfuzz import fuzz
@@ -239,7 +240,14 @@ def claim_existing_bouts_for_greco(engine: Engine, bouts_df: pd.DataFrame) -> in
         return 0
 
     by_key: dict[tuple[int, int, int], tuple[int, int]] = {
-        (int(r.event_id), int(r.pair_low), int(r.pair_high)): (int(r.id), int(r.fighter_red_id))
+        (
+            int(cast(SupportsInt, r.event_id)),
+            int(cast(SupportsInt, r.pair_low)),
+            int(cast(SupportsInt, r.pair_high)),
+        ): (
+            int(cast(SupportsInt, r.id)),
+            int(cast(SupportsInt, r.fighter_red_id)),
+        )
         for r in candidates.itertuples()
     }
 
@@ -247,8 +255,11 @@ def claim_existing_bouts_for_greco(engine: Engine, bouts_df: pd.DataFrame) -> in
 
     claimed = 0
     for row in df.itertuples():
-        red, blue = int(row.fighter_red_id), int(row.fighter_blue_id)
-        key = (int(row.event_id), min(red, blue), max(red, blue))
+        red, blue = (
+            int(cast(SupportsInt, row.fighter_red_id)),
+            int(cast(SupportsInt, row.fighter_blue_id)),
+        )
+        key = (int(cast(SupportsInt, row.event_id)), min(red, blue), max(red, blue))
 
         hit = by_key.get(key)
         if hit is None:

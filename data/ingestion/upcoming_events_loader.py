@@ -13,7 +13,9 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from data.ingestion.loaders import _clean_for_insert  # reused, not duplicated
 
 
-def _upsert_by_key(engine, table: Table, df: pd.DataFrame, insert_cols: list[str], key_col: str) -> dict:
+def _upsert_by_key(
+    engine, table: Table, df: pd.DataFrame, insert_cols: list[str], key_col: str
+) -> dict:
     """Generalized version of loaders.py's _upsert_by_source_url, keyed on any unique column."""
     records = _clean_for_insert(df, insert_cols)
     if not records:
@@ -40,7 +42,9 @@ def load_upcoming_events(engine, events_df: pd.DataFrame) -> dict[int, int]:
     events_tbl = Table("events", metadata, autoload_with=engine)
 
     insert_cols = ["name", "event_date", "venue", "location", "wikipedia_pageid"]
-    return _upsert_by_key(engine, events_tbl, events_df, insert_cols, key_col="wikipedia_pageid")
+    return _upsert_by_key(
+        engine, events_tbl, events_df, insert_cols, key_col="wikipedia_pageid"
+    )
 
 
 TITLE_KEYWORDS = ("championship", "title")
@@ -65,7 +69,14 @@ def infer_bout_details(bout: dict, is_main_event: bool = False) -> dict:
     }
 
 
-def load_bout(engine, event_id: int, bout: dict, fighter_red_id: int, fighter_blue_id: int, is_main_event: bool = False) -> None:
+def load_bout(
+    engine,
+    event_id: int,
+    bout: dict,
+    fighter_red_id: int,
+    fighter_blue_id: int,
+    is_main_event: bool = False,
+) -> None:
     """
     One transaction per bout — the check, any cancellation, and the insert
     happen atomically, so a fighter swap can't be left half-applied.
@@ -74,7 +85,7 @@ def load_bout(engine, event_id: int, bout: dict, fighter_red_id: int, fighter_bl
 
     with engine.begin() as conn:
         # Exact pairing already exists and is still active — nothing to do
-    # beyond refreshing details that could've changed (weight class, card position).
+        # beyond refreshing details that could've changed (weight class, card position).
         existing_exact = conn.execute(
             text("""
                 SELECT id FROM bouts
@@ -94,9 +105,11 @@ def load_bout(engine, event_id: int, bout: dict, fighter_red_id: int, fighter_bl
                     WHERE id = :id
                 """),
                 {
-                    "wc": inferred["weight_class"], "cp": inferred["card_tier"],
+                    "wc": inferred["weight_class"],
+                    "cp": inferred["card_tier"],
                     "rounds": inferred["scheduled_rounds"],
-                    "title": inferred["is_title_fight"], "id": existing_exact.id,
+                    "title": inferred["is_title_fight"],
+                    "id": existing_exact.id,
                 },
             )
             return
@@ -113,7 +126,10 @@ def load_bout(engine, event_id: int, bout: dict, fighter_red_id: int, fighter_bl
         ).fetchall()
 
         for row in stale:
-            conn.execute(text("UPDATE bouts SET status = 'cancelled' WHERE id = :id"), {"id": row.id})
+            conn.execute(
+                text("UPDATE bouts SET status = 'cancelled' WHERE id = :id"),
+                {"id": row.id},
+            )
 
         conn.execute(
             text("""
@@ -125,8 +141,12 @@ def load_bout(engine, event_id: int, bout: dict, fighter_red_id: int, fighter_bl
                 )
             """),
             {
-                "event_id": event_id, "red": fighter_red_id, "blue": fighter_blue_id,
-                "wc": inferred["weight_class"], "title": inferred["is_title_fight"],
-                "rounds": inferred["scheduled_rounds"], "cp": inferred["card_tier"],
+                "event_id": event_id,
+                "red": fighter_red_id,
+                "blue": fighter_blue_id,
+                "wc": inferred["weight_class"],
+                "title": inferred["is_title_fight"],
+                "rounds": inferred["scheduled_rounds"],
+                "cp": inferred["card_tier"],
             },
         )

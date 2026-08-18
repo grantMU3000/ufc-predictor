@@ -1,7 +1,8 @@
 """
-This module gathers historical MMA match odds from Odds API. These odds are 
-cached and will be filtered to just UFC bouts in subsequent modules. 
+This module gathers historical MMA match odds from Odds API. These odds are
+cached and will be filtered to just UFC bouts in subsequent modules.
 """
+
 import json
 import os
 from pathlib import Path
@@ -11,8 +12,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 API_KEY = os.environ["ODDS_API_KEY"]
-BASE_URL = "https://api.the-odds-api.com/v4/historical/sports/mma_mixed_martial_arts/odds"
+BASE_URL = (
+    "https://api.the-odds-api.com/v4/historical/sports/mma_mixed_martial_arts/odds"
+)
 CACHE_DIR = Path("data/raw/odds")
+
 
 def fetch_historical_odds(query_date: str) -> dict | None:
     """
@@ -29,14 +33,19 @@ def fetch_historical_odds(query_date: str) -> dict | None:
         return json.loads(cache_path.read_text())
 
     params = {
-        "apiKey": API_KEY, "regions": "us", "markets": "h2h",
-        "oddsFormat": "american", "date": query_date,
+        "apiKey": API_KEY,
+        "regions": "us",
+        "markets": "h2h",
+        "oddsFormat": "american",
+        "date": query_date,
     }
     resp = requests.get(BASE_URL, params=params, timeout=15)
 
     if resp.status_code != 200:
-        print(f"fetch_historical_odds: FAILED for {query_date} "
-              f"(status {resp.status_code}): {resp.text[:200]}")
+        print(
+            f"fetch_historical_odds: FAILED for {query_date} "
+            f"(status {resp.status_code}): {resp.text[:200]}"
+        )
         return None
 
     data = resp.json()

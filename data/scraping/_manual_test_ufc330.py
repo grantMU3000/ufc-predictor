@@ -52,22 +52,32 @@ def main():
     # 3. Fighter resolution + bout load
     for bout in bouts:
         red = resolve_fighter(
-            engine, roster, bout["fighter_red"],
+            engine,
+            roster,
+            bout["fighter_red"],
             wikipedia_link_target=bout["fighter_red_link_target"],
         )
         blue = resolve_fighter(
-            engine, roster, bout["fighter_blue"],
+            engine,
+            roster,
+            bout["fighter_blue"],
             wikipedia_link_target=bout["fighter_blue_link_target"],
         )
-        print(f"  {bout['fighter_red']} [{red.match_type}] vs "
-              f"{bout['fighter_blue']} [{blue.match_type}]")
+        print(
+            f"  {bout['fighter_red']} [{red.match_type}] vs "
+            f"{bout['fighter_blue']} [{blue.match_type}]"
+        )
 
         if red.match_type == "collision" or blue.match_type == "collision":
             print("    -> skipped, needs manual collision resolution")
             continue
 
-        red_id = red.fighter_id or create_stub_fighter(engine, roster, bout["fighter_red"])
-        blue_id = blue.fighter_id or create_stub_fighter(engine, roster, bout["fighter_blue"])
+        red_id = red.fighter_id or create_stub_fighter(
+            engine, roster, bout["fighter_red"]
+        )
+        blue_id = blue.fighter_id or create_stub_fighter(
+            engine, roster, bout["fighter_blue"]
+        )
 
         load_bout(engine, event_id, bout, red_id, blue_id)
 

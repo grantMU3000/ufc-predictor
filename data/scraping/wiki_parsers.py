@@ -5,6 +5,7 @@ import mwparserfromhell
 
 EXPECTED_HEADERS = ["Event", "Date", "Venue", "Location", "Ref."]
 
+
 def _first_wikilink(cell_wikicode) -> dict | None:
     """Return {'target': ..., 'display': ...} for the first wikilink in a cell, or None."""
     links = cell_wikicode.filter_wikilinks()
@@ -14,6 +15,7 @@ def _first_wikilink(cell_wikicode) -> dict | None:
     target = str(link.title).strip()
     display = str(link.text).strip() if link.text is not None else target
     return {"target": target, "display": display}
+
 
 def _parse_dts(cell_wikicode) -> date | None:
     """Extract a date from a {{dts|YYYY|Mon|DD}} template."""
@@ -32,6 +34,7 @@ def _parse_dts(cell_wikicode) -> date | None:
                 continue
     return None
 
+
 def parse_scheduled_events(wikitext: str) -> list[dict]:
     """
     Parses the "Scheduled events" wikitable (List_of_UFC_events) into a list
@@ -46,7 +49,12 @@ def parse_scheduled_events(wikitext: str) -> list[dict]:
     # Header block is everything before the first row separator — check it
     # matches what we expect before trusting the column order below.
     header_block, *row_blocks = re.split(r"\n\|-\s*\n?", table_text)
-    headers = [h.strip() for h in re.findall(r'^!\s*(?:scope="col"\s*\|\s*)?(.+)$', header_block, re.MULTILINE)]
+    headers = [
+        h.strip()
+        for h in re.findall(
+            r'^!\s*(?:scope="col"\s*\|\s*)?(.+)$', header_block, re.MULTILINE
+        )
+    ]
     if headers != EXPECTED_HEADERS:
         raise ValueError(f"Unexpected table columns: {headers}")
 
@@ -70,15 +78,18 @@ def parse_scheduled_events(wikitext: str) -> list[dict]:
         if event_link is None:
             continue  # no linked event page — nothing to resolve a pageid from
 
-        events.append({
-            "event_title": event_link["target"],
-            "event_display_name": event_link["display"],
-            "date": _parse_dts(date_cell),
-            "venue": venue_cell.strip_code().strip(),
-            "location": location_cell.strip_code().strip(),
-        })
+        events.append(
+            {
+                "event_title": event_link["target"],
+                "event_display_name": event_link["display"],
+                "date": _parse_dts(date_cell),
+                "venue": venue_cell.strip_code().strip(),
+                "location": location_cell.strip_code().strip(),
+            }
+        )
 
     return events
+
 
 def _get_param(template, index: int) -> str:
     """Extract and clean positional param `index` (1-based) from a template, or '' if absent."""
@@ -87,6 +98,7 @@ def _get_param(template, index: int) -> str:
         value = str(template.get(key).value)
         return mwparserfromhell.parse(value).strip_code().strip()
     return ""
+
 
 def _get_param_and_link(template, index: int) -> tuple[str, str | None]:
     """
@@ -106,6 +118,7 @@ def _get_param_and_link(template, index: int) -> tuple[str, str | None]:
 
     display_text = mwparserfromhell.parse(str(value_wikicode)).strip_code().strip()
     return display_text, link_target
+
 
 def parse_fight_card(wikitext: str) -> list[dict]:
     """
@@ -129,21 +142,24 @@ def parse_fight_card(wikitext: str) -> list[dict]:
         fighter_red_raw, fighter_red_link = _get_param_and_link(template, 2)
         fighter_blue_raw, fighter_blue_link = _get_param_and_link(template, 4)
 
-        bouts.append({
-            "card_tier": current_tier,
-            "weight_class": _get_param(template, 1),
-            "fighter_red": fighter_red_raw.replace("(c)", "").strip(),
-            "fighter_red_link_target": fighter_red_link,
-            "fighter_red_is_champion": "(c)" in fighter_red_raw,
-            "connector": _get_param(template, 3),   # "vs." = not yet fought, "def." = result recorded
-            "fighter_blue": fighter_blue_raw.replace("(c)", "").strip(),
-            "fighter_blue_link_target": fighter_blue_link,
-            "fighter_blue_is_champion": "(c)" in fighter_blue_raw,
-            "method": _get_param(template, 5),
-            "round": _get_param(template, 6),
-            "time": _get_param(template, 7),
-            "notes": _get_param(template, 8),
-        })
+        bouts.append(
+            {
+                "card_tier": current_tier,
+                "weight_class": _get_param(template, 1),
+                "fighter_red": fighter_red_raw.replace("(c)", "").strip(),
+                "fighter_red_link_target": fighter_red_link,
+                "fighter_red_is_champion": "(c)" in fighter_red_raw,
+                "connector": _get_param(
+                    template, 3
+                ),  # "vs." = not yet fought, "def." = result recorded
+                "fighter_blue": fighter_blue_raw.replace("(c)", "").strip(),
+                "fighter_blue_link_target": fighter_blue_link,
+                "fighter_blue_is_champion": "(c)" in fighter_blue_raw,
+                "method": _get_param(template, 5),
+                "round": _get_param(template, 6),
+                "time": _get_param(template, 7),
+                "notes": _get_param(template, 8),
+            }
+        )
 
     return bouts
-

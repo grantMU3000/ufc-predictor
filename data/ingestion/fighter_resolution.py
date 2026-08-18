@@ -15,16 +15,19 @@ from sqlalchemy import text
 FUZZY_MATCH_THRESHOLD = 90
 LOG_DIR = Path("data/ingestion/logs")
 
+
 def _normalize(name: str) -> str:
     """Lowercase, strip diacritics, collapse whitespace — for comparison only, never stored."""
     nfkd = unicodedata.normalize("NFKD", name)
     ascii_name = nfkd.encode("ascii", "ignore").decode("ascii")
     return re.sub(r"\s+", " ", ascii_name).strip().lower()
 
+
 def _blocking_key(normalized_name: str) -> str:
     """First letter of the last name-token — narrows fuzzy-match candidates before scoring."""
     tokens = normalized_name.split()
     return tokens[-1][0] if tokens else ""
+
 
 @dataclass
 class FighterRoster:
@@ -34,15 +37,18 @@ class FighterRoster:
     hold in memory and cheap enough to load once, versus a DB round-trip
     per name on a card of ~20 fighters.
     """
-    by_id: dict[int, str]                    # fighter_id -> real_name
-    name_index: dict[str, list[int]]          # normalized real_name -> [fighter_id, ...]
-    alias_index: dict[str, int]                # normalized alias -> fighter_id
+
+    by_id: dict[int, str]  # fighter_id -> real_name
+    name_index: dict[str, list[int]]  # normalized real_name -> [fighter_id, ...]
+    alias_index: dict[str, int]  # normalized alias -> fighter_id
 
     @classmethod
     def load(cls, engine) -> "FighterRoster":
         """Loaded via pandas, matching how the rest of the pipeline reads from Postgres."""
         fighters_df = pd.read_sql("SELECT id, real_name FROM fighters", engine)
-        aliases_df = pd.read_sql("SELECT fighter_id, alias_name FROM fighter_aliases", engine)
+        aliases_df = pd.read_sql(
+            "SELECT fighter_id, alias_name FROM fighter_aliases", engine
+        )
 
         by_id = dict(zip(fighters_df["id"], fighters_df["real_name"]))
         name_index: dict[str, list[int]] = {}
@@ -50,28 +56,36 @@ class FighterRoster:
             name_index.setdefault(_normalize(name), []).append(fid)
 
         alias_index: dict[str, int] = {}
-        for alias_name, fighter_id in zip(aliases_df["alias_name"], aliases_df["fighter_id"]):
+        for alias_name, fighter_id in zip(
+            aliases_df["alias_name"], aliases_df["fighter_id"]
+        ):
             norm = _normalize(alias_name)
             if norm in alias_index and alias_index[norm] != fighter_id:
-                _log("alias_collisions.jsonl", {
-                    "alias_name": alias_name,
-                    "existing_fighter_id": alias_index[norm],
-                    "conflicting_fighter_id": fighter_id,
-                })
+                _log(
+                    "alias_collisions.jsonl",
+                    {
+                        "alias_name": alias_name,
+                        "existing_fighter_id": alias_index[norm],
+                        "conflicting_fighter_id": fighter_id,
+                    },
+                )
                 continue  # keep the first-seen mapping, don't silently overwrite
             alias_index[norm] = fighter_id
 
         return cls(by_id=by_id, name_index=name_index, alias_index=alias_index)
+
 
 @dataclass
 class ResolvedFighter:
     fighter_id: int | None
     match_type: str  # "alias" | "exact" | "fuzzy" | "collision" | "unresolved"
 
+
 def _log(filename: str, record: dict) -> None:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     with (LOG_DIR / filename).open("a", encoding="utf-8") as f:
         f.write(json.dumps(record, default=str) + "\n")
+
 
 def _add_alias(engine, fighter_id: int, alias_name: str) -> None:
     with engine.begin() as conn:
@@ -83,6 +97,7 @@ def _add_alias(engine, fighter_id: int, alias_name: str) -> None:
             """),
             {"fighter_id": fighter_id, "alias_name": alias_name},
         )
+
 
 def resolve_fighter(
     engine,
@@ -118,23 +133,29 @@ def resolve_fighter(
     if len(exact_matches) > 1:
         # Real collision (e.g. two "Bruno Silva"s) and no wikilink to disambiguate —
         # don't guess. Route to the same manual-review process as Greco's collisions.
-        _log("fighter_collisions.jsonl", {
-            "display_name": display_name,
-            "wikipedia_link_target": wikipedia_link_target,
-            "candidate_fighter_ids": exact_matches,
-        })
+        _log(
+            "fighter_collisions.jsonl",
+            {
+                "display_name": display_name,
+                "wikipedia_link_target": wikipedia_link_target,
+                "candidate_fighter_ids": exact_matches,
+            },
+        )
         return ResolvedFighter(None, "collision")
 
     # 3. Blocked fuzzy match
     block_key = _blocking_key(norm_display)
     candidate_pool = {
-        fid: _normalize(name) for fid, name in roster.by_id.items()
+        fid: _normalize(name)
+        for fid, name in roster.by_id.items()
         if _blocking_key(_normalize(name)) == block_key
     }
     if candidate_pool:
         match = process.extractOne(
-            norm_display, candidate_pool,
-            scorer=fuzz.WRatio, score_cutoff=FUZZY_MATCH_THRESHOLD,
+            norm_display,
+            candidate_pool,
+            scorer=fuzz.WRatio,
+            score_cutoff=FUZZY_MATCH_THRESHOLD,
         )
         if match is not None:
             _, _, fighter_id = match
@@ -144,11 +165,15 @@ def resolve_fighter(
             return ResolvedFighter(fighter_id, "fuzzy")
 
     # 4. Nothing found — log for manual review, caller decides whether to stub
-    _log("unresolved_fighters.jsonl", {
-        "display_name": display_name,
-        "wikipedia_link_target": wikipedia_link_target,
-    })
+    _log(
+        "unresolved_fighters.jsonl",
+        {
+            "display_name": display_name,
+            "wikipedia_link_target": wikipedia_link_target,
+        },
+    )
     return ResolvedFighter(None, "unresolved")
+
 
 def create_stub_fighter(engine, roster: FighterRoster, display_name: str) -> int:
     """
