@@ -99,9 +99,7 @@ def get_closing_lines(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
 
     # Step 4: median across books per (bout_id, fighter_id).
     result = (
-        closing.groupby(["bout_id", "fighter_id"])["market_prob"]
-        .median()
-        .reset_index()
+        closing.groupby(["bout_id", "fighter_id"])["market_prob"].median().reset_index()
     )
 
     return result

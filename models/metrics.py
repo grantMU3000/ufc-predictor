@@ -156,11 +156,17 @@ def reliability_curve(
     for i in range(n_bins):
         mask = bin_idx == i
         count = int(mask.sum())
-        rows.append({
-            "bin_low": edges[i],
-            "bin_high": edges[i + 1],
-            "mean_predicted": float(y_prob[mask].mean()) if count > 0 else float("nan"),
-            "actual_rate": float(y_true[mask].mean()) if count > 0 else float("nan"),
-            "count": count,
-        })
+        rows.append(
+            {
+                "bin_low": edges[i],
+                "bin_high": edges[i + 1],
+                "mean_predicted": float(y_prob[mask].mean())
+                if count > 0
+                else float("nan"),
+                "actual_rate": float(y_true[mask].mean())
+                if count > 0
+                else float("nan"),
+                "count": count,
+            }
+        )
     return pd.DataFrame(rows)

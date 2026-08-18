@@ -101,10 +101,10 @@ def _symmetrize_row(
     symmetrized = {}
     for key, value in row.items():
         if key.startswith(self_source):
-            suffix = key[len(self_source):]
+            suffix = key[len(self_source) :]
             symmetrized[f"self_{suffix}"] = value
         elif key.startswith(opp_source):
-            suffix = key[len(opp_source):]
+            suffix = key[len(opp_source) :]
             if suffix in _STANCE_MATCHUP_SUFFIXES:
                 continue  # dropped — redundant mirror, see module note
             symmetrized[f"opp_{suffix}"] = value
@@ -115,6 +115,7 @@ def _symmetrize_row(
     symmetrized["opp_fighter_id"] = opp_fighter_id
     symmetrized["source_corner"] = "red" if self_source == "red_" else "blue"
     return symmetrized
+
 
 def build_symmetrized_dataset(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
     """

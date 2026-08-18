@@ -12,7 +12,6 @@ copy-paste away from becoming a feature itself — and a model that
 can see the answer will look great and mean nothing.
 """
 
-
 import duckdb
 import pandas as pd
 
@@ -66,6 +65,7 @@ def get_completed_decided_bouts(con: duckdb.DuckDBPyConnection) -> pd.DataFrame:
         ORDER BY e.event_date ASC
     """
     return con.execute(query).df()
+
 
 def raw_red_corner_win_rate(labels: pd.DataFrame) -> float:
     """

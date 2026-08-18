@@ -108,7 +108,7 @@ def to_differential(
     matched_opp_cols = set()
 
     for col in self_cols:
-        suffix = col[len("self_"):]
+        suffix = col[len("self_") :]
         if suffix == "won":
             continue  # already pulled out as y, never a feature
         if suffix in _ID_SUFFIXES:
@@ -123,8 +123,12 @@ def to_differential(
             continue
 
         matched_opp_cols.add(opp_col)
-        if pd.api.types.is_numeric_dtype(df[col]) and pd.api.types.is_numeric_dtype(df[opp_col]):
-            diff_data[f"diff_{suffix}"] = df[col].astype(float) - df[opp_col].astype(float)
+        if pd.api.types.is_numeric_dtype(df[col]) and pd.api.types.is_numeric_dtype(
+            df[opp_col]
+        ):
+            diff_data[f"diff_{suffix}"] = df[col].astype(float) - df[opp_col].astype(
+                float
+            )
             included.append(suffix)
         else:
             non_numeric_dropped.append(suffix)
@@ -134,17 +138,21 @@ def to_differential(
     # output, but cheap to check and loud if it's ever wrong.
     unmatched_opp = opp_cols - matched_opp_cols
     for col in unmatched_opp:
-        opp_only_dropped.append(col[len("opp_"):])
+        opp_only_dropped.append(col[len("opp_") :])
 
     X = pd.DataFrame(diff_data, index=df.index)
 
     if verbose:
         print(f"to_differential: {len(included)} diff_ features built")
         if self_only_dropped:
-            print(f"  dropped (self_-only, no opp_ pair, would break symmetry): {self_only_dropped}")
+            print(
+                f"  dropped (self_-only, no opp_ pair, would break symmetry): {self_only_dropped}"
+            )
         if non_numeric_dropped:
             print(f"  dropped (non-numeric, can't subtract): {non_numeric_dropped}")
         if opp_only_dropped:
-            print(f"  WARNING dropped (opp_-only, no self_ pair — unexpected): {opp_only_dropped}")
+            print(
+                f"  WARNING dropped (opp_-only, no self_ pair — unexpected): {opp_only_dropped}"
+            )
 
     return X, y

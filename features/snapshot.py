@@ -23,10 +23,19 @@ from dotenv import load_dotenv
 load_dotenv()
 
 OUTPUT_DIR = Path("data/processed")
-TABLES = ["fighters", "events", "bouts", "bout_stats", "fighter_aliases", "odds_snapshots"]
+TABLES = [
+    "fighters",
+    "events",
+    "bouts",
+    "bout_stats",
+    "fighter_aliases",
+    "odds_snapshots",
+]
 
 
-def export_postgres_to_parquet(database_url: str, output_dir: Path = OUTPUT_DIR) -> None:
+def export_postgres_to_parquet(
+    database_url: str, output_dir: Path = OUTPUT_DIR
+) -> None:
     """
     Copy each table in TABLES from Postgres into its own Parquet file.
 

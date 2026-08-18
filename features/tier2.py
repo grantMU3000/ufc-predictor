@@ -19,6 +19,7 @@ ROUND_LENGTH_SECONDS = 300  # 5-minute UFC rounds. Safe across this
 # round lengths) are already excluded at ingestion (PLAN_ADDENDUM §7),
 # so every bout this function will ever see follows the modern format.
 
+
 def _is_decision_method(method: str | None) -> bool:
     """
     True if a bout's method string represents a decision (any of
@@ -29,6 +30,7 @@ def _is_decision_method(method: str | None) -> bool:
     not two copies that could quietly drift apart later.
     """
     return method is not None and method.strip().lower().startswith("decision")
+
 
 def get_fight_duration_seconds(
     method: str | None,
@@ -89,7 +91,10 @@ def _get_prior_fight_durations(
     durations = []
     for _, bout in prior_bouts.iterrows():
         duration = get_fight_duration_seconds(
-            bout["method"], bout["ending_round"], bout["ending_time_seconds"], bout["scheduled_rounds"]
+            bout["method"],
+            bout["ending_round"],
+            bout["ending_time_seconds"],
+            bout["scheduled_rounds"],
         )
         if duration is not None:
             durations.append(duration)
@@ -101,6 +106,7 @@ def get_total_seconds_fought(
 ) -> float:
     """Total seconds fought across all prior bouts. 0.0 for a debutant — see original docstring for why that's a true zero, not a gap."""
     return sum(_get_prior_fight_durations(con, fighter_id, as_of_date), 0.0)
+
 
 def _rate_per_time_window(
     con: duckdb.DuckDBPyConnection,
@@ -188,6 +194,7 @@ def takedowns_landed_per_15(
         con, fighter_id, as_of_date, "self_takedowns_landed", window_seconds=900
     )
 
+
 def submissions_attempted_per_15(
     con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date
 ) -> float | None:
@@ -195,6 +202,7 @@ def submissions_attempted_per_15(
     return _rate_per_time_window(
         con, fighter_id, as_of_date, "self_sub_attempts", window_seconds=900
     )
+
 
 def _column_ratio(
     con: duckdb.DuckDBPyConnection,
@@ -244,7 +252,11 @@ def striking_accuracy(
 ) -> float | None:
     """Significant strikes landed ÷ attempted — this fighter's own striking accuracy."""
     return _column_ratio(
-        con, fighter_id, as_of_date, "self_sig_strikes_landed", "self_sig_strikes_attempted"
+        con,
+        fighter_id,
+        as_of_date,
+        "self_sig_strikes_landed",
+        "self_sig_strikes_attempted",
     )
 
 
@@ -270,8 +282,13 @@ def significant_strike_rate(
     striker, even with similar overall accuracy.
     """
     return _column_ratio(
-        con, fighter_id, as_of_date, "self_sig_strikes_landed", "self_total_strikes_landed"
+        con,
+        fighter_id,
+        as_of_date,
+        "self_sig_strikes_landed",
+        "self_total_strikes_landed",
     )
+
 
 def striking_defense(
     con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date
@@ -288,7 +305,11 @@ def striking_defense(
     "can't compute a ratio from 0" guard as _column_ratio.
     """
     opponent_accuracy = _column_ratio(
-        con, fighter_id, as_of_date, "opp_sig_strikes_landed", "opp_sig_strikes_attempted"
+        con,
+        fighter_id,
+        as_of_date,
+        "opp_sig_strikes_landed",
+        "opp_sig_strikes_attempted",
     )
     if opponent_accuracy is None:
         return None
@@ -310,6 +331,7 @@ def takedown_defense(
         return None
     return 1 - opponent_accuracy
 
+
 def _decided_bouts(prior_bouts: pd.DataFrame) -> pd.DataFrame:
     """
     Filters get_prior_bouts' output down to fights with a real
@@ -325,6 +347,7 @@ def _decided_bouts(prior_bouts: pd.DataFrame) -> pd.DataFrame:
     through as a normal decided bout.
     """
     return prior_bouts[prior_bouts["self_won"].notna()]
+
 
 def career_win_percentage(
     con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date
@@ -346,6 +369,7 @@ def career_win_percentage(
     win_count = int(decided["self_won"].astype(bool).sum())
     return win_count / len(decided)
 
+
 def decision_win_percentage(
     con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date
 ) -> float | None:
@@ -361,8 +385,11 @@ def decision_win_percentage(
     if decided.empty:
         return None
 
-    is_decision_win = decided["self_won"].astype(bool) & decided["method"].apply(_is_decision_method)
+    is_decision_win = decided["self_won"].astype(bool) & decided["method"].apply(
+        _is_decision_method
+    )
     return int(is_decision_win.sum()) / len(decided)
+
 
 def decision_loss_percentage(
     con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date
@@ -378,8 +405,11 @@ def decision_loss_percentage(
     if decided.empty:
         return None
 
-    is_decision_loss = (~decided["self_won"].astype(bool)) & decided["method"].apply(_is_decision_method)
+    is_decision_loss = (~decided["self_won"].astype(bool)) & decided["method"].apply(
+        _is_decision_method
+    )
     return int(is_decision_loss.sum()) / len(decided)
+
 
 def submission_win_count(
     con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date
@@ -402,6 +432,7 @@ def submission_win_count(
         prior_bouts["method"] == "Submission"
     )
     return int(is_submission_win.sum())
+
 
 def submission_success_rate(
     con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date
@@ -429,6 +460,7 @@ def submission_success_rate(
         return None
 
     return win_count / total_attempts
+
 
 def _wins_only(prior_bouts: pd.DataFrame) -> pd.DataFrame:
     """Decided prior bouts this fighter WON (see _decided_bouts) — includes DQ wins."""
@@ -525,6 +557,7 @@ def sub_loss_rate(
     is_sub_loss = losses["method"] == "Submission"
     return int(is_sub_loss.sum()) / len(losses)
 
+
 def total_ufc_fights(
     con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date
 ) -> int:
@@ -581,6 +614,7 @@ def title_fight_experience(
         return 0
     return int(prior_bouts["is_title_fight"].sum())
 
+
 def times_knocked_down(
     con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date
 ) -> int:
@@ -599,10 +633,16 @@ def knockdown_rate(
     con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date
 ) -> float | None:
     """Knockdowns SCORED per 15 minutes of fight time — reuses _rate_per_time_window, self_knockdowns as numerator."""
-    return _rate_per_time_window(con, fighter_id, as_of_date, "self_knockdowns", window_seconds=900)
+    return _rate_per_time_window(
+        con, fighter_id, as_of_date, "self_knockdowns", window_seconds=900
+    )
+
 
 def _time_percentage(
-    con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date, seconds_column: str
+    con: duckdb.DuckDBPyConnection,
+    fighter_id: int,
+    as_of_date: date,
+    seconds_column: str,
 ) -> float | None:
     """Shared plumbing for control_time_percentage/time_controlled_percentage — a column of seconds, divided by total seconds fought. None if the fighter has 0 seconds fought."""
     total_seconds = get_total_seconds_fought(con, fighter_id, as_of_date)
@@ -612,14 +652,19 @@ def _time_percentage(
     return prior_stats[seconds_column].sum() / total_seconds
 
 
-def control_time_percentage(con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date) -> float | None:
+def control_time_percentage(
+    con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date
+) -> float | None:
     """% of fight time this fighter spent CONTROLLING opponents (self_control_time_seconds)."""
     return _time_percentage(con, fighter_id, as_of_date, "self_control_time_seconds")
 
 
-def time_controlled_percentage(con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date) -> float | None:
+def time_controlled_percentage(
+    con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date: date
+) -> float | None:
     """% of fight time this fighter spent BEING CONTROLLED (opp_control_time_seconds)."""
     return _time_percentage(con, fighter_id, as_of_date, "opp_control_time_seconds")
+
 
 def _round_split_decay(prior_stats: pd.DataFrame, column_name: str) -> float | None:
     """

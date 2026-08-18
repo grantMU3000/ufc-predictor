@@ -169,6 +169,7 @@ def stance_matchup(
 
     return descriptive, is_open_stance
 
+
 _BOUT_COLUMNS = {"weight_class", "is_title_fight", "scheduled_rounds"}
 
 
@@ -277,7 +278,9 @@ def is_title_fight_at_bout(con: duckdb.DuckDBPyConnection, bout_id: int) -> bool
     return _fetch_bout_column(con, bout_id, "is_title_fight")
 
 
-def scheduled_rounds_at_bout(con: duckdb.DuckDBPyConnection, bout_id: int) -> int | None:
+def scheduled_rounds_at_bout(
+    con: duckdb.DuckDBPyConnection, bout_id: int
+) -> int | None:
     """
     How many rounds this bout was scheduled for (3 or 5). Same
     bout-level reasoning as weight_class_at_bout.

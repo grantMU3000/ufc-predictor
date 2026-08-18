@@ -104,8 +104,10 @@ if __name__ == "__main__":
     # scored, since the inner join silently drops uncovered bouts.
     # val is symmetrized (2 rows/bout), so compare row counts, not
     # bout counts, to match what evaluate() actually sees.
-    print(f"val rows: {len(val)} | scored rows: {len(merged)} "
-          f"({len(merged) / len(val):.1%} coverage)")
+    print(
+        f"val rows: {len(val)} | scored rows: {len(merged)} "
+        f"({len(merged) / len(val):.1%} coverage)"
+    )
 
     result = evaluate(y_true, y_prob, name="market_baseline")
     print(result)
