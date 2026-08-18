@@ -5,14 +5,15 @@ Revises: 873526c2bf73
 Create Date: 2026-08-10 13:35:04.052122
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '9cd265588036'
-down_revision: str | Sequence[str] | None = '873526c2bf73'
+revision: str = "9cd265588036"
+down_revision: str | Sequence[str] | None = "873526c2bf73"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

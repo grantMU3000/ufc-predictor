@@ -1,10 +1,11 @@
 """create initial schema
 
 Revision ID: 38e3db2c80a5
-Revises: 
+Revises:
 Create Date: 2026-08-04 14:43:00.121102
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -12,7 +13,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '38e3db2c80a5'
+revision: str = "38e3db2c80a5"
 down_revision: str | Sequence[str] | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -81,9 +82,7 @@ def upgrade() -> None:
         ),
         sa.Column("scheduled_rounds", sa.SmallInteger(), nullable=False),
         sa.Column("card_position", sa.Text(), nullable=True),
-        sa.Column(
-            "status", sa.Text(), nullable=False, server_default="scheduled"
-        ),
+        sa.Column("status", sa.Text(), nullable=False, server_default="scheduled"),
         sa.Column(
             "winner_id", sa.BigInteger(), sa.ForeignKey("fighters.id"), nullable=True
         ),
@@ -105,8 +104,8 @@ def upgrade() -> None:
         ),
         sa.CheckConstraint(
             "winner_id IS NULL OR winner_id = fighter_red_id OR winner_id = fighter_blue_id",
-            name="ck_bouts_valid_winner"
-        )
+            name="ck_bouts_valid_winner",
+        ),
     )
 
     op.create_table(
@@ -119,29 +118,111 @@ def upgrade() -> None:
             "fighter_id", sa.BigInteger(), sa.ForeignKey("fighters.id"), nullable=False
         ),
         sa.Column("round_number", sa.SmallInteger(), nullable=False),
-        sa.Column("sig_strikes_landed", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("sig_strikes_attempted", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("total_strikes_landed", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("total_strikes_attempted", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("takedowns_landed", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("takedowns_attempted", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("sub_attempts", sa.SmallInteger(), nullable=False, server_default="0"),
+        sa.Column(
+            "sig_strikes_landed", sa.SmallInteger(), nullable=False, server_default="0"
+        ),
+        sa.Column(
+            "sig_strikes_attempted",
+            sa.SmallInteger(),
+            nullable=False,
+            server_default="0",
+        ),
+        sa.Column(
+            "total_strikes_landed",
+            sa.SmallInteger(),
+            nullable=False,
+            server_default="0",
+        ),
+        sa.Column(
+            "total_strikes_attempted",
+            sa.SmallInteger(),
+            nullable=False,
+            server_default="0",
+        ),
+        sa.Column(
+            "takedowns_landed", sa.SmallInteger(), nullable=False, server_default="0"
+        ),
+        sa.Column(
+            "takedowns_attempted", sa.SmallInteger(), nullable=False, server_default="0"
+        ),
+        sa.Column(
+            "sub_attempts", sa.SmallInteger(), nullable=False, server_default="0"
+        ),
         sa.Column("knockdowns", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("control_time_seconds", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("head_strikes_landed", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("head_strikes_attempted", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("body_strikes_landed", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("body_strikes_attempted", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("leg_strikes_landed", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("leg_strikes_attempted", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("distance_strikes_landed", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("distance_strikes_attempted", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("clinch_strikes_landed", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("clinch_strikes_attempted", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("ground_strikes_landed", sa.SmallInteger(), nullable=False, server_default="0"),
-        sa.Column("ground_strikes_attempted", sa.SmallInteger(), nullable=False, server_default="0"),
+        sa.Column(
+            "control_time_seconds",
+            sa.SmallInteger(),
+            nullable=False,
+            server_default="0",
+        ),
+        sa.Column(
+            "head_strikes_landed", sa.SmallInteger(), nullable=False, server_default="0"
+        ),
+        sa.Column(
+            "head_strikes_attempted",
+            sa.SmallInteger(),
+            nullable=False,
+            server_default="0",
+        ),
+        sa.Column(
+            "body_strikes_landed", sa.SmallInteger(), nullable=False, server_default="0"
+        ),
+        sa.Column(
+            "body_strikes_attempted",
+            sa.SmallInteger(),
+            nullable=False,
+            server_default="0",
+        ),
+        sa.Column(
+            "leg_strikes_landed", sa.SmallInteger(), nullable=False, server_default="0"
+        ),
+        sa.Column(
+            "leg_strikes_attempted",
+            sa.SmallInteger(),
+            nullable=False,
+            server_default="0",
+        ),
+        sa.Column(
+            "distance_strikes_landed",
+            sa.SmallInteger(),
+            nullable=False,
+            server_default="0",
+        ),
+        sa.Column(
+            "distance_strikes_attempted",
+            sa.SmallInteger(),
+            nullable=False,
+            server_default="0",
+        ),
+        sa.Column(
+            "clinch_strikes_landed",
+            sa.SmallInteger(),
+            nullable=False,
+            server_default="0",
+        ),
+        sa.Column(
+            "clinch_strikes_attempted",
+            sa.SmallInteger(),
+            nullable=False,
+            server_default="0",
+        ),
+        sa.Column(
+            "ground_strikes_landed",
+            sa.SmallInteger(),
+            nullable=False,
+            server_default="0",
+        ),
+        sa.Column(
+            "ground_strikes_attempted",
+            sa.SmallInteger(),
+            nullable=False,
+            server_default="0",
+        ),
         sa.UniqueConstraint(
-            "bout_id", "fighter_id", "round_number", name="uq_bout_stats_bout_fighter_round"
+            "bout_id",
+            "fighter_id",
+            "round_number",
+            name="uq_bout_stats_bout_fighter_round",
         ),
     )
 
@@ -211,8 +292,11 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.func.now(),
         ),
-        sa.UniqueConstraint("prediction_id", name="uq_prediction_results_prediction_id"),
+        sa.UniqueConstraint(
+            "prediction_id", name="uq_prediction_results_prediction_id"
+        ),
     )
+
 
 def downgrade() -> None:
     """Downgrade schema."""

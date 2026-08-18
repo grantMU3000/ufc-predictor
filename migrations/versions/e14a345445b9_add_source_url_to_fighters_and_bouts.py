@@ -5,13 +5,14 @@ Revises: 38e3db2c80a5
 Create Date: 2026-08-05 15:20:44.441399
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = 'e14a345445b9'
+revision: str = "e14a345445b9"
 down_revision: str | Sequence[str] | None = "38e3db2c80a5"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -19,19 +20,11 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    op.add_column(
-        "fighters", sa.Column("source_url", sa.Text(), nullable=True)
-    )
-    op.create_unique_constraint(
-        "uq_fighters_source_url", "fighters", ["source_url"]
-    )
+    op.add_column("fighters", sa.Column("source_url", sa.Text(), nullable=True))
+    op.create_unique_constraint("uq_fighters_source_url", "fighters", ["source_url"])
 
-    op.add_column(
-        "bouts", sa.Column("source_url", sa.Text(), nullable=True)
-    )
-    op.create_unique_constraint(
-        "uq_bouts_source_url", "bouts", ["source_url"]
-    )
+    op.add_column("bouts", sa.Column("source_url", sa.Text(), nullable=True))
+    op.create_unique_constraint("uq_bouts_source_url", "bouts", ["source_url"])
 
 
 def downgrade() -> None:

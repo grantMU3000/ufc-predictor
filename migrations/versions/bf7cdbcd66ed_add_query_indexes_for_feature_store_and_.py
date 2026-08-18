@@ -13,13 +13,14 @@ Revises: f29818945860
 Create Date: 2026-08-14 18:35:20.837187
 
 """
+
 from collections.abc import Sequence
 
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = 'bf7cdbcd66ed'
-down_revision: str | Sequence[str] | None = 'f29818945860'
+revision: str = "bf7cdbcd66ed"
+down_revision: str | Sequence[str] | None = "f29818945860"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
