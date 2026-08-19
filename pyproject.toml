@@ -38,3 +38,7 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[[tool.mypy.overrides]]
+module = "sklearn.*"
+ignore_missing_imports = true

@@ -12,16 +12,15 @@ row from one script, one run, one consistent evaluation pass.
 import duckdb
 import numpy as np
 import pandas as pd
-
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from features.differential import to_differential
-from features.odds import get_closing_lines
 from features.elo import compute_elo_ratings, expected_score, k_factor_by_experience
 from features.labels import get_completed_decided_bouts
+from features.odds import get_closing_lines
 from features.split import TEST_START
 
 

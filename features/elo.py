@@ -28,12 +28,19 @@ earlier answers," so the filtering happens upstream, deliberately,
 every time this gets called before Week 3.
 """
 
-import pandas as pd
 import math
-from typing import Callable
+from collections.abc import Callable
+from typing import cast, overload
+
+import numpy as np
+import pandas as pd
 
 
-def expected_score(rating_a: float, rating_b: float) -> float:
+@overload
+def expected_score(rating_a: float, rating_b: float) -> float: ...
+@overload
+def expected_score(rating_a: np.ndarray, rating_b: np.ndarray) -> np.ndarray: ...
+def expected_score(rating_a, rating_b):
     """
     The classic Elo formula: given two ratings, what's fighter A's
     probability of beating fighter B?
@@ -42,6 +49,10 @@ def expected_score(rating_a: float, rating_b: float) -> float:
     to roughly a 76% win probability for the higher-rated fighter; a
     400-point gap is about 91%. The curve is symmetric —
     expected_score(a, b) always equals 1 - expected_score(b, a).
+
+    Works elementwise on either scalars or numpy arrays — the two
+    @overload signatures above just tell mypy which shape comes back
+    for which input, since the arithmetic itself needs no branching.
     """
     return 1.0 / (1.0 + 10 ** ((rating_b - rating_a) / 400))
 
@@ -120,8 +131,8 @@ def compute_elo_ratings(
     rows = []
 
     for bout in bouts.itertuples(index=False):
-        red_id = bout.fighter_red_id
-        blue_id = bout.fighter_blue_id
+        red_id = cast(int, bout.fighter_red_id)
+        blue_id = cast(int, bout.fighter_blue_id)
 
         red_rating = ratings.get(red_id, initial_rating)
         blue_rating = ratings.get(blue_id, initial_rating)
