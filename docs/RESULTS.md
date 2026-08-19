@@ -9,6 +9,7 @@ Initial baseline check: 1,037 distinct val bouts, and 954 with odds
 | Logistic Regression (odds-covered subset) | 1,870 | 0.6043 | 0.6634 | 0.2356 | 0.0209 |
 | Elo (experience-based K, full val) | 2,034 | 0.5610 | 0.6781 | 0.2426 | 0.0059 |
 | Elo (experience-based K, odds-covered subset) | 1,870 | 0.5615 | 0.6788 | 0.2430 | 0.0041 |
+| LightGBM Untuned (full val) | 2,034 | 0.6165 | 0.6535 | 0.2306 | 0.0214 |
 
 Coverage: 1,870 / 2,034 val rows (91.9%) had at least one sportsbook
 odds snapshot. Rows without coverage are excluded, not imputed.
