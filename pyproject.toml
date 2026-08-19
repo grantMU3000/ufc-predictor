@@ -12,6 +12,7 @@ dependencies = [
     "duckdb>=1.5.5",
     "lightgbm>=4.7.0",
     "mwparserfromhell>=0.7.2",
+    "optuna>=4.9.0",
     "pandas>=3.0.5",
     "psycopg2-binary>=2.9.12",
     "pyarrow>=25.0.1",

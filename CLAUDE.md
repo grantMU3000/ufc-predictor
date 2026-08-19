@@ -19,6 +19,7 @@ The human writes, by hand: feature functions, model code, the evaluation harness
 - Never use a random train/test split. Always strictly temporal: train ≤2022, validate 2023–2024, test 2025+.
 - Treat any accuracy jump of more than ~3 points from a single change as a leak until proven otherwise. Log the investigation in `LEAKAGE_LOG.md` before accepting the result.
 - The test set is locked until Week 3 of the plan. Flag it immediately if any change touches it before then.
+- For any code written, ensure it follows ruff & mypy guidelines. This goes for any up/downstream code that's affected by what you write
 
 ## Conventions
 - One PR per day, merged, with green CI (`ruff`, `mypy`, `pytest`)
