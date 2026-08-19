@@ -11,6 +11,8 @@ Initial baseline check: 1,037 distinct val bouts, and 954 with odds
 | Elo (experience-based K, odds-covered subset) | 1,870 | 0.5615 | 0.6788 | 0.2430 | 0.0041 |
 | LightGBM Untuned (full val) | 2,034 | 0.6165 | 0.6589 | 0.2329 | 0.0191 |
 | LightGBM Untuned (odds-covered subset) | 1,870 | 0.6246 | 0.6535 | 0.2306 | 0.0214 |
+| LightGBM Tuned (full val) | 2,034 | 0.6224 | 0.6529 | 0.2304 | 0.0235 |
+| LightGBM Tuned (odds-covered subset) | 1,870 | 0.6305 | 0.6483 | 0.2282 | 0.0318 |
 
 Coverage: 1,870 / 2,034 val rows (91.9%) had at least one sportsbook
 odds snapshot. Rows without coverage are excluded, not imputed.
@@ -54,3 +56,17 @@ values only exist for about a third of rows. This isn't a reason to
 drop the feature — just a reason not to read a small or noisy
 coefficient on it as "submission ability doesn't matter." It mostly
 means "this stat mostly isn't there yet."
+
+Tuned via Optuna, 60 trials, expanding-window CV (2011-2022 folds,
+`models/cv.py`) on train only — val never touched during search.
+Best CV log loss: 0.6602 (not directly comparable to the val numbers
+above; CV folds average in early, thin-history windows that don't
+reflect the full model's training population).
+
+**On tuned ECE vs. untuned:** tuning optimized for log loss and
+improved it (0.6535 -> 0.6483, odds-covered), but ECE moved the wrong
+direction (0.0214 -> 0.0318) — still comfortably inside the ≤0.05
+target, but a real, not noise-level, shift. Expected: log loss
+rewards confident correct calls, and tuning found a model willing to
+be more confident, at some cost to calibration. Wednesday's isotonic/
+Platt calibration step exists specifically to correct exactly this.

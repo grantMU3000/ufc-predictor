@@ -19,13 +19,16 @@ tell the model "this debutant has an average career," which is false
 information, when "we don't know yet" (NaN) is the true fact.
 """
 
+import json
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
+from pathlib import Path
 
 from features.build_lgbm_matrix import build_train_val_with_elo
 from features.differential import to_differential
 from models.baselines import _load_val_and_odds, _odds_covered_mask
+from models.tune_lightgbm import BEST_PARAMS_PATH
 
 # Deliberately conservative defaults, not LightGBM's library defaults.
 # num_leaves=31 / n_estimators=100 are lightgbm's own out-of-the-box
@@ -131,26 +134,93 @@ def top_lgbm_features(
     )
     return result.sort_values("gain", ascending=False).head(n).reset_index(drop=True)
 
+def load_tuned_params(path: Path = BEST_PARAMS_PATH) -> dict:
+    """
+    Reads the winning hyperparameters written by
+    models/tune_lightgbm.py's save_best_params.
+
+    Simple version: Step 7's search took ~20 minutes to find these
+    numbers. This just reads them back off disk so retraining doesn't
+    mean rerunning the whole search — the same reason ADR-014's tuned
+    Elo constants live as function defaults rather than being
+    re-derived on every call.
+
+    Deliberately loads ONLY best_params, not best_cv_log_loss — that
+    CV number measured something different (average across 12
+    expanding folds, most training on far less history than the full
+    train set) and isn't comparable to the val score this file
+    produces. Kept in the JSON for context, kept out of the model.
+
+    Raises
+    ------
+    FileNotFoundError with a pointer to the script that creates it,
+    rather than a bare missing-file error — the fix is "go run the
+    tuning script," which isn't obvious from the default message.
+    """
+    if not path.exists():
+        raise FileNotFoundError(
+            f"{path} not found — run `python -m models.tune_lightgbm` "
+            f"first to generate it."
+        )
+    return json.loads(path.read_text())["best_params"]
 
 if __name__ == "__main__":
     from models.metrics import evaluate
 
     train, val = build_train_val_with_elo()
-    print(f"train: {len(train)} rows, val: {len(val)} rows")
+    print(f"train: {len(train)} rows, val: {len(val)} rows\n")
 
-    y_val, y_prob, model, X_train = train_lightgbm_baseline(train, val)
-    print(evaluate(y_val, y_prob, name="lightgbm_default_full_val"))
-
-    # --- Odds-covered subset, apples-to-apples vs. every other baseline ---
     _, closing = _load_val_and_odds()
     covered_mask = _odds_covered_mask(val, closing).to_numpy()
+
+    # --- Default params (Step 4, rerun here for a direct side-by-side) ---
+    y_val, y_prob_default, model_default, X_train = train_lightgbm_baseline(train, val)
+    print(evaluate(y_val, y_prob_default, name="lgbm_default_full_val"))
     print(
         evaluate(
             y_val[covered_mask],
-            y_prob[covered_mask],
-            name="lightgbm_default_odds_covered_subset",
+            y_prob_default[covered_mask],
+            name="lgbm_default_odds_covered",
         )
     )
 
-    # --- Feature importance, first look (Step 9 goes deeper) ---
-    print(top_lgbm_features(model, X_train.columns.tolist()))
+    # --- Tuned params (Step 7's Optuna winner) ---
+    # Same function, same train/val data, same evaluate() call — the
+    # ONLY thing that changed is the hyperparameters. That's what
+    # makes this a clean before/after rather than two loosely related
+    # numbers.
+    tuned_params = load_tuned_params()
+    y_val_t, y_prob_tuned, model_tuned, _ = train_lightgbm_baseline(
+        train, val, params=tuned_params
+    )
+    print(evaluate(y_val_t, y_prob_tuned, name="lgbm_tuned_full_val"))
+    print(
+        evaluate(
+            y_val_t[covered_mask],
+            y_prob_tuned[covered_mask],
+            name="lgbm_tuned_odds_covered",
+        )
+    )
+
+    # --- Structural symmetry check ---
+    # Same check models/baselines.py runs on LR, applied here. NOTE:
+    # unlike LR (pure diff_ features + fit_intercept=False, where
+    # symmetry is mathematically guaranteed), LightGBM has NO such
+    # structural guarantee — trees can split asymmetrically. So this
+    # number is genuinely informative here rather than a formality.
+    # Expect close to 1.0, but not exactly; a large deviation would
+    # mean the model learned something corner-dependent it shouldn't
+    # have.
+    pair_sums = (
+        pd.DataFrame({"bout_id": val["bout_id"].to_numpy(), "y_prob": y_prob_tuned})
+        .groupby("bout_id")["y_prob"]
+        .sum()
+    )
+    print(
+        f"\nsymmetric pair sum — mean: {pair_sums.mean():.6f}, "
+        f"max deviation from 1.0: {(pair_sums - 1.0).abs().max():.6f}"
+    )
+
+    # --- Feature importance, tuned model (Step 9) ---
+    print("\ntuned model feature importance:")
+    print(top_lgbm_features(model_tuned, X_train.columns.tolist()))
