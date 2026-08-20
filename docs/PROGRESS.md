@@ -33,6 +33,107 @@ Daily log of what shipped, what's blocked, and what's next. Written at the end o
 
 ## Log
 
+## 2026-08-19 (Week 2, Day 8)
+
+**Planned today:** Saturday's plan deliverable — leakage audit day (shuffle labels, drop each feature group, check train/val drift, log to `LEAKAGE_LOG.md`) — and start implementing LightGBM.
+
+**Shipped:**
+- Leakage audit fully checked, and clean
+- Implemented untuned LightGBM on the full feature set + combined Elo signal (`features/build_lgbm_matrix.py`, `models/lightgbm_model.py`), logged to `docs/RESULTS.md`: 0.6165 accuracy / 0.6589 log loss / 0.2329 Brier full val, 0.6246 / 0.6535 / 0.2306 odds-covered subset — best accuracy and log loss of any model so far (`e47cd64`)
+- Added `lightgbm` + supporting deps to `pyproject.toml`/`uv.lock` (`8eaaab4`)
+- Built `models/cv.py`: expanding-window CV for hyperparameter search, growing by year with 1999–2010 folded in as a single first window (thin early history). Added `tests/test_cv.py` (`ac23c60`)
+- Tuned LightGBM via Optuna (60 trials, expanding-window CV on train only, val untouched) and evaluated: 0.6224 / 0.6529 / 0.2304 full val, 0.6305 / 0.6483 / 0.2282 odds-covered — a real but modest improvement over untuned on accuracy/log loss. Flagged the tradeoff in `docs/RESULTS.md`: ECE moved the wrong direction (0.0214 → 0.0318, odds-covered) — still inside the ≤0.05 target but a genuine calibration cost from the model being more confident, which the planned isotonic/Platt calibration step should correct (`4252e37`)
+- Added `optuna` dependency and one CLAUDE.md rule (ruff/mypy compliance extends to any up/downstream code touched) (`2dce71d`)
+- (Uncommitted) Saved tuned hyperparameters to `models/artifacts/lgbm_best_params.json`
+- (Uncommitted) Cosmetic cleanup in `scripts/load_first_ufc_stats.py`, `scripts/odds_api_small.py`, `scripts/wiki_api_test.py` (quote style, line wraps, trailing newlines) — no logic changes
+- (Uncommitted) Backfilled Aug 16–18 entries into `docs/PROGRESS.md`
+
+**Blocked / open questions:**
+-
+
+**Research (30 min):** — Data leakage taxonomy
+
+**Tomorrow's first task:** Make CI green, then commit today's uncommitted work (`lgbm_best_params.json`, script formatting, PROGRESS.md backfill), then move to the calibration step flagged in today's tuned-model results — isotonic/Platt calibration to pull ECE back down before the tuned model is treated as the leading candidate.
+
+**Energy / notes:**
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
+## 2026-08-18 (Week 2, Day 7)
+
+**Planned today:** Elo/Glicko implementation + tuning of K-factor and weight-class priors (Friday's plan deliverable).
+
+**Shipped:**
+- Implemented the first version of the Elo feature (`features/elo.py`) with global, weight-class-blind, sequential ratings — pre-fight ratings recorded before any update touches them so a bout's own result can't leak into its own prediction (`b4b0d9e`)
+- Added experience-based K-factor decay (higher K for low-fight-count fighters, lower for established ones) with tests in `tests/test_elo.py` (`71f87d3`)
+- Tuned and landed the Elo baseline in `models/baselines.py`: starter K=80, veteran K=24, smooth decay scale=3 (`b1314ea`)
+- Logged ADR-014 (experience-based K over constant K; Glicko-2 deferred to Week 3 Tuesday, gated on whether ECE-by-experience-bucket shows a real calibration gap) and the Elo baseline's validation results in `docs/RESULTS.md`: 0.5610 accuracy / 0.6781 log loss / 0.2426 Brier full val, 0.0059 ECE — weakest of the three baselines on accuracy/log loss as expected for a single Tier 3 signal in isolation, but lowest ECE of any baseline so far (`56c4eda`)
+- (Uncommitted) Added `scikit-learn` dependency to `pyproject.toml`, tweaked `scripts/load_first_ufc_stats.py`, `scripts/odds_api_small.py`, `scripts/wiki_api_test.py`, and three new K-factor tuning scripts (`scripts/elo_k_factor_search.py`, `scripts/elo_experience_k_search.py`, `scripts/elo_spot_check.py`) plus a `data/tuning/` output directory — not yet committed
+- (Uncommitted) One more research note added to `docs/research/2026-08-18-KFactor.md` on Glicko's loss-punishment/longevity tradeoff
+
+**Blocked / open questions:**
+-
+
+**Research (1hr):** Elo rating system (K-factor) — `docs/research/2026-08-18-KFactor.md`
+
+**Tomorrow's first task:** Commit today's uncommitted work (scikit-learn dep, tuning scripts, script tweaks) and confirm CI is green, then move to Saturday's plan deliverable — **leakage audit day**: shuffle labels and confirm accuracy collapses to ~50%, drop each feature group and re-measure, check for train/val distribution drift, and write findings to `LEAKAGE_LOG.md`.
+
+**Energy / notes:**
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
+## 2026-08-17 (Week 2, Day 6)
+
+**Planned today:** Check the Postgres DB and confirm the ingestion data is good (`docs/IngestWorkflow.md` step 6 onwards), then move to baselines: (1) always-favorite, (2) higher-Elo-wins, (3) logistic regression on differential features, recording accuracy/log loss/Brier on the validation split.
+
+**Shipped:**
+- Diagnosed and repaired the UFC 330 event duplication (Greco's ingest inserted a second `events` row instead of updating the existing Wikipedia-sourced one, since it matched on `source_url` which was still `NULL`) via a one-off merge script, then built `data/ingestion/reconciliation.py` — `claim_existing_events_for_greco`/`claim_existing_bouts_for_greco` write Greco's `source_url` onto the matching pre-existing row before the normal upsert runs, so it can't recur. Added `check_duplicate_bouts` alongside the existing `check_duplicate_events` quality check (`e0e74b8`)
+- Researched ranking systems (Elo vs. Glicko vs. TrueSkill) ahead of building the Elo baseline — `docs/research/2026-08-17-RankingSystems.md` (`0146030`)
+- Built the market baseline: `features/odds.py` (`get_closing_lines`, de-vigged), `models/baselines.py` (`market_baseline`), `models/metrics.py` (`evaluate`, `reliability_curve` for ECE), and `features/differential.py` (`to_differential` — self-minus-opp feature prep for the upcoming LR baseline). First validation-set result logged in `docs/RESULTS.md`: market baseline scores 0.6936 accuracy / 0.5897 log loss / 0.2019 Brier at 91.9% odds coverage (1,870/2,034 val rows) (`b862650`)
+- (Uncommitted) Logged ADR-013 in `docs/DECISIONS.md`: the reconciliation direction rule (whichever source's row lands first keeps its `id`; the later source only contributes data), and the consequence that settlement logic (Week 4) must key on `predicted_winner_id`, never corner position
+- (Uncommitted) Ran `ruff format` across the repo — cosmetic reflow only (blank lines, line wraps), no logic changes; touches ~55 files, not yet committed
+
+**Blocked / open questions:**
+-
+
+**Research (30 min):** Ranking systems (Elo/Glicko/TrueSkill) — `docs/research/2026-08-17-RankingSystems.md`
+
+**Tomorrow's first task:** Build the logistic regression baseline on `to_differential`'s output and log it to `docs/RESULTS.md` alongside the market baseline. Then make CI green.
+
+**Energy / notes:**
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
+## 2026-08-16 (Week 2, Day 5)
+
+**Planned today:** Finish Wednesday's deliverable — temporal split (train ≤2022, val 2023–24, test 2025+) on top of yesterday's symmetrization.
+
+**Shipped:**
+- Researched time-series cross-validation methods (simple time split vs. sliding/expanding window); logged findings in `docs/research/2026-08-16-CrossValidation.md`. Confirmed simple time split is the right starting point for this project (`4da611e`)
+- Built `features/split.py`: `temporal_split()` cuts the symmetrized dataset into train/val/test by `event_date` with half-open boundaries at `VAL_START`/`TEST_START`, plus `validate_split()` to guard against a bout's paired self_/opp_ rows landing in different splits. Added `tests/test_split.py` (`b5c03c6`)
+- Fixed CI lint failures (ruff import ordering/unused imports, a mypy missing-annotation catch in `split.py`) and gitignored `data/processed/` and `data/test_locked/` now that `split.py` materializes them locally (`2d3d7fb`)
+- Added `odds_snapshots` to the Postgres → Parquet export in `features/snapshot.py` (`a8c1cad`)
+- Ran the weekly data ingest per `docs/IngestWorkflow.md`: pulled Greco's updated fight-stats CSVs and ran the Wiki ingest for upcoming events, then resolved fighter conflicts (steps 3–5) — updated `data/ingestion/logs/unresolved_bout_fighters.csv` and cleared `unresolved_fighters.jsonl`, not yet committed
+
+**Blocked / open questions:**
+-
+
+**Research (30 min):** Time-series cross-validation — `docs/research/2026-08-16-CrossValidation.md`
+
+**Tomorrow's first task:** Check the Postgres DB and confirm the ingestion data is good — `docs/IngestWorkflow.md` step 6 onwards (row counts, bouts & bout stats check, quality check, then document row counts again). Then move to Thursday's plan deliverable — baselines: (1) always-favorite, (2) higher-Elo-wins, (3) logistic regression on differential features, recording accuracy/log loss/Brier for each on the validation split.
+
+**Energy / notes:**
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
 ## 2026-08-15 (Week 2, Day 4)
 
 **Planned today:** With Tiers 1 & 2 complete and unit-tested, move to Wednesday's plan deliverable: symmetrization (dual rows / differential features, per ADR in `docs/DECISIONS.md`) so the model can't key off corner position, then the strict temporal split (train ≤2022, val 2023–24, test 2025+) with the test set moved to a locked directory.
