@@ -20,10 +20,11 @@ information, when "we don't know yet" (NaN) is the true fact.
 """
 
 import json
+from pathlib import Path
+
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
-from pathlib import Path
 
 from features.build_lgbm_matrix import build_train_val_with_elo
 from features.differential import to_differential
@@ -90,7 +91,7 @@ def train_lightgbm_baseline(
     model = lgb.LGBMClassifier(**model_params)
     model.fit(X_train, y_train)
 
-    y_prob = model.predict_proba(X_val)[:, 1]
+    y_prob = np.asarray(model.predict_proba(X_val))[:, 1]
     return y_val.to_numpy(), y_prob, model, X_train
 
 

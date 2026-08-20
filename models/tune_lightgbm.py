@@ -26,6 +26,7 @@ tuning against accuracy would be optimizing for the wrong thing.
 
 import json
 from pathlib import Path
+from typing import Any
 
 import lightgbm as lgb
 import numpy as np
@@ -91,7 +92,7 @@ def objective(trial: optuna.Trial, train: pd.DataFrame) -> float:
     -------
     float — mean log loss across all folds. Optuna minimizes this.
     """
-    params = {
+    params: dict[str, Any] = {
         **FIXED_PARAMS,
         # How big a step each tree takes. Lower = slower but steadier
         # learning, usually paired with more trees.
@@ -127,7 +128,7 @@ def objective(trial: optuna.Trial, train: pd.DataFrame) -> float:
         model = lgb.LGBMClassifier(**params)
         model.fit(X_tr, y_tr)
 
-        y_prob = model.predict_proba(X_va)[:, 1]
+        y_prob = np.asarray(model.predict_proba(X_va))[:, 1]
         fold_losses.append(log_loss(y_va, y_prob))
 
     return float(np.mean(fold_losses))
