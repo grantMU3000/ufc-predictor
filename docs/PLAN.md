@@ -209,7 +209,7 @@ Each week has a **hard deliverable** and an **exit criterion**. If you miss an e
 | Day | Focus |
 |---|---|
 | Mon | LightGBM. Sensible defaults first, then `optuna` with **time-series CV** (expanding window, never random KFold). |
-| Tue | Tier 3 features: style clustering, SoS, short-notice, layoff interactions. Measure each addition's delta. Bucket ECE by total_ufc_fights / days_since_last_fight (ADR-014) — build Glicko-2's RD as a feature only if this shows a real calibration gap; otherwise log to IDEAS.md and move on.|
+| Tue | Tier 3 features: style clustering, SoS, short-notice, layoff interactions. Measure each addition's delta. Bucket ECE by total_ufc_fights / days_since_last_fight (ADR-014) — build Glicko-2's RD as a feature only if time allows; otherwise log to IDEAS.md and move on.|
 | Wed | **Calibration.** Raw GBDT probabilities are overconfident. Apply isotonic or Platt on the validation set. Plot the reliability diagram — this plot goes in the README. |
 | Thu | Ensemble: LR + LightGBM + Elo, blended. Usually worth 1–2 points of log loss for an hour of work. |
 | Fri | **Test set unlock.** Run once. Whatever it says, that's your number. Also compute: accuracy on close fights, ROI backtest at closing odds with flat 1-unit stakes, and a Kelly-fraction simulation. |

@@ -34,6 +34,122 @@ The actual reasoning. Be specific about tradeoffs accepted, not just benefits ga
 What this makes easier, what this makes harder, what it forecloses or defers.
 ```
 ---
+## [ADR-015] Glicko-2 RD: evidence gate closed — bucketed ECE differences are sampling noise
+
+**Date:** 2026-08-20
+**Status:** Accepted — resolves the deferral in ADR-014
+
+### Context
+
+ADR-014 gated Glicko-2's rating deviation (RD) on a measured
+calibration gap: bucket the tuned LightGBM's val ECE by
+`total_ufc_fights` and `days_since_last_fight`, build RD only if
+low-fight-count or long-layoff fighters are measurably worse
+calibrated than the model overall. `models/calibration_buckets.py`
+implements that check with a pre-registered rule (bucket ECE ≥ 2x
+full-val ECE of 0.0235, n ≥ 150, in an ADR-named population).
+
+### What the rule said
+
+Gate OPEN. Three triggers: debut (0.0682, 2.90x baseline), 365-730d
+layoff (0.0677, 2.88x baseline), and `no prior fight` — the last
+being the same 228 rows as the debut bucket viewed through the other
+bucketing dimension (a debutant has both `total_ufc_fights = 0` and
+`days_since_last_fight = NaN`), so two distinct populations
+triggered, not three.
+
+### Why that verdict was discarded
+
+The pre-registered threshold compared small-bucket ECE against a
+full-val ECE computed on 2,034 rows. ECE is biased upward at small
+n — with fewer rows per confidence bin, each bin's actual-rate
+estimate is noisier, inflating the predicted-vs-actual gap even for a
+perfectly calibrated model. Comparing a 173-row bucket's ECE directly
+against a 2,034-row baseline compares unlike quantities.
+
+A permutation test (`check_buckets_against_null` in
+`models/calibration_buckets.py`, 2,000 size-matched random draws from
+the full val set, seed=42) established each triggered bucket's null
+distribution — what ECE looks like for a random group of that exact
+size, with no real effect present:
+
+| bucket | n | observed ECE | null mean ECE | percentile | p-value |
+|---|---|---|---|---|---|
+| 0 (debut) | 228 | 0.0682 | 0.0590 | 70.7 | 0.29 |
+| 365-730d | 173 | 0.0677 | 0.0673 | 53.4 | 0.47 |
+| 730d+ | 42 | 0.1872 | 0.1349 | 87.3 | 0.13 |
+| 21+ | 116 | 0.0610 | 0.0825 | 21.4 | 0.79 |
+
+No bucket reaches p < 0.05. **365-730d — the strongest apparent
+finding, the one with n ≥ 150, and the only bucket RD could
+mechanistically address (RD varies continuously with time since last
+fight, unlike a debutant's constant initial RD) — landed at the 53rd
+percentile of its own null.** It is indistinguishable from a random
+draw of that size.
+
+### Decision
+
+Gate **CLOSED**. Glicko-2 RD is not built. Deferred to `IDEAS.md`
+with these numbers attached, for revisit once the test set unlocks
+and larger samples (especially 730d+, currently n=42) are available.
+
+### Why
+
+The pre-registered rule's own comparison was flawed: it measured
+whether a bucket was *small*, not whether it was *miscalibrated*,
+because ECE's small-sample bias was never accounted for in the
+threshold. The permutation check corrects for this by testing each
+bucket against its own size-matched null rather than against a
+whole-dataset aggregate, and under that correction, every triggered
+bucket collapses to statistical noise.
+
+This is consistent with the debunking pattern already established
+elsewhere in the project (the naive-corner-baseline investigation in
+`LEAKAGE_LOG.md`): a number looked meaningful, was investigated
+before being acted on, and turned out to be explainable by a known,
+non-leak mechanism. The same discipline — verify before building —
+applies to feature-justifying evidence, not just leakage suspicions.
+
+### Secondary finding, also not acted on
+
+The 21+ fight bucket (n=116, below the n ≥ 150 interpretability
+threshold) showed `mean_pred` 0.4543 vs. `actual_rate` 0.4138,
+suggesting the model may under-discount high-mileage veterans. At the
+21st percentile of its own null (p=0.79), this is not evidence of a
+real effect and should not be over-read. Logged to `IDEAS.md` as an
+age-nonlinearity / `age x total_ufc_fights` mileage-interaction
+question to revisit at test unlock — explicitly *not* as an
+RD/Glicko question, since RD is characteristically **low** for
+actively-fighting veterans and would reinforce trust in their rating
+rather than discount it, the opposite of the effect this bucket would
+need explained.
+
+### Consequences
+
+**Easier:** Week 3 stays on schedule — no half-day Glicko-2 build
+(rating periods, iterative volatility solve, hand-verified tests)
+displacing today's remaining Tier 3 work (strength of schedule,
+contextual features, CV-based delta measurement).
+
+**Adds a standing tool:** `check_buckets_against_null` in
+`models/calibration_buckets.py` is reusable for any future subgroup-
+metric comparison in this project. The guardrail it encodes — compare
+a bucket against a size-matched permutation null, never against a
+whole-dataset aggregate — applies beyond this one check.
+
+**Forecloses, for now:** RD as a standalone feature. Not permanently —
+if a future recheck (larger val/test population, or a differently-
+constructed bucket) shows a real, permutation-surviving gap, this ADR
+should be superseded, not edited.
+
+**Requires care going forward:** any calibration-gap claim in
+`docs/RESULTS.md`, `docs/MODEL_CARD.md`, or a future README should be
+read against this ADR — the raw bucketed-ECE table alone
+(`models/calibration_buckets.py`'s primary output) is not sufficient
+evidence of a real subgroup effect without the permutation check
+behind it.
+
+---
 ## [ADR-014] Elo rating system: experience-based K-factor over constant K, Glicko-2 deferred to Week 3
 
 **Date:** 2026-08-14

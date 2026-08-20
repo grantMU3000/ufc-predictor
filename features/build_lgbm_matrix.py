@@ -26,11 +26,11 @@ from features.labels import get_completed_decided_bouts
 from features.split import TEST_START
 
 
-def _load_elo_ratings(
+def _load_labels_and_elo(
     k_new: float = 80.0,
     k_veteran: float = 24.0,
     decay_scale: float = 3.0,
-) -> pd.DataFrame:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Computes pre-fight Elo for every train+val-era bout, using the
     tuned experience-based K from ADR-014 (defaults match
@@ -44,11 +44,14 @@ def _load_elo_ratings(
 
     Returns
     -------
-    pd.DataFrame — bout_id, red_elo_pre, blue_elo_pre, covering every
-    decided train+val bout in ONE call. compute_elo_ratings walks
-    train+val history as one continuous timeline (a fighter's rating
-    doesn't reset at the train/val boundary — only the model's
-    TRAINING does), so this single pass already covers both splits.
+    (labels, elo_ratings)
+        labels: the decided-bout frame Elo was computed from -
+            bout_id, event_date, fighter ids, winner_id. Returned
+            rather than discarded because features/tier3.py's SoS
+            needs the same population and the same date filtering,
+            and reloading it would mean a second DuckDB round-trip
+            for data already in hand.
+        elo_ratings: bout_id, red_elo_pre, blue_elo_pre.
     """
     con = duckdb.connect()
     for table in ["fighters", "events", "bouts"]:
@@ -67,79 +70,99 @@ def _load_elo_ratings(
             fight_count, k_new=k_new, k_veteran=k_veteran, decay_scale=decay_scale
         )
 
-    return compute_elo_ratings(labels, k_factor=k_fn)
+    return labels, compute_elo_ratings(labels, k_factor=k_fn)
 
 
-def attach_elo(df: pd.DataFrame, elo_ratings: pd.DataFrame) -> pd.DataFrame:
+def attach_by_corner(
+    df: pd.DataFrame, bout_level: pd.DataFrame, stems: list[str]
+) -> pd.DataFrame:
     """
-    Merges pre-fight Elo onto an already-symmetrized split (train or
-    val), producing self_elo_pre / opp_elo_pre — same self_/opp_
-    naming convention every other feature already uses. That's what
-    lets to_differential() pick this up automatically as diff_elo_pre
-    with zero changes to that file.
+    Merges bout-level red_X/blue_X columns onto a symmetrized split
+    and relabels them to self_X/opp_X based on source corner.
 
-    Simple version: elo_ratings still speaks "red"/"blue," same as
-    every raw feature before symmetrize.py ever touches it. This
-    function does the same ME/THEM relabeling _symmetrize_row does
-    elsewhere — just for one extra column, bolted on after the fact
-    instead of inside store.py's original per-bout build.
+    Generalized from the original attach_elo - SoS needs the exact
+    same ME/THEM flip that Elo did, and a second near-identical
+    function would be two places to fix the same bug. 'stems' is the
+    list of names WITHOUT the corner prefix: pass["elo_pre"] and it
+    looks for red_elo_pre/blue_elo_pre and produces self_elo_pre/
+    opp_elo_pre.
+
+    That self_opp_ naming is the whole point - it's what lets 
+    features/differential.py's to_differential() auto-discover these
+    as diff_ columns with zero edits to that file.
 
     Parameters
     ----------
     df : pd.DataFrame
-        A symmetrized split (train or val). Needs bout_id and
-        source_corner (both already present per symmetrize.py).
-    elo_ratings : pd.DataFrame
-        Output of compute_elo_ratings — bout_id, red_elo_pre,
-        blue_elo_pre.
+        A symmetrized split. Needs bout_id and source_corner.
+    bout_level : pd.DataFrame
+        One row per bout, with red_{stem}/blue_{stem} for every stem.
+    stems : list[str]
+        Feature names without corner prefix, e.g. ["elo_pre"] or
+        ["sos_last_3", "sos_last_5"].
 
     Returns
     -------
-    pd.DataFrame — df plus self_elo_pre and opp_elo_pre. Row count
-    and row order match df's original (left merge) — every row in df
-    is expected to find a match, checked below rather than assumed.
+    pd.DataFrame — df plus self_{stem}/opp_{stem} for each steam
 
     Raises
     ------
-    ValueError if any row fails to match, or if the merge changes row
-    count — either would mean train/val and the Elo history disagree
-    about which bouts are in scope, which should fail loud, not
-    silently hand LightGBM a NaN Elo for a real fight.
+    ValueError on row-count change or unmatched rows — either means
+    the split and the bout-level frame disagree about scope, which
+    should fail loud rather than hand LightGBM a NaN for a real
+    fight.
+
+    NOTE on NaN: an unmatched BOUT raises. A matched bout whose value
+    is legitimately NaN (a debutant has no strength of schedule) is
+    fine and passes through — LightGBM handles it natively. The check
+    below is deliberately on bout_id matching, not on value
+    nullity, so those two cases stay distinguishable.
     """
-    merged = df.merge(elo_ratings, on="bout_id", how="left")
+    before = len(df)
+    merged = df.merge(bout_level, on="bout_id", how="left", indicator=True)
 
-    if len(merged) != len(df):
+    if len(merged) != before:
         raise ValueError(
-            f"row count changed after merge ({len(df)} -> {len(merged)}) "
-            f"— check for duplicate bout_id in elo_ratings."
+            f"row count changed after merge ({before} -> {len(merged)}) "
+            f"— check for duplicate bout_id in bout_level."
         )
 
-    missing = merged["red_elo_pre"].isna().sum()
-    if missing:
+    unmatched = (merged["_merge"] != "both").sum()
+    if unmatched:
         raise ValueError(
-            f"{missing} row(s) had no matching bout_id in elo_ratings "
-            f"— check both were built from the same decided-bout "
-            f"population before TEST_START."
+            f"{unmatched} row(s) had no matching bout_id — check both "
+            f"were built from the same decided-bout population before "
+            f"TEST_START."
         )
+    merged = merged.drop(columns=["_merge"])
 
     is_red = merged["source_corner"] == "red"
-    merged["self_elo_pre"] = np.where(
-        is_red, merged["red_elo_pre"], merged["blue_elo_pre"]
-    )
-    merged["opp_elo_pre"] = np.where(
-        is_red, merged["blue_elo_pre"], merged["red_elo_pre"]
-    )
+    for stem in stems:
+        merged[f"self_{stem}"] = np.where(
+            is_red, merged[f"red_{stem}"], merged[f"blue_{stem}"]
+        )
+        merged[f"opp_{stem}"] = np.where(
+            is_red, merged[f"blue_{stem}"], merged[f"red_{stem}"]
+        )
 
-    return merged.drop(columns=["red_elo_pre", "blue_elo_pre"])
+    drop_cols = [f"{c}_{stem}" for stem in stems for c in ("red", "blue")]
+    return merged.drop(columns=drop_cols)
 
 
-def build_train_val_with_elo() -> tuple[pd.DataFrame, pd.DataFrame]:
+def build_train_val_with_elo(
+    include_sos: bool = True,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     One-call convenience wrapper: loads train.parquet/val.parquet,
     attaches Elo to both, hands back symmetrized dataframes ready for
     features.differential.to_differential (or straight to LightGBM,
     if a future step wants raw self_/opp_ columns too — not needed
     today, differential features stay the input, consistent with LR).
+
+    Include_sos toggles Tier 3 strength-of-schedule columns. Defaults
+    True, but exposed as a flag specifically so models/feature_deltas
+    .py can build the exact pre-SoS baseline for a clean before/after
+    — measuring a feature's delta requires being able to turn it off.
 
     Returns
     -------
@@ -149,10 +172,18 @@ def build_train_val_with_elo() -> tuple[pd.DataFrame, pd.DataFrame]:
     train = pd.read_parquet("data/processed/train.parquet")
     val = pd.read_parquet("data/processed/val.parquet")
 
-    elo_ratings = _load_elo_ratings()
+    labels, elo_ratings = _load_labels_and_elo()
 
-    train = attach_elo(train, elo_ratings)
-    val = attach_elo(val, elo_ratings)
+    train = attach_by_corner(train, elo_ratings, stems=["elo_pre"])
+    val = attach_by_corner(val, elo_ratings, stems=["elo_pre"])
+
+    if include_sos:
+        from features.tier3 import SOS_WINDOWS, build_sos_by_bout
+
+        sos = build_sos_by_bout(labels, elo_ratings)
+        stems = [f"sos_last_{n}" for n in SOS_WINDOWS]
+        train = attach_by_corner(train, sos, stems=stems)
+        val = attach_by_corner(val, sos, stems=stems)
 
     return train, val
 
