@@ -272,7 +272,7 @@ Each week has a **hard deliverable** and an **exit criterion**. If you miss an e
 
 ### Buffer — Sep 12–18
 
-Reserved. It **will** get used. If it somehow doesn't: monitoring dashboard, load test, or start Tier-3 feature research for the long-term phase.
+Reserved. It **will** get used. If it somehow doesn't: monitoring dashboard, load test, or start Tier-3 feature research for the long-term phase, style clustering.
 
 ---
 

@@ -34,6 +34,195 @@ The actual reasoning. Be specific about tradeoffs accepted, not just benefits ga
 What this makes easier, what this makes harder, what it forecloses or defers.
 ```
 ---
+## [ADR-016] Week 3 Tuesday Tier 3 features: all four groups cut — no measured contribution on either metric
+
+**Date:** 2026-08-20
+**Status:** Accepted
+
+### Context
+
+`docs/PLAN.md` §3's Week 3 Tuesday entry calls for Tier 3 features
+("style clustering, SoS, short-notice, layoff interactions") with the
+explicit instruction to "measure each addition's delta." Four groups
+were built and wired into the training matrix, taking it from 32 to
+38 `diff_` features:
+
+| group | columns | rationale |
+|---|---|---|
+| `sos` | `diff_sos_last_3`, `diff_sos_last_5` | Elo says a fighter is 1650; it doesn't say whether they got there in deep water or against padding. `docs/PLAN.md` §2's headline Tier 3 item. |
+| `damage` | `diff_recent_damage_24mo` | Trailing-24-month significant strikes absorbed. Distinct from the existing career-cumulative Tier 2 stat, which can't separate "took damage early, untouchable since" from "just survived three wars." |
+| `interactions` | `diff_layoff_x_age`, `diff_age_x_experience` | Trees don't automatically find multiplicative relationships. A 38-year-old off 18 months ≠ a 26-year-old off 18 months. |
+| `weight_change` | `diff_weight_class_change` | -1/0/+1 division move since last bout. |
+
+Two planned items were not built: **short-notice** (no bout
+announcement date exists in the schema or in either data source —
+see `IDEAS.md`) and **style clustering** (designated stretch, cut for
+time after the ADR-015 permutation work).
+
+### Method
+
+`models/feature_deltas.py`. Every number comes from
+`models/cv.py`'s expanding-window folds carved out of **train only** —
+val was not read at any point during feature selection. Adding a
+feature, scoring val, and keeping it if val improved would be feature
+selection against val, which destroys val's honesty exactly as surely
+as hyperparameter tuning against it would (the trap
+`models/tune_lightgbm.py` was built to avoid, one level up).
+
+Hyperparameters held fixed at Monday's Optuna winner across every
+configuration. Those params were found on the 32-feature set, so they
+mildly favor the baseline — the conservative direction, making new
+features work harder to prove themselves.
+
+**Pre-registered thresholds, set before results were seen:**
+- Log loss: |Δ| ≥ **0.002** to count. Below that is noise at this
+  fold structure — the same stopping rule ADR-014 used for Elo
+  K-factor tuning.
+- Accuracy: |Δ| ≥ **0.005**. Accuracy discards confidence
+  information and is noisier; at val's n≈2,034 and p≈0.62, one
+  standard error is ~1.1 points, so half a point is the floor for a
+  correlated-fold CV average.
+
+Both a cumulative walk (add groups one at a time) and a leave-one-out
+ablation (drop each group from the full 38-feature model) were run.
+Both were needed: a group can look useless when added because another
+group already covers the same ground, yet still be the one carrying
+signal when both are present.
+
+### Results
+
+**Baseline reproduced Monday's tuned CV log loss to six decimals
+(0.660179).** That is a free end-to-end regression test on the Elo
+attach, symmetrization, CV splitter, `to_differential` build, and
+tuned-params loading — nothing drifted while six features were added.
+
+Cumulative:
+
+| config | n_feat | CV log loss | CV accuracy | Δ log loss vs. baseline | Δ accuracy vs. baseline |
+|---|---|---|---|---|---|
+| baseline (Monday) | 32 | 0.660179 | 0.606076 | 0.000000 | 0.000000 |
+| + sos | 34 | 0.660236 | 0.604414 | +0.000057 | -0.001662 |
+| + damage | 35 | 0.659999 | 0.605032 | -0.000180 | -0.001044 |
+| + interactions | 37 | 0.659913 | 0.607627 | -0.000266 | +0.001551 |
+| + weight_change | 38 | 0.660239 | 0.602612 | +0.000060 | -0.003464 |
+
+Leave-one-out from the full 38-feature model (positive Δ = removing
+it made things worse = the group was contributing):
+
+| dropped | CV log loss | CV accuracy | Δ log loss | Δ accuracy |
+|---|---|---|---|---|
+| (none — full) | 0.660239 | 0.602612 | 0.000000 | 0.000000 |
+| sos | 0.661142 | 0.605147 | +0.000902 | +0.002535 |
+| damage | 0.660101 | 0.607818 | -0.000138 | +0.005206 |
+| interactions | 0.660130 | 0.606500 | -0.000109 | +0.003888 |
+| weight_change | 0.659913 | 0.607627 | -0.000327 | +0.005015 |
+| `diff_sos_last_3` only | 0.659646 | 0.605996 | -0.000594 | +0.003385 |
+| `diff_sos_last_5` only | 0.660468 | 0.606017 | +0.000229 | +0.003405 |
+
+**Every log-loss effect in the entire run falls between -0.0006 and
++0.0009 — the largest is under half the 0.002 threshold.** Six
+features, three new query paths, and the full 38-feature model landed
+0.00006 *worse* than the 32-feature baseline.
+
+### Decision
+
+**All four groups cut from the model.** The three
+`build_train_val_with_elo` flags (`include_sos`, `include_damage`,
+`include_weight`) default to `False`.
+
+**Code retained, not deleted.** `features/tier3.py` and
+`tests/test_tier3.py` stay in the repo, tested and correct. What's
+absent is the *evidence for inclusion*, not the correctness of the
+implementation — and the flags make re-testing a one-argument change
+if the training population later changes (see Consequences).
+
+**No val read was performed for today's work.** With every feature
+cut, the val configuration is Monday's exact 32-feature model, and
+val's numbers are already in `docs/RESULTS.md`. Spending one of val's
+looks to confirm that an unchanged model produces an unchanged number
+would buy zero information.
+
+### Why
+
+The pre-registered thresholds did their job. Without them, several of
+these numbers are small enough to rationalize in either direction —
+`+ interactions` at -0.000266 could be written up as "a modest
+improvement" by someone motivated to keep it.
+
+**On the accuracy question specifically:** accuracy was added to this
+harness mid-session, after log loss came back flat, on the reasoning
+that a feature could push near-coinflip fights across the 0.50 line
+without moving log loss much — a real mechanism worth testing rather
+than assuming. The measured answer was not just "flat" but mildly
+unfavorable: **all four leave-one-out removals improved accuracy**
+(+0.0025 to +0.0052), and the cumulative walk lost 0.35 points from
+baseline to full. Those magnitudes still sit at or inside the 0.005
+accuracy noise floor, so the honest read is "no evidence of benefit,
+with unfavorable drift," not "these features actively hurt." Four out
+of four pointing the same direction is more suggestive than any single
+number, but not a claim worth staking.
+
+Because both metrics agree, no revision to `docs/PLAN.md` §0.1's
+metric hierarchy (log loss as the headline, accuracy as parity check)
+was needed — the question of whether to promote accuracy over log
+loss was closed by data rather than by argument.
+
+**Most likely mechanism: redundancy.** SoS correlates with Elo by
+construction — beating strong opponents raises your own rating, so
+`diff_elo_pre` already carries much of what SoS was meant to add.
+`recent_damage_24mo` overlaps the existing career-cumulative absorbed
+stat. The interactions are relationships trees can approximate through
+repeated splits on `diff_age` and `diff_days_since_last_fight`, which
+are already features #1 and #10 by gain. `weight_class_change` is 75%
+zeros with only 7.4% non-zero rows.
+
+### Secondary finding: `diff_sos_last_3` is the weaker of the two windows
+
+Dropping *only* `diff_sos_last_3` produced the best log loss of any
+configuration tested (0.659646, -0.000594 vs. full), while dropping
+only `diff_sos_last_5` made things worse (+0.000229). Both are inside
+the noise threshold and neither is actionable alone, but the direction
+is mechanically sensible: two highly correlated columns measuring the
+same thing, with the noisier 3-fight window diluting the 5-fight one.
+
+**If SoS is ever revisited, the starting configuration should be
+`n=5` alone, not both windows.** Recorded here so that isn't
+re-derived from scratch later.
+
+### Consequences
+
+**Easier:** Week 4's FastAPI inference path stays at 32 features with
+no additional live Postgres query paths. `recent_damage_absorbed` and
+`weight_class_change` are per-fighter DB round-trips that would have
+had to run for every upcoming bout at inference time — real
+operational cost for measurably zero predictive benefit.
+
+**Retained for cheap retest:** all three flags flip to `True` with one
+argument. The most likely retest is the modern-only training window in
+`IDEAS.md` — these features may behave differently on a 2010+
+population where the sport is more professionalized and the era-drift
+effects from Saturday's KS-test findings are absent.
+
+**Standing tool:** `models/feature_deltas.py` is reusable for any
+future feature-set question. Its `FEATURE_GROUPS` dict is the only
+thing that needs editing to test a new group, and the pre-registration
+discipline it encodes — thresholds written before results are seen,
+both cumulative and leave-one-out run together — applies beyond
+today's four groups.
+
+**Not foreclosed:** style clustering was never built (cut for time),
+so this ADR says nothing about it. Short-notice remains blocked on
+data availability, not on evidence.
+
+**Realistic framing for the rest of Week 3:** two more chances remain
+to close the gap to the market baseline (0.5897 log loss) before
+Friday's one-shot test unlock — Wednesday's calibration and Thursday's
+ensemble. Today's result, combined with the fold-trend saturation
+finding in `docs/RESULTS.md`, suggests the ensemble (combining
+genuinely different model *shapes*) is the more promising of the two,
+since adding more features of the same *kind* moved nothing.
+
+---
 ## [ADR-015] Glicko-2 RD: evidence gate closed — bucketed ECE differences are sampling noise
 
 **Date:** 2026-08-20

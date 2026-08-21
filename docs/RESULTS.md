@@ -70,3 +70,99 @@ target, but a real, not noise-level, shift. Expected: log loss
 rewards confident correct calls, and tuning found a model willing to
 be more confident, at some cost to calibration. Wednesday's isotonic/
 Platt calibration step exists specifically to correct exactly this.
+
+---
+
+## Week 3 Tuesday — Tier 3 feature evaluation (all cut)
+
+Four feature groups were built and measured on expanding-window CV
+folds inside `train` only (`models/feature_deltas.py`). Val was not
+read during feature selection. Hyperparameters held fixed at Monday's
+Optuna winner across every configuration. Full decision and reasoning:
+**ADR-016**.
+
+Pre-registered thresholds, set before results were seen: log loss
+|Δ| ≥ 0.002, accuracy |Δ| ≥ 0.005.
+
+**The baseline configuration reproduced Monday's tuned CV log loss to
+six decimals (0.660179)** — an end-to-end regression check on the Elo
+attach, symmetrization, CV splitter, and differential build.
+
+### Cumulative additions
+
+| config | n_feat | CV log loss | CV accuracy | Δ LL vs. baseline | Δ acc vs. baseline |
+|---|---|---|---|---|---|
+| baseline (Monday, 32 feat) | 32 | 0.660179 | 0.606076 | 0.000000 | 0.000000 |
+| + sos | 34 | 0.660236 | 0.604414 | +0.000057 | -0.001662 |
+| + damage | 35 | 0.659999 | 0.605032 | -0.000180 | -0.001044 |
+| + interactions | 37 | 0.659913 | 0.607627 | -0.000266 | +0.001551 |
+| + weight_change | 38 | 0.660239 | 0.602612 | +0.000060 | -0.003464 |
+
+### Leave-one-out from the full 38-feature model
+
+Positive Δ = removing it made things worse = the group was
+contributing.
+
+| dropped group | CV log loss | CV accuracy | Δ LL | Δ acc |
+|---|---|---|---|---|
+| (none — full 38 feat) | 0.660239 | 0.602612 | 0.000000 | 0.000000 |
+| sos | 0.661142 | 0.605147 | +0.000902 | +0.002535 |
+| damage | 0.660101 | 0.607818 | -0.000138 | +0.005206 |
+| interactions | 0.660130 | 0.606500 | -0.000109 | +0.003888 |
+| weight_change | 0.659913 | 0.607627 | -0.000327 | +0.005015 |
+| `diff_sos_last_3` only | 0.659646 | 0.605996 | -0.000594 | +0.003385 |
+| `diff_sos_last_5` only | 0.660468 | 0.606017 | +0.000229 | +0.003405 |
+
+**Verdict: all four groups cut.** Every log-loss effect in the run
+falls between -0.0006 and +0.0009 — the largest under half the 0.002
+threshold. On accuracy, all four leave-one-out removals *improved*
+the number (+0.0025 to +0.0052), and the cumulative walk lost 0.35
+points from baseline to full; those magnitudes sit at or inside the
+0.005 accuracy noise floor, so the honest read is "no evidence of
+benefit, with unfavorable drift," not "actively harmful."
+
+No val read was performed — with every feature cut, the val
+configuration is Monday's unchanged 32-feature model, and its numbers
+are already recorded above.
+
+### Fold-by-fold trend — the model saturates on training volume
+
+Baseline (32 feat), oldest to newest:
+
+| val_year | train bouts | val bouts | log loss | accuracy |
+|---|---|---|---|---|
+| 2011 | 1,291 | 295 | 0.671664 | 0.572881 |
+| 2012 | 1,586 | 333 | 0.664527 | 0.600601 |
+| 2013 | 1,919 | 376 | 0.644137 | 0.646277 |
+| 2014 | 2,295 | 494 | 0.664687 | 0.606275 |
+| 2015 | 2,789 | 464 | 0.655693 | 0.602371 |
+| 2016 | 3,253 | 483 | 0.649070 | 0.630435 |
+| 2017 | 3,736 | 446 | 0.651452 | 0.631166 |
+| 2018 | 4,182 | 469 | 0.657615 | 0.608742 |
+| 2019 | 4,651 | 506 | 0.680333 | 0.565217 |
+| 2020 | 5,157 | 444 | 0.656005 | 0.614865 |
+| 2021 | 5,601 | 497 | 0.668792 | 0.578471 |
+| 2022 | 6,098 | 506 | 0.658171 | 0.615613 |
+
+`corr(val_year, log_loss) = 0.073` for the baseline, `0.064` for the
+full 38-feature model — essentially zero, and marginally *positive*
+(later folds slightly worse, not better).
+
+**Training bouts grow ~4.7x across the fold range (1,291 → 6,098)
+and buy nothing.** The model saturates on training volume well before
+2022's fold. Two implications:
+
+1. Supporting evidence for the modern-only training window idea in
+   `IDEAS.md` — if the extra pre-2010 history isn't improving
+   anything, dropping it costs less than assumed.
+2. The binding constraint is not data volume. It's the feature set,
+   or the ceiling of what pre-fight tabular stats can express about a
+   fight outcome. Relevant framing for the README and
+   `docs/MODEL_CARD.md`.
+
+**2019 is the worst fold on both metrics in both configurations**
+(0.6803 log loss, 0.5652 accuracy) and **2013 the best** (0.6441 /
+0.6463) despite training on only 1,919 bouts. Not investigated —
+most likely year-to-year variance in upset frequency rather than
+anything structural, but worth a line in the model card as a known
+artifact rather than leaving it to be rediscovered.

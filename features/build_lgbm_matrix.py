@@ -167,9 +167,9 @@ def _load_recent_damage(labels: pd.DataFrame) -> pd.DataFrame:
     return damage
 
 def build_train_val_with_elo(
-    include_sos: bool = True,
-    include_damage: bool = True,
-    include_weight: bool = True,
+    include_sos: bool = False,
+    include_damage: bool = False,
+    include_weight: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     One-call convenience wrapper: loads train.parquet/val.parquet,

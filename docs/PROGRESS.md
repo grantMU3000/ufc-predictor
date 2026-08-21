@@ -33,6 +33,31 @@ Daily log of what shipped, what's blocked, and what's next. Written at the end o
 
 ## Log
 
+## 2026-08-20 (Week 3, Day 1)
+
+**Planned today:** Tuesday's plan deliverable — LightGBM research/exploration, Tier 3 features (SoS, style clustering, short-notice, layoff interactions), measure each addition's delta, and the ADR-014 calibration-bucket gate check for Glicko-2 RD.
+
+**Shipped:**
+- Researched gradient boosting internals / LightGBM (histogram training, GOSS, leaf-wise growth vs. XGBoost's depth-wise growth) — `docs/research/2026-08-20-LightGBM.md`; logged three follow-up ideas to `docs/IDEAS.md` (higher learning rate, more Optuna trials, try XGBoost) (`475fd69`)
+- Ran the ADR-014 calibration-bucket gate check for Glicko-2 RD (`models/calibration_buckets.py`): the pre-registered rule initially fired (debut and 365-730d-layoff buckets showed ECE ~2.9x the full-val baseline), but a permutation test against a size-matched null showed every triggered bucket lands well inside its own null distribution (best case: 53rd percentile, p=0.47) — the pre-registered rule was measuring bucket *size*, not miscalibration. **Gate closed**, Glicko-2 RD not built; logged as ADR-015 with the full numbers, and as a revisit-at-test-unlock item in `IDEAS.md` (`9b9efd1`)
+- Built and hand-verified Tier 3 `strength_of_schedule` (rolling mean of opponents' pre-fight Elo, leak-guarded via `.shift(1)`) against Khabib Nurmagomedov's real 13-fight career — 4 tests in `tests/test_tier3.py`, including a dedicated test that the current opponent's own Elo never enters their own SoS window (`9b9efd1`)
+- Built and hand-verified `recent_damage_absorbed` (24-month trailing sum of strikes absorbed) against Joshua Van's career, including a boundary test that a fight 4 days past the 24-month cutoff is correctly excluded — 3 tests in `tests/test_tier3.py` (`e9e259f`)
+- Added the weight-class-change feature (`build_weight_class_change_by_bout`) and wired all three new Tier 3 features (SoS, recent damage, weight class) plus two interaction terms (`layoff_x_age`, `age_x_experience`) into `build_train_val_with_elo()` via new `include_damage`/`include_weight` flags (`e9e259f`)
+- (Uncommitted) Deleted three one-off/throwaway scripts no longer needed (`scripts/load_first_ufc_stats.py`, `scripts/odds_api_small.py`, `scripts/wiki_api_test.py`) — cleanup, not logic changes
+
+**Blocked / open questions:**
+-
+
+**Research (1hr):** Gradient boosting internals / LightGBM — `docs/research/2026-08-20-LightGBM.md`
+
+**Tomorrow's first task:** None of today's three new Tier 3 features (SoS, recent damage, weight-class-change) have a measured val-set delta yet — per the Tuesday plan line ("measure each addition's delta"), run each through the LightGBM val evaluation (individually and combined) and log accuracy/log loss/Brier/ECE deltas to `docs/RESULTS.md` before treating them as part of the leading feature set. Then commit the uncommitted script deletions and confirm CI is green.
+
+**Energy / notes:**
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
 ## 2026-08-19 (Week 2, Day 8)
 
 **Planned today:** Saturday's plan deliverable — leakage audit day (shuffle labels, drop each feature group, check train/val drift, log to `LEAKAGE_LOG.md`) — and start implementing LightGBM.
