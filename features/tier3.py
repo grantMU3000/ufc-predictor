@@ -36,7 +36,9 @@ to val (which is what style clustering WILL require, and the reason
 that's a different kind of problem).
 """
 
+import duckdb
 import pandas as pd
+import re
 
 # Window sizes to emit. Both get built; models/feature_deltas.py
 # decides which (if either) earns a place. n=5 is the plan's default
@@ -242,3 +244,302 @@ def build_sos_by_bout(
         )
 
     return out
+
+def add_interaction_features(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Adds self_/opp_ multiplicative interactions to an already-
+    symmetrized, Elo/SoS-attached split. Pure row-wise arithmetic —
+    no DB access, no merge, because both inputs are already present
+    and already leakage-safe.
+
+    self_layoff_x_age: days-since-last-fight times age. Trees don't
+    automatically find multiplicative interactions — a 38-year-old
+    off 18 months and a 26-year-old off 18 months carry the same raw
+    layoff number even though they're very different bets. This makes
+    that difference explicit instead of hoping two separate diff_
+    columns imply it.
+
+    self_age_x_experience: age times total_ufc_fights — the mileage
+    signal flagged during the ADR-015 21+ fight bucket discussion.
+    NOT built because that bucket proved anything — the permutation
+    check showed it didn't, it was noise. Built because the underlying
+    idea (a 23-fight veteran and a 23-year-old prodigy with 23 fights
+    are different, even at the same age or the same fight count alone)
+    is sound on its own, and it's cheap enough to just test rather
+    than argue about. Step 6's CV delta is the actual verdict.
+
+    Requires self_/opp_ age, days_since_last_fight, total_ufc_fights
+    already present — call this AFTER attach_by_corner, on the full
+    symmetrized frame.
+    """
+    out = df.copy()
+    for prefix in ("self", "opp"):
+        out[f"{prefix}_layoff_x_age"] = (
+            out[f"{prefix}_days_since_last_fight"] * out[f"{prefix}_age"]
+        )
+        out[f"{prefix}_age_x_experience"] = (
+            out[f"{prefix}_age"] * out[f"{prefix}_total_ufc_fights"]
+        )
+    return out
+
+def recent_damage_absorbed(
+    con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date
+) -> float | None:
+    """
+    Total significant strikes ABSORBED by fighter_id in the 24 months
+    strictly before as_of_date. Not the lifetime-cumulative version
+    already in Tier 2 — that can't tell "took a lot of damage early,
+    untouchable for 3 years since" apart from "just survived three
+    wars back to back." This can.
+
+    "Absorbed" means the OPPONENT's landed significant strikes in
+    that bout — bout_stats rows are keyed by who did the striking, so
+    this joins to the other corner in the same bout to find what came
+    back the other way.
+
+    Point-in-time rule: event_date < as_of_date, strict — same as
+    every Tier 1/2 function. The bout on as_of_date is the fight
+    being predicted, not history.
+
+    Returns
+    -------
+    float | None — None means no bouts in the 24-month window (a
+    debutant, or a layoff longer than 2 years), NOT zero damage.
+    Don't impute this to 0 downstream — same NaN discipline as every
+    other Tier 2 rate feature.
+    """
+    query = """
+        WITH damage AS (
+            SELECT
+                bs.bout_id,
+                e.event_date,
+                CASE WHEN b.fighter_red_id = bs.fighter_id
+                     THEN b.fighter_blue_id
+                     ELSE b.fighter_red_id
+                END AS absorbing_fighter_id,
+                bs.sig_strikes_landed AS strikes_against
+            FROM bout_stats bs
+            JOIN bouts b ON b.id = bs.bout_id
+            JOIN events e ON e.id = b.event_id
+        )
+        SELECT SUM(strikes_against)
+        FROM damage
+        WHERE absorbing_fighter_id = $fighter_id
+          AND event_date < $as_of_date
+          AND event_date >= $as_of_date - INTERVAL 24 MONTH
+    """
+    result = con.execute(
+        query, {"fighter_id": fighter_id, "as_of_date": as_of_date}
+    ).fetchone()
+    return float(result[0]) if result and result[0] is not None else None
+
+
+def build_recent_damage_by_bout(
+    con: duckdb.DuckDBPyConnection, labels: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Runs recent_damage_absorbed for every fighter in every bout,
+    producing the same red_/blue_ bout-level shape build_sos_by_bout
+    hands back — ready for attach_by_corner.
+
+    Same per-bout-per-corner loop store.py's build_feature_row
+    already uses for every Tier 1/2 feature. Kept separate from
+    store.py (not added to FIGHTER_FEATURES) because that list is
+    already materialized into train.parquet/val.parquet — adding to
+    it means re-running the full Week 2 materialize step, not just
+    today. Follows the same attach-after-the-fact pattern as Elo and
+    SoS instead.
+    """
+    rows = []
+    for bout in labels.itertuples(index=False):
+        rows.append({
+            "bout_id": bout.bout_id,
+            "red_recent_damage_24mo": recent_damage_absorbed(
+                con, bout.fighter_red_id, bout.event_date
+            ),
+            "blue_recent_damage_24mo": recent_damage_absorbed(
+                con, bout.fighter_blue_id, bout.event_date
+            ),
+        })
+    return pd.DataFrame(rows)
+
+# Ordered lightest -> heaviest, men's and women's as SEPARATE ladders.
+# Men's Flyweight (125) and Women's Flyweight (125) are the same
+# poundage but not the same division — a fighter never "moves"
+# between them, so putting them on one ladder would be meaningless.
+# Two ladders, and a cross-ladder comparison returns None.
+MENS_LADDER = {
+    "Flyweight": 0,
+    "Bantamweight": 1,
+    "Featherweight": 2,
+    "Lightweight": 3,
+    "Welterweight": 4,
+    "Middleweight": 5,
+    "Light Heavyweight": 6,
+    "Heavyweight": 7,
+}
+
+WOMENS_LADDER = {
+    "Women's Strawweight": 0,
+    "Women's Flyweight": 1,
+    "Women's Bantamweight": 2,
+    "Women's Featherweight": 3,
+}
+
+# Divisions with no ladder position by nature — a catchweight has no
+# official poundage in this data (the column carries no number), and
+# Open/Super Heavyweight are historical formats with no modern
+# equivalent. These map to None, NOT to a guessed position.
+UNLADDERED = {"Catch Weight", "Catchweight", "Open Weight", "Super Heavyweight"}
+
+
+def normalize_weight_class(raw: str | None) -> str | None:
+    """
+    Collapses the ~110 distinct weight_class strings in `bouts` down
+    to a canonical division name.
+
+    Simple version: the raw column is a mess of the same handful of
+    divisions written a dozen different ways — "Lightweight Bout,"
+    "Lightweight," "UFC Lightweight Title Bout," "UFC Interim
+    Lightweight Title Bout," and "Ultimate Fighter 22 Lightweight
+    Tournament Title Bout" are all just Lightweight. This strips the
+    decoration and returns the division.
+
+    WHY A NORMALIZER AND NOT A PLAIN DICT LOOKUP: a dict keyed on
+    "Lightweight" silently returns None for all four of the other
+    spellings above. That failure is invisible — no error, just a
+    NaN where a real value belonged, on exactly the highest-signal
+    bouts in the dataset (title fights). Normalizing first makes the
+    unmatched set small enough to actually eyeball.
+
+    Order of matching matters: "Women's Bantamweight" must be tested
+    BEFORE "Bantamweight", and "Light Heavyweight" before
+    "Heavyweight", or the shorter name matches first and mislabels
+    the division. Longest-first sorting handles this without needing
+    the dicts themselves ordered carefully.
+
+    Returns
+    -------
+    str | None — a canonical division name (a key of MENS_LADDER,
+    WOMENS_LADDER, or a member of UNLADDERED), or None if nothing
+    matched. None should be rare; run the __main__ audit below to
+    see exactly what falls through before trusting this.
+    """
+    if raw is None:
+        return None
+
+    text = str(raw)
+
+    candidates = list(WOMENS_LADDER) + list(MENS_LADDER) + list(UNLADDERED)
+    # Longest first: "Women's Bantamweight" wins over "Bantamweight",
+    # "Light Heavyweight" over "Heavyweight", "Super Heavyweight"
+    # over "Heavyweight".
+    for name in sorted(candidates, key=len, reverse=True):
+        if re.search(re.escape(name), text, flags=re.IGNORECASE):
+            return name
+
+    return None
+
+
+def _ladder_position(division: str | None) -> tuple[str, int] | None:
+    """
+    Maps a canonical division to (ladder_name, position), or None for
+    unladdered/unmatched divisions. The ladder_name is returned so
+    the caller can refuse to compare across ladders.
+    """
+    if division is None or division in UNLADDERED:
+        return None
+    if division in MENS_LADDER:
+        return ("mens", MENS_LADDER[division])
+    if division in WOMENS_LADDER:
+        return ("womens", WOMENS_LADDER[division])
+    return None
+
+
+def weight_class_change(
+    con: duckdb.DuckDBPyConnection, fighter_id: int, as_of_date
+) -> int | None:
+    """
+    Did this fighter move up, down, or stay put since their last
+    bout? -1 = moved down, 0 = same division, +1 = moved up.
+
+    Simple version: a guy cutting to a new, lower division is a
+    different bet than the same guy moving up to face bigger
+    opponents — the physical advantages flip. This captures the
+    direction of that move.
+
+    Deliberately just DIRECTION, not magnitude. A two-division jump
+    could be encoded as +2, but there are few enough of those that
+    the model would be fitting a rule off a handful of bouts, and
+    +1/-1 already carries the part that matters. Same "don't build a
+    rule off 2 bouts" instinct as min_child_samples in the tuned
+    params.
+
+    Returns None (not 0) when: no prior bout (debut), the prior or
+    current bout was a catchweight/open weight, or the two bouts sit
+    on different ladders (a men's-to-women's comparison, which
+    shouldn't happen but is refused rather than guessed). None means
+    "can't say," which is different from 0's "no change."
+    """
+    query = """
+        SELECT b.weight_class
+        FROM bouts b
+        JOIN events e ON e.id = b.event_id
+        WHERE $fighter_id IN (b.fighter_red_id, b.fighter_blue_id)
+          AND e.event_date < $as_of_date
+        ORDER BY e.event_date DESC
+        LIMIT 1
+    """
+    prior = con.execute(
+        query, {"fighter_id": fighter_id, "as_of_date": as_of_date}
+    ).fetchone()
+
+    if prior is None:
+        return None  # debut
+
+    current_query = """
+        SELECT b.weight_class
+        FROM bouts b
+        JOIN events e ON e.id = b.event_id
+        WHERE $fighter_id IN (b.fighter_red_id, b.fighter_blue_id)
+          AND e.event_date = $as_of_date
+        LIMIT 1
+    """
+    current = con.execute(
+        current_query, {"fighter_id": fighter_id, "as_of_date": as_of_date}
+    ).fetchone()
+
+    if current is None:
+        return None
+
+    prior_pos = _ladder_position(normalize_weight_class(prior[0]))
+    current_pos = _ladder_position(normalize_weight_class(current[0]))
+
+    if prior_pos is None or current_pos is None:
+        return None
+    if prior_pos[0] != current_pos[0]:  # different ladders
+        return None
+
+    delta = current_pos[1] - prior_pos[1]
+    return (delta > 0) - (delta < 0)  # sign only: -1, 0, or +1
+
+
+def build_weight_class_change_by_bout(
+    con: duckdb.DuckDBPyConnection, labels: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Bout-level red_/blue_ shape, same as build_sos_by_bout and
+    build_recent_damage_by_bout — ready for attach_by_corner.
+    """
+    rows = []
+    for bout in labels.itertuples(index=False):
+        rows.append({
+            "bout_id": bout.bout_id,
+            "red_weight_class_change": weight_class_change(
+                con, bout.fighter_red_id, bout.event_date
+            ),
+            "blue_weight_class_change": weight_class_change(
+                con, bout.fighter_blue_id, bout.event_date
+            ),
+        })
+    return pd.DataFrame(rows)

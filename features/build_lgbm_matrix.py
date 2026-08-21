@@ -24,6 +24,7 @@ import pandas as pd
 from features.elo import compute_elo_ratings, k_factor_by_experience
 from features.labels import get_completed_decided_bouts
 from features.split import TEST_START
+from features.tier3 import build_recent_damage_by_bout, build_weight_class_change_by_bout
 
 
 def _load_labels_and_elo(
@@ -148,9 +149,27 @@ def attach_by_corner(
     drop_cols = [f"{c}_{stem}" for stem in stems for c in ("red", "blue")]
     return merged.drop(columns=drop_cols)
 
+def _load_recent_damage(labels: pd.DataFrame) -> pd.DataFrame:
+    """
+    Opens its own connection (separate from _load_labels_and_elo's)
+    since it needs bout_stats, which the Elo loader has no reason to
+    touch. Kept separate rather than widening that function's scope —
+    its job is "give me Elo," not "give me every table any future
+    Tier 3 feature might eventually want."
+    """
+    con = duckdb.connect()
+    for table in ["fighters", "events", "bouts", "bout_stats"]:
+        con.execute(
+            f"CREATE VIEW {table} AS SELECT * FROM read_parquet('data/processed/{table}.parquet')"
+        )
+    damage = build_recent_damage_by_bout(con, labels)
+    con.close()
+    return damage
 
 def build_train_val_with_elo(
     include_sos: bool = True,
+    include_damage: bool = True,
+    include_weight: bool = True,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     One-call convenience wrapper: loads train.parquet/val.parquet,
@@ -167,7 +186,8 @@ def build_train_val_with_elo(
     Returns
     -------
     (train, val) — same shape as the raw parquet reads, plus
-    self_elo_pre / opp_elo_pre on both.
+    self_elo_pre / opp_elo_pre and (if enabled) sos_last_3/5,
+    recent_damage_24mo, layoff_x_age, age_x_experience.
     """
     train = pd.read_parquet("data/processed/train.parquet")
     val = pd.read_parquet("data/processed/val.parquet")
@@ -185,8 +205,38 @@ def build_train_val_with_elo(
         train = attach_by_corner(train, sos, stems=stems)
         val = attach_by_corner(val, sos, stems=stems)
 
+    if include_damage:
+        from features.tier3 import add_interaction_features
+
+        damage = _load_recent_damage(labels)
+        train = attach_by_corner(train, damage, stems=["recent_damage_24mo"])
+        val = attach_by_corner(val, damage, stems=["recent_damage_24mo"])
+
+        # Interactions need self_/opp_ age, days_since_last_fight,
+        # total_ufc_fights already in place — true regardless of the
+        # flags above, since those come from the original symmetrized
+        # parquet, not from anything attached in this function.
+        train = add_interaction_features(train)
+        val = add_interaction_features(val)
+
+    if include_weight:
+        wc = _load_weight_class_change(labels)
+        train = attach_by_corner(train, wc, stems=["weight_class_change"])
+        val = attach_by_corner(val, wc, stems=["weight_class_change"])
+
     return train, val
 
+def _load_weight_class_change(labels: pd.DataFrame) -> pd.DataFrame:
+    """Same connection pattern as _load_recent_damage — only needs
+    bouts/events, but reuses the same view set for consistency."""
+    con = duckdb.connect()
+    for table in ["fighters", "events", "bouts"]:
+        con.execute(
+            f"CREATE VIEW {table} AS SELECT * FROM read_parquet('data/processed/{table}.parquet')"
+        )
+    result = build_weight_class_change_by_bout(con, labels)
+    con.close()
+    return result
 
 if __name__ == "__main__":
     from features.differential import to_differential
@@ -195,8 +245,18 @@ if __name__ == "__main__":
     print(f"train: {len(train)} rows, val: {len(val)} rows")
 
     X_train, y_train = to_differential(train, verbose=True)
-    assert "diff_elo_pre" in X_train.columns, (
-        "diff_elo_pre didn't show up — check self_elo_pre/opp_elo_pre "
-        "landed with those exact names."
-    )
-    print(f"diff_elo_pre present. X_train shape: {X_train.shape}")
+
+    expected_new = [
+        "diff_elo_pre",
+        "diff_sos_last_3",
+        "diff_sos_last_5",
+        "diff_recent_damage_24mo",
+        "diff_layoff_x_age",
+        "diff_age_x_experience",
+        "diff_weight_class_change",
+    ]
+    missing = [c for c in expected_new if c not in X_train.columns]
+    assert not missing, f"missing expected diff_ columns: {missing}"
+
+    print(f"all Tier 3 diff_ columns present. X_train shape: {X_train.shape}")
+    print(train["self_weight_class_change"].value_counts(dropna=False))
