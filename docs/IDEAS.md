@@ -71,3 +71,23 @@
 - **Have LightGBM do more trials/training sessions**: This may also lead to overfitting, but again, I think these models are worth at least testing to see if we can achieve a market-level model.
 - **Try XGBoost**: Less prone to overfitting. Uses more memory, but my dataset is relatively small
 - **Train model strictly on people with multiple UFC fights**: Optimize the model for "main-card" worthy fighters, or people who have actually been in the UFC for a while
+- **Post-hoc calibration (Platt / beta calibration, not isotonic)**:
+  ADR-017 rejected both isotonic (fails ADR-004 symmetry — its step
+  function amplifies LightGBM's existing corner-pair asymmetry, 1.86x
+  the raw model's own deviation, confirmed on both the train-internal
+  holdout and val) and Platt (real, correctly-signed ECE improvement,
+  −0.0022, but below the −0.005 gate). Revisit at test unlock with
+  more data. Two things to change next time, not re-derive from
+  scratch: **(1)** start from Platt or beta calibration (smooth,
+  won't shatter symmetry) — isotonic is structurally the wrong family
+  for this symmetrized dual-row design, not just under-evidenced.
+  **(2)** size the ECE-improvement gate to the *calibration holdout's
+  own baseline ECE*, not to val's regressed number — this round's
+  gate (0.005) was calibrated against val's 0.0318 while the holdout's
+  actual baseline was 0.0133, effectively demanding Platt close ~38%
+  of a gap sized for a different population. The underlying signal
+  worth chasing: the raw model's reliability diagram shows genuine
+  **underconfidence** (below diagonal at low p, above it past ~0.55),
+  not overconfidence — a global stretch (which is what Platt does) is
+  mechanistically the right tool for that shape, it just isn't earning
+  its keep yet at this sample size.

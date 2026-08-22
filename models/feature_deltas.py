@@ -279,7 +279,9 @@ def print_fold_trend(per_fold: pd.DataFrame, label: str) -> None:
           f"({'improving with more history' if corr < 0 else 'no clear improvement, or noisy'})")
 
 if __name__ == "__main__":
-    train, _ = build_train_val_with_elo()
+    train, _ = build_train_val_with_elo(
+         include_sos=True, include_damage=True, include_weight=True
+    )
     params = {**FIXED_PARAMS, **load_tuned_params()}
 
     print(f"train: {len(train)} rows, {train['bout_id'].nunique()} bouts")

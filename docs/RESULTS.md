@@ -166,3 +166,60 @@ and buy nothing.** The model saturates on training volume well before
 most likely year-to-year variance in upset frequency rather than
 anything structural, but worth a line in the model card as a known
 artifact rather than leaving it to be rediscovered.
+
+## Week 3 Wednesday — Calibration (rejected, v1 ships uncalibrated)
+
+Both isotonic and Platt evaluated as post-hoc calibrators, fit on
+out-of-fold train predictions (not val — see ADR-017). Neither passed
+all pre-registered gates; **v1 ships uncalibrated**.
+
+### Train-internal holdout (OOF fit: 2011–20, n=8,620 · holdout: 2021–22, n=2,006)
+
+| method | accuracy | log_loss | brier | ece | max_pair_dev | d_log_loss | d_ece |
+|---|---|---|---|---|---|---|---|
+| uncalibrated | 0.5972 | 0.6634 | 0.2355 | 0.0133 | 0.0702 | — | — |
+| platt | 0.5972 | 0.6635 | 0.2355 | 0.0111 | 0.0683 (0.97x) | +0.0000 | −0.0022 |
+| isotonic | 0.5992 | 0.6653 | 0.2364 | 0.0057 | 0.1307 (**1.86x**) | +0.0019 | −0.0076 |
+
+Isotonic disqualified on symmetry (Gate C, ADR-004). Platt passes
+symmetry but falls short of the required ECE improvement (Gate A).
+
+### Val (the one read — isotonic only, since it was the provisional pick before Gate C existed)
+
+| | raw (shipped v1) | isotonic (rejected) | Δ |
+|---|---|---|---|
+| accuracy, full val | 0.6224 | 0.6244 | +0.0020 |
+| log loss, full val | 0.6529 | 0.6539 | +0.0010 |
+| ece, full val | 0.0235 | 0.0307 | +0.0072 |
+| accuracy, odds-covered | 0.6305 | 0.6326 | +0.0021 |
+| log loss, odds-covered | 0.6483 | 0.6492 | +0.0009 |
+| ece, odds-covered | 0.0318 | 0.0352 | +0.0035 |
+
+### ECE sensitivity to bin count (val)
+
+| n_bins | raw, full val | isotonic, full val | raw, odds-covered | isotonic, odds-covered |
+|---|---|---|---|---|
+| 5 | 0.0150 | 0.0114 | 0.0209 | 0.0132 |
+| 10 | 0.0235 | 0.0307 | 0.0318 | 0.0352 |
+| 15 | 0.0291 | 0.0337 | 0.0354 | 0.0415 |
+| 20 | 0.0253 | 0.0365 | 0.0330 | 0.0462 |
+
+Isotonic only wins at n_bins=5; loses at every finer resolution, gap
+widening — a step-function artifact, not a robust improvement. All
+other ECE in this project is reported at n_bins=10 (`models/metrics.py`
+default); this is the first time that choice has been shown to matter
+this much (~2x swing on raw alone).
+
+### Reliability diagrams
+
+`docs/images/reliability_v1_full_val.png`,
+`docs/images/reliability_v1_odds_covered.png`
+
+Raw model's curve sits below the diagonal at low predicted probability
+and above it past ~0.55 — the shape of **underconfidence** (real
+outcomes more decisive than stated probabilities), not the
+overconfidence a log-loss-optimized tune would suggest by default.
+Platt's small, correctly-signed holdout effect is consistent with this.
+
+Full reasoning, gate definitions, and the Gate C mid-session revision:
+**ADR-017**.

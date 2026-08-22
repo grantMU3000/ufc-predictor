@@ -241,7 +241,13 @@ def _load_weight_class_change(labels: pd.DataFrame) -> pd.DataFrame:
 if __name__ == "__main__":
     from features.differential import to_differential
 
-    train, val = build_train_val_with_elo()
+    # Tier 3 flags forced ON here deliberately — this block exists to
+    # smoke-test that the Tier 3 wiring still BUILDS (ADR-016 cut the
+    # features from the model, not the code from the repo). The default
+    # path used by every model file is the 32-feature baseline.
+    train, val = build_train_val_with_elo(
+        include_sos=True, include_damage=True, include_weight=True
+    )
     print(f"train: {len(train)} rows, val: {len(val)} rows")
 
     X_train, y_train = to_differential(train, verbose=True)

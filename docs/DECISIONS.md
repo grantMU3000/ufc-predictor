@@ -34,6 +34,97 @@ The actual reasoning. Be specific about tradeoffs accepted, not just benefits ga
 What this makes easier, what this makes harder, what it forecloses or defers.
 ```
 ---
+## [ADR-017] Calibration: both methods rejected — v1 ships uncalibrated
+
+**Date:** 2026-08-21
+**Status:** Accepted
+
+### Context
+
+Monday's tuning improved log loss but regressed ECE (0.0214 → 0.0318,
+odds-covered). `docs/PLAN.md` §3 calls for isotonic/Platt calibration
+to fix this. Deviation from the plan's literal wording: the calibrator
+is fit on **out-of-fold predictions from train** (12 expanding-window
+folds), not on val directly — fitting on val and grading on val would
+be circular, same trap `tune_lightgbm.py` avoids for hyperparameters.
+Val is read once, after the method is chosen.
+
+### Method — three pre-registered gates
+
+- **Gate A:** must cut holdout ECE by ≥0.005, log loss may not rise >0.002.
+- **Gate B:** isotonic must beat Platt's log loss by ≥0.002 to be preferred.
+- **Gate C (added mid-session):** symmetrized bout pairs must sum to
+  ~1.0 (ADR-004). First version used an absolute bar (1e-6), which
+  turned out unfair — the raw model's own pair-sum deviation is
+  0.070, not near-zero (LightGBM has no structural symmetry
+  guarantee). Revised to a **ratio vs. the raw baseline** (≤1.5×)
+  before re-testing.
+
+### Results (train-internal holdout, OOF folds 2011–20 fit / 2021–22 held out)
+
+| method | d_log_loss | d_ece | max_pair_dev (vs. baseline) |
+|---|---|---|---|
+| platt | +0.000039 | −0.0022 | 0.97× — passes Gate C |
+| isotonic | +0.001898 | −0.0076 | **1.86× — fails Gate C** |
+
+**Isotonic disqualified on Gate C** — its step function amplifies the
+raw model's existing corner-pair asymmetry into a real ADR-004
+violation, confirmed again on val (pair-sum deviation 0.125) and
+bin-count sensitivity (beats raw ECE at 5 bins, loses at 10/15/20 — a
+step-function artifact, not a robust improvement).
+
+**Platt passes Gate C, fails Gate A** — real, correctly-signed effect
+(consistent with the raw model's reliability curve showing genuine
+*underconfidence*, not overconfidence), but too small to clear the bar.
+
+**No method clears both gates → `chosen = None`.**
+
+### Decision
+
+**Ship v1 uncalibrated.** Week 3 Saturday's frozen artifact is the
+tuned LightGBM alone.
+
+### Why
+
+Two distinct, non-overlapping failures — not one blanket "didn't
+work." Isotonic fails structurally (incompatible with the symmetrized
+dual-row design). Platt fails on magnitude, not mechanism — its
+−0.0022 sits inside the noise range this project treats as
+insignificant elsewhere (ADR-014/016's floors). Underlying both: raw
+full-val ECE (0.0235) was already comfortably under the ≤0.05 target,
+so there wasn't much of a real problem to fix.
+
+**Caveat on the gate itself, not grounds to reopen it:**
+`MIN_ECE_IMPROVEMENT=0.005` was sized to val's 0.0318 regression, but
+the holdout's own baseline ECE is 0.0133 — under half that. Platt was
+held to a bar built for a different population. Noted for next time,
+not corrected retroactively.
+
+Bucketed ECE re-check (`calibration_buckets.py`) against the shipped
+raw model reproduces ADR-015 exactly — no drift, no new evidence on
+the Glicko-2 gate.
+
+### Consequences
+
+**Easier:** Week 4 inference stays single-artifact — no calibrator to
+load or sequence.
+
+**Standing tool:** `models/calibration.py`'s gate/OOF structure is
+reusable for Thursday's ensemble, but needs its own OOF generator and
+its own re-registered thresholds — don't reuse today's numbers.
+
+**Retained for later:** the raw model's underconfidence direction is
+real and corroborated (reliability diagram + Platt's correctly-signed
+holdout number) — logged to `IDEAS.md` for a revisit at test unlock,
+starting from Platt or beta calibration, not isotonic.
+
+**Note for the record:** all project ECE is reported at n_bins=10;
+today's sensitivity check showed it varies ~2× by bin count alone.
+
+**Forecloses, for now:** isotonic for this specific symmetrized
+pipeline — not permanently, only until the step-function/symmetry
+interaction is addressed directly.
+---
 ## [ADR-016] Week 3 Tuesday Tier 3 features: all four groups cut — no measured contribution on either metric
 
 **Date:** 2026-08-20
