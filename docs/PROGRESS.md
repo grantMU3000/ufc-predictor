@@ -33,6 +33,29 @@ Daily log of what shipped, what's blocked, and what's next. Written at the end o
 
 ## Log
 
+## 2026-08-21 (Week 3, Day 2)
+
+**Planned today:** None of yesterday's three new Tier 3 features (SoS, recent damage, weight-class-change) had a measured val-set delta yet — run each through the LightGBM val evaluation (individually and combined) and log accuracy/log loss/Brier/ECE deltas to `docs/RESULTS.md` before treating them as part of the leading feature set. Then commit the uncommitted script deletions and confirm CI is green.
+
+**Shipped:**
+- Measured all four Tier 3 feature groups (SoS, recent damage, weight-class-change, two interaction terms) via `models/feature_deltas.py` on expanding-window CV folds inside train only — val was not read. Cumulative and leave-one-out walks both landed inside the pre-registered noise floor (log loss: -0.0006 to +0.0009 vs. a 0.002 threshold; accuracy: -0.0035 to +0.0052 vs. a 0.005 threshold). **All four cut** — logged as ADR-016, with the fold-by-fold breakdown surfacing a side finding: training bouts grow ~4.7x across folds (1,291 → 6,098) with ~zero log-loss correlation (`corr(val_year, log_loss) = 0.073`), suggesting the model saturates on volume well before the ceiling is data — a candidate line for the README/`MODEL_CARD.md` and supporting evidence for the modern-only training window idea in `IDEAS.md` (`724cdbe`)
+- Evaluated isotonic and Platt calibration, fit on out-of-fold train predictions (not val, to avoid the same circularity `tune_lightgbm.py` avoids for hyperparameters) — three pre-registered gates (`models/calibration.py`), including a mid-session Gate C revision (symmetrized pair-sum deviation judged as a ratio vs. the raw model's own 0.070 baseline, not an absolute bar, since LightGBM has no structural symmetry guarantee). **Isotonic disqualified** (1.86x the raw model's pair-sum deviation — a step-function artifact, confirmed by ECE flipping sign across bin counts 5/10/15/20). **Platt survived symmetry but missed the ECE gate** (-0.0022 vs. a -0.005 requirement). **v1 ships uncalibrated** — logged as ADR-017, with two concrete notes in `IDEAS.md` for a test-unlock revisit: start from Platt/beta (not isotonic) next time, and size the ECE gate to the calibration holdout's own baseline (0.0133) instead of val's regressed one (0.0318), which had silently demanded closing ~38% of a gap sized for a different population (`27c511b`)
+- Rendered both reliability diagrams (`docs/images/reliability_v1_{full_val,odds_covered}.png`) — the raw model's curve shows **underconfidence** (below the diagonal at low predicted probability, above it past ~0.55), not the overconfidence a log-loss-tuned model would suggest by default; this is the mechanistic reason Platt's small effect was correctly signed even though it missed the gate (`27c511b`)
+- Added `joblib` and `matplotlib` to `pyproject.toml`/`uv.lock` in support of the calibration and plotting work (uncommitted)
+
+**Blocked / open questions:**
+- Yesterday's "commit the uncommitted script deletions" carried over undone — `scripts/load_first_ufc_stats.py`, `scripts/odds_api_small.py`, `scripts/wiki_api_test.py` are still deleted-but-uncommitted in working tree, now alongside the new uncommitted `pyproject.toml`/`uv.lock` dependency bump
+
+**Research (1hr):** Probability calibration (Platt vs. isotonic) — `docs/research/2026-08-21-ProbabilityCalibration.md`
+
+**Tomorrow's first task:** Commit the outstanding working-tree changes (script deletions + `joblib`/`matplotlib` deps) and confirm CI is green, then move to Thursday's plan deliverable — the LR + LightGBM + Elo ensemble blend — since the frozen-artifact decision (uncalibrated tuned LightGBM) is now made and Friday's test-set unlock is close behind. Then pull Greco information
+
+**Energy / notes:**
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
 ## 2026-08-20 (Week 3, Day 1)
 
 **Planned today:** Tuesday's plan deliverable — LightGBM research/exploration, Tier 3 features (SoS, style clustering, short-notice, layoff interactions), measure each addition's delta, and the ADR-014 calibration-bucket gate check for Glicko-2 RD.

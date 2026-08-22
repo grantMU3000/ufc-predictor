@@ -10,7 +10,9 @@ requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.18.5",
     "duckdb>=1.5.5",
+    "joblib>=1.5.3",
     "lightgbm>=4.7.0",
+    "matplotlib>=3.11.1",
     "mwparserfromhell>=0.7.2",
     "optuna>=4.9.0",
     "pandas>=3.0.5",

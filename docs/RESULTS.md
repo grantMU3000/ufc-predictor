@@ -223,3 +223,49 @@ Platt's small, correctly-signed holdout effect is consistent with this.
 
 Full reasoning, gate definitions, and the Gate C mid-session revision:
 **ADR-017**.
+
+## Week 3 Thursday — Ensemble evaluation (rejected, v1 ships as tuned LightGBM alone)
+
+LR + LightGBM + Elo blended via `models/ensemble.py`, scored against
+four pre-registered gates. Full reasoning: **ADR-018**.
+
+### Diagnostic (before any blend was built)
+
+Pairwise probability correlation: LightGBM/LR 0.845, LightGBM/Elo
+0.490, LR/Elo 0.581. Disagreement rate (not all three pick the same
+side): 42.3%. Oracle best-of-3 ceiling: 0.5594 (an optimistic upper
+bound, not an achievable target — see ADR-018).
+
+### Candidate comparison — train-internal holdout (2021–2022, n=2,006)
+
+| method | n | log loss | accuracy | brier | ece | max_pair_dev | d_log_loss |
+|---|---|---|---|---|---|---|---|
+| single_p_lgbm | 1 | 0.663434 | 0.5972 | 0.2355 | 0.0133 | 0.0702 | 0.000000 |
+| single_p_lr | 1 | 0.664535 | 0.6162 | 0.2351 | 0.0240 | 0.00001 | +0.001101 |
+| single_p_elo | 1 | 0.679832 | 0.5623 | 0.2435 | 0.0126 | ~0 | +0.016398 |
+| equal_prob_mean | 3 | 0.662230 | 0.6107 | 0.2349 | 0.0336 | 0.0234 | -0.001204 |
+| equal_logit_mean | 3 | 0.662335 | 0.6097 | 0.2349 | 0.0328 | 0.0233 | -0.001099 |
+| **weighted_logit_3** | 3 | **0.661449** | 0.6067 | 0.2345 | 0.0162 | 0.0526 | **-0.001985** |
+| weighted_logit_lgbm_elo | 2 | 0.663173 | 0.5977 | 0.2354 | 0.0042 | 0.0667 | -0.000261 |
+| stacker_no_intercept | 3 | 0.661459 | 0.6072 | 0.2345 | 0.0169 | 0.0547 | -0.001975 |
+| stacker_intercept | 3 | 0.661457 | 0.6067 | 0.2345 | 0.0163 | 0.0546 | -0.001977 |
+
+Best fitted weights (`weighted_logit_3`): lgbm=0.75, lr=0.23, elo=0.02.
+
+**Gate results:** Gate D disqualified both equal-weight blends (ECE
+regression past 0.0133 + 0.005 = 0.0183 limit). Gate C passed for
+every remaining candidate, including `stacker_intercept`. **Gate A
+failed for all candidates** — best result (`weighted_logit_3`,
+-0.001985) missed the -0.002 requirement by 0.000015. No val read
+performed; the near-miss decided the outcome entirely on the holdout.
+
+**Verdict: no candidate ships.** v1 remains the tuned LightGBM alone
+(ADR-017's frozen artifact, unchanged). A real, consistently-signed,
+sub-threshold effect — distinct from ADR-016's scattered, unsigned
+Tier 3 result — see ADR-018 for the distinction.
+
+**Secondary finding:** `single_p_lr` beats `single_p_lgbm` on accuracy
+(0.6162 vs. 0.5972) and Brier (0.2351 vs. 0.2355) while losing on log
+loss — the first metric disagreement of the project between models.
+Not actionable under the project's log-loss-first hierarchy; noted
+for `docs/MODEL_CARD.md`.

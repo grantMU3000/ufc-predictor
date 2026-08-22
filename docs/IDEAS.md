@@ -91,3 +91,110 @@
   not overconfidence — a global stretch (which is what Platt does) is
   mechanistically the right tool for that shape, it just isn't earning
   its keep yet at this sample size.
+
+  - **Path to market-level accuracy — a real roadmap, not a single feature**:
+  P asked directly whether market parity is achievable long-term (any
+  algorithm, any training window, any published competitor). Short
+  answer: matching the market's **log loss** looks realistically
+  reachable; consistently **beating** the closing line net of vig is a
+  much harder, different claim, and most of the honest answer is about
+  telling those two apart. Full reasoning below so this doesn't need
+  re-deriving.
+
+  **What won't close the gap (already tested or strongly implied by what's already been tested):**
+  - *Algorithm swap (XGBoost/CatBoost instead of LightGBM).* Today's
+    ensemble result is the direct evidence against this: three
+    genuinely different model *shapes* (LR/LightGBM/Elo) blended to
+    only -0.002 log loss, missing Gate A. XGBoost is a much closer
+    cousin to LightGBM than Elo is to either — expect less than that,
+    not more. Worth a 30-minute run for the model card's sake, not a
+    real lever.
+  - *More data.* Already directly measured and ruled out — ADR-016's
+    fold-trend finding: training bouts grew 4.7x (1,291 -> 6,098
+    bouts) across the fold range with `corr(val_year, log_loss) =
+    0.073`, essentially zero. The model saturates on training volume
+    early. This is the single most important diagnostic for this
+    question: it means the project is **information-starved, not
+    data-starved** — no amount of additional historical rows fixes a
+    feature set that's already been fully learned from.
+  - *Modern-only (~2010+) training window.* Still worth testing per
+    the existing entry above, but the saturation finding cuts both
+    ways — if more data doesn't help, less data (within reason)
+    probably doesn't hurt much either. Expect a small effect in either
+    direction, not a path to market parity on its own.
+
+  **Where the real hope lives, ranked by plausibility:**
+  1. **Fighter representation, not fighter statistics — the biggest
+     lever.** The current feature set (32 `diff_` differentials) can
+     express "who has the better takedown defense" but not "does this
+     specific style beat that specific style" — a wrestler beating a
+     striker who can't stop takedowns is a matchup interaction, not a
+     stat differential, and nothing in the current design can
+     represent it. Two converging pieces of evidence: (a) the
+     project's own unbuilt style-clustering idea (entry above,
+     k-means archetypes on Tier 2 rates), and (b) an external
+     reference point found via search — a public UFC prediction site
+     (mmamodel.ai) reports 67.6% accuracy / 0.598 log loss / 0.015 ECE
+     on a stacked 5-model ensemble, and the detail that stands out is
+     a Siamese neural network component (13% meta-weight) that learns
+     a fighter-*embedding* space rather than reading hand-built
+     stats — a strictly more powerful version of the style-clustering
+     idea. (Numbers are self-reported with no visible leakage audit —
+     treat as a directional existence proof, not a verified target.)
+  2. **Short-notice / camp-disruption flag.** Already logged above as
+     blocked on data availability. Restated here because it's a
+     **systematic, one-directional** blind spot — the market prices
+     this instantly (short-notice fighters underperform and the line
+     moves accordingly) and the current model prices it at exactly
+     zero. Revisit if Week 6's news-ingestion pipeline lands, with its
+     own leakage review before promoting it from display-only to a
+     model input.
+  3. **Timing — beating the market's clock, not its knowledge.**
+     Beating the *closing* line means outpredicting the market's
+     final, fully-informed price. Beating the *opening* line only
+     means being faster than the crowd. Search turned up a directly
+     relevant, specific claim: prelim bouts get far less market
+     attention and sharp money moves those lines less aggressively
+     than main-card lines, so mispricing persists longer there.
+     `docs/PLAN.md` §7 already flagged this as the most plausible
+     path to real money; this is corroborating outside evidence, not
+     a new idea, but it reframes prelim-specific backtesting as worth
+     prioritizing over an all-card backtest.
+  4. **Weight-cut / hydration signals.** Partially available already
+     (`fighter_red_weigh_in_lbs` / `fighter_blue_weigh_in_lbs` exist
+     in the schema, unused as features). Cheap to test relative to
+     the other three.
+
+  **The honest ceiling, per the literature (not project-specific,
+  general sports-betting market efficiency research found via
+  search):** one large multi-sport study found markets broadly
+  efficient with no odds-based strategy yielding statistically
+  significant long-term profit — but the same study specifically
+  flagged UFC underdog bets as showing a *positive* return over an
+  extended period, without clearing statistical significance. That's
+  the right way to read this project's own realistic ceiling: a real,
+  recurring signal that keeps showing up and keeps failing to be
+  provable at this sample size. Suggestive that a durable edge may
+  exist in a specific slice (underdogs, prelims, short-notice) even if
+  it's implausible across the board.
+
+  **Rough near-term target, not a promise:** log loss ~0.62-0.63 with
+  style/embedding features added — closing roughly a third of the
+  current 0.059 gap to market (0.6483 -> market's 0.5897). Full market
+  log-loss parity is a plausible 12+ month goal, most likely to arrive
+  through better fighter representation than through more tuning of
+  the current feature set. A genuine, bettable edge net of vig is a
+  "keep the prediction ledger running and find out honestly" question,
+  not something to claim in advance — which is exactly what the
+  ledger (`predictions`/`prediction_results`, `docs/PLAN.md` §3 Week 4)
+  already exists to answer.
+
+  **Long-term connection worth naming explicitly:** the original
+  project scope's long-term goal #2 (fight-footage analysis, cut from
+  the 6-week short-term plan as a multi-month problem) is not a
+  separate stretch idea from this — it's arguably the *real* long-term
+  answer to this exact question. The market's edge ultimately comes
+  from thousands of people having watched the fighters fight; a model
+  that can watch fight footage is the only version of this project
+  that competes with that directly rather than approximating it
+  secondhand through box-score-style stats.

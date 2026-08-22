@@ -34,6 +34,248 @@ The actual reasoning. Be specific about tradeoffs accepted, not just benefits ga
 What this makes easier, what this makes harder, what it forecloses or defers.
 ```
 ---
+## [ADR-019] Ensemble (LR + LightGBM + Elo): Gate A missed by 0.000015 — v1 ships as tuned LightGBM alone
+
+**Date:** 2026-08-22
+**Status:** Accepted
+
+### Context
+
+`docs/PLAN.md` §3's Week 3 Thursday entry calls for blending LR +
+LightGBM + Elo. Motivated by ADR-016 (training volume saturated) and
+ADR-017 (raw model already reasonably calibrated) leaving little else
+to try before Friday's test unlock. A blend only helps where its
+components make different mistakes, so a correlation/disagreement
+diagnostic ran first (`models/ensemble.py`) before any blend was
+built — it showed real room (LightGBM/LR correlation 0.845; either vs.
+Elo 0.49-0.58; 42.3% disagreement rate). One diagnostic metric, raw
+residual correlation, turned out structurally uninformative
+(dominated by the shared `y_true` term regardless of model
+similarity) and was misread as a warning sign at first. Fix identified
+(split by outcome class), deferred to `IDEAS.md` — never fed into a
+gate, so it doesn't affect this decision.
+
+### Method
+
+Four pre-registered gates, same discipline as ADR-014/015/016/017:
+
+- **Gate A:** holdout log loss must beat the best single model's own
+  holdout log loss by ≥ 0.002.
+- **Gate B:** a stacker must beat the best fixed-weight blend by
+  ≥ 0.002 to be preferred; ties go to the simpler blend.
+- **Gate C (ADR-004 symmetry):** `max_pair_deviation` ≤ 1.5x the best
+  single model's own deviation, same holdout.
+- **Gate D (calibration guard):** holdout ECE must not worsen by more
+  than 0.005 vs. the best single model's holdout ECE.
+
+Accuracy was explicitly not a gate (`docs/PLAN.md` §0.1, reconfirmed
+by ADR-016) — reported for parity only.
+
+Same fit/holdout split as ADR-017 (fit 2011-2020, n=8,620; holdout
+2021-2022, n=2,006). LightGBM and LR refit per fold (LR's
+imputer/scaler included — fitted transforms, same leak risk). Elo not
+refit — it's a sequential rating walk, already point-in-time-safe by
+construction, no training set to have peeked at.
+
+Seven candidates: three single models, equal-weight probability
+average, equal-weight logit average, fitted-weight logit blend (all
+three, non-negative weights), fitted-weight logit blend (LightGBM +
+Elo only — testing whether LR was redundant), and two stackers
+(with/without intercept — the intercept version included to give
+Gate C something real to catch, since a fitted intercept breaks
+ADR-004's `P(self)+P(opp)=1` invariant by construction).
+
+### Results
+
+Holdout (2021-2022, n=2,006):
+
+| method | n | log loss | accuracy | ece | max_pair_dev | d_log_loss |
+|---|---|---|---|---|---|---|
+| single_p_lgbm | 1 | 0.663434 | 0.5972 | 0.0133 | 0.0702 | 0.000000 |
+| single_p_lr | 1 | 0.664535 | 0.6162 | 0.0240 | 0.00001 | +0.001101 |
+| single_p_elo | 1 | 0.679832 | 0.5623 | 0.0126 | ~0 | +0.016398 |
+| equal_prob_mean | 3 | 0.662230 | 0.6107 | 0.0336 | 0.0234 | -0.001204 |
+| equal_logit_mean | 3 | 0.662335 | 0.6097 | 0.0328 | 0.0233 | -0.001099 |
+| **weighted_logit_3** | 3 | **0.661449** | 0.6067 | 0.0162 | 0.0526 | **-0.001985** |
+| weighted_logit_lgbm_elo | 2 | 0.663173 | 0.5977 | 0.0042 | 0.0667 | -0.000261 |
+| stacker_no_intercept | 3 | 0.661459 | 0.6072 | 0.0169 | 0.0547 | -0.001975 |
+| stacker_intercept | 3 | 0.661457 | 0.6067 | 0.0163 | 0.0546 | -0.001977 |
+
+Fitted weights, `weighted_logit_3`: lgbm=0.75, lr=0.23, elo=0.02.
+
+**Gate D:** both equal-weight blends disqualified — ECE (0.0336,
+0.0328) exceeded the limit (0.0133 + 0.005 = 0.0183).
+
+**Gate C:** no failures, including `stacker_intercept`
+(0.0546 vs. limit 0.1053) — contrary to expectation. Likely because
+the symmetrized dual-row design forces a globally balanced target,
+leaving the fitted intercept little room to drift from ~0.
+
+**Gate A:** best surviving candidate, `weighted_logit_3`, reached
+**-0.001985** — short of -0.002 by **0.000015**. Nothing cleared Gate
+A; Gate B never reached.
+
+**Contrary to the diagnostic's prediction:** every blend that improved
+on `single_p_lgbm` weighted LR meaningfully (0.21-0.23); the
+LightGBM+Elo-only blend (excluding LR) barely moved (-0.000261). Low
+correlation with a *weaker* model isn't automatically useful diversity
+— Elo's independence from LightGBM was real but not informative
+enough to matter; LR's higher correlation still carried more usable
+signal.
+
+**Observation, not gated:** `single_p_lr` beats `single_p_lgbm` by 1.9
+accuracy points while losing on log loss — the first time in the
+project accuracy and log loss have ranked two models differently.
+Brier agrees with accuracy. Not actionable (ADR-016 already settled
+log loss as the headline metric), but worth a `docs/MODEL_CARD.md`
+note.
+
+### Decision
+
+**No candidate clears Gate A. v1 ships as the tuned LightGBM alone**,
+unchanged from ADR-017. Third pre-registered negative result of Week
+3 (after ADR-015, ADR-016), fourth counting ADR-017.
+
+### Why
+
+The gate was fixed before any number was seen specifically so a
+result this close couldn't be rationalized into a pass — every other
+negative result this week is only credible because thresholds held
+when inconvenient.
+
+Worth distinguishing from ADR-016's negative result: that one was
+scattered and unsigned (-0.0006 to +0.0009, no consistent direction).
+Today, four independently-built blends all landed between -0.0011 and
+-0.0020, all correctly signed. Real, small, consistent — "below the
+bar," not "not there." Honest framing for the README: the ensemble
+recovers roughly the low end of the 1-2 points `docs/PLAN.md` §3
+predicted, just short of the bar set for the added inference
+complexity.
+
+### Consequences
+
+**Easier:** Week 4's inference path stays single-artifact — one
+`predict_proba` call per upcoming bout, no blend weights to load or
+keep in sync with a retrained model.
+
+**Standing tool:** `models/ensemble.py`'s gate/OOF/candidate structure
+reuses the same pattern as `models/feature_deltas.py` (ADR-016) and
+`models/calibration.py` (ADR-017) — ready if revisited at test unlock
+with a larger holdout.
+
+**Logged to `IDEAS.md`:** revisit the ensemble with a larger
+population; fix the residual-correlation diagnostic; the LR-vs-LGBM
+accuracy/Brier disagreement; LR-carries-more-signal-than-Elo as a
+caution for any future Elo-adjacent feature (e.g. Glicko-2 RD, still
+gated closed per ADR-015).
+
+**Not foreclosed:** standalone Elo/LR numbers already in
+`docs/RESULTS.md` are unaffected — this ADR concerns only whether
+combining them with LightGBM clears a production bar.
+
+**Realistic framing heading into Friday:** Tuesday's saturation
+finding, Wednesday's calibration rejection, and today's near-miss
+ensemble all land in the same place — small, real, sub-threshold
+effects. The tuned LightGBM alone is likely close to this feature
+set's ceiling. Friday's test unlock should be read with that
+expectation set, not as a moment to go looking for a number these
+three sessions didn't find.
+
+---
+
+## [ADR-018] Ensemble (LR + LightGBM + Elo): pre-registered gates
+
+**Date:** 2026-08-22
+**Status:** Proposed — gates registered before any blend is scored; results to follow
+
+### Context
+
+`docs/PLAN.md` §3's Week 3 Thursday entry calls for blending LR +
+LightGBM + Elo, noting it's "usually worth 1–2 points of log loss for
+an hour of work." Two findings from earlier this week point at this as
+the most promising remaining lever before Friday's one-shot test
+unlock: Tuesday's fold-trend check found training volume saturated
+(4.7x more data, ~0 log-loss benefit — ADR-016), and Wednesday's
+calibration work found the raw model already reasonably calibrated
+(ADR-017) — neither more data nor recalibration had room left to give.
+What hasn't been tried is combining different model *shapes*: LR reads
+the feature set linearly, LightGBM reads threshold interactions, Elo
+reads only the sequential win/loss record with no per-fight stats at
+all. An ensemble only helps if these three make genuinely different
+mistakes — a residual-correlation diagnostic runs before any blend is
+built, specifically to check that assumption rather than take it on
+faith.
+
+### Options considered
+
+1. **Equal-weight average, probability space** — simplest possible
+   blend, zero fitted parameters.
+2. **Equal-weight / weighted average, logit space** — averages evidence
+   additively rather than pulling confident correct calls toward 0.5,
+   which is what probability-space averaging does.
+3. **Weighted logit blend, weights fit on OOF folds** — same
+   mechanism as (2), non-negative weights summing to 1, fit rather
+   than assumed equal.
+4. **Logistic-regression stacker** on the three component logits — one
+   intercept, three coefficients, the highest-capacity and
+   highest-overfit-risk option of the four.
+
+### Decision — pre-registered gates (set before results are seen)
+
+- **Gate A — improvement:** ensemble holdout log loss must beat the
+  **best single model's own holdout log loss** by ≥ **0.002**.
+  (Sized to the holdout's own baseline, not to a number from a
+  different split — the process lesson ADR-017's Gate A miscalibration
+  left behind.)
+- **Gate B — simplicity tiebreak:** the stacker (option 4) must beat
+  the best fixed-weight blend by ≥ **0.002** to be preferred; ties go
+  to the simpler blend.
+- **Gate C — symmetry (ADR-004):** blend's `max_pair_deviation` on the
+  holdout must be ≤ **1.5×** the best single model's own deviation on
+  the same holdout. Averaging preserves symmetry if every input does;
+  a fitted stacker with a non-zero intercept does not, by construction
+  — a stacker that fails this gate gets refit without an intercept,
+  not waved through.
+- **Gate D — calibration guard:** holdout ECE must not worsen by more
+  than **0.005** versus the best single model's holdout ECE.
+
+**Accuracy is explicitly not a gate.** Per `docs/PLAN.md` §0.1's
+metric hierarchy (reconfirmed by ADR-016), accuracy is reported
+alongside the gated metrics as a parity check only — a candidate is
+never selected or rejected on accuracy alone.
+
+If no candidate clears all four gates, **v1 ships as the tuned
+LightGBM alone**, unchanged from Wednesday, and this becomes this
+week's fourth pre-registered negative result (after ADR-014's initial
+Glicko gate, ADR-016's Tier 3 cut, and ADR-017's calibration
+rejection).
+
+### Why
+
+Same discipline as ADR-016/017: thresholds fixed before any number is
+seen, so a marginal result can't be rationalized into a win after the
+fact. Gate C exists because nothing about blending guarantees the
+project's ADR-004 symmetry invariant — it has to be checked, not
+assumed. Gate B exists because the stacker is the one candidate with
+real capacity to overfit three inputs on a modest OOF set; it has to
+earn its extra complexity the same way isotonic was asked to in
+ADR-017, not get preferred by default for being fancier.
+
+### Results
+
+*TBD — filled in after Step 4 (blend scoring) and Step 6 (gate
+application).*
+
+### Consequences
+
+*TBD.* Known in advance regardless of outcome: a winning blend adds
+real operational cost to Week 4's inference path (three artifacts
+loaded, three predict calls per upcoming bout instead of one), and
+would need its own, separately re-registered calibration gates before
+any recalibration attempt — today's ADR-017 thresholds were fit to
+LightGBM-alone's error population and don't transfer as-is.
+
+---
 ## [ADR-017] Calibration: both methods rejected — v1 ships uncalibrated
 
 **Date:** 2026-08-21
@@ -124,6 +366,7 @@ today's sensitivity check showed it varies ~2× by bin count alone.
 **Forecloses, for now:** isotonic for this specific symmetrized
 pipeline — not permanently, only until the step-function/symmetry
 interaction is addressed directly.
+
 ---
 ## [ADR-016] Week 3 Tuesday Tier 3 features: all four groups cut — no measured contribution on either metric
 
