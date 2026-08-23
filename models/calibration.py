@@ -46,9 +46,10 @@ enforces it explicitly rather than hoping.
 """
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Literal
+from typing import Literal, cast
 
 import joblib
 import lightgbm as lgb
@@ -61,7 +62,7 @@ from features.build_lgbm_matrix import build_train_val_with_elo
 from features.differential import to_differential
 from models.cv import expanding_year_folds
 from models.lightgbm_model import load_tuned_params
-from models.metrics import evaluate, expected_calibration_error
+from models.metrics import evaluate
 from models.tune_lightgbm import FIXED_PARAMS
 
 CALIBRATOR_PATH = Path("models/artifacts/calibrator_v1.joblib")
@@ -203,14 +204,16 @@ class Calibrator:
     """
 
     method: Literal["platt", "isotonic"]
-    estimator: object
+    estimator: LogisticRegression | IsotonicRegression
     symmetric: bool = True
 
     def _raw_transform(self, p: np.ndarray) -> np.ndarray:
         p = np.asarray(p, dtype=float)
         if self.method == "platt":
-            return self.estimator.predict_proba(_logit(p).reshape(-1, 1))[:, 1]
-        return self.estimator.predict(p)
+            platt = cast(LogisticRegression, self.estimator)
+            return platt.predict_proba(_logit(p).reshape(-1, 1))[:, 1]
+        iso = cast(IsotonicRegression, self.estimator)
+        return iso.predict(p)
 
     def transform(self, p: np.ndarray) -> np.ndarray:
         """
@@ -536,7 +539,7 @@ if __name__ == "__main__":
             "method": chosen,
             "symmetric": True,
             "fit_on": "out-of-fold predictions, models/cv.py folds 2011-2022",
-            "n_fit_rows": int(len(oof)),
+            "n_fit_rows": len(oof),
             "n_fit_bouts": int(oof["bout_id"].nunique()),
             "selection_holdout_years": [2021, 2022],
             "base_model_params": load_tuned_params(),

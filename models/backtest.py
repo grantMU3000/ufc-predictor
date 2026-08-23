@@ -17,6 +17,8 @@ The core distinction running through this file, from ADR-020:
 Mixing these up manufactures profit out of the sportsbook's margin.
 """
 
+from typing import cast
+
 import numpy as np
 import pandas as pd
 
@@ -237,7 +239,7 @@ def kelly_simulation(
     for i, bet in enumerate(bets.itertuples(index=False)):
         stake = bankroll * f_used[i]
         won = bool(bet.self_won)
-        profit = stake * (bet.decimal_odds - 1.0) if won else -stake
+        profit = stake * (cast(float, bet.decimal_odds) - 1.0) if won else -stake
 
         rows.append(
             {

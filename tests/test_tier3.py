@@ -10,11 +10,17 @@ one-off script calling _load_labels_and_elo() and filtering to
 Khabib's 13 bout_ids. Full working shown in PR description.
 """
 
-import pytest
-import duckdb
 from datetime import date
+
+import duckdb
+import pytest
+
 from features.build_lgbm_matrix import _load_labels_and_elo
-from features.tier3 import build_fighter_bout_history, strength_of_schedule, recent_damage_absorbed
+from features.tier3 import (
+    build_fighter_bout_history,
+    recent_damage_absorbed,
+    strength_of_schedule,
+)
 
 KHABIB_ID = 68
 

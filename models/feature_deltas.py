@@ -30,10 +30,10 @@ signal. A feature group that moves mean CV log loss by less than
 ~0.002 has not earned a place in the model.
 """
 
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
-from sklearn.metrics import log_loss, accuracy_score
+from sklearn.metrics import accuracy_score, log_loss
 
 from features.build_lgbm_matrix import build_train_val_with_elo
 from features.differential import to_differential
@@ -59,7 +59,7 @@ ALL_TIER3_COLS = [c for cols in FEATURE_GROUPS.values() for c in cols]
 
 def score_configuration(
     train: pd.DataFrame, drop_cols: list[str], params: dict
-) -> tuple[float, list[float]]:
+) -> tuple[float, float, pd.DataFrame]:
     """
     Runs the full expanding-window CV walk for ONE feature
     configuration, returning mean log loss across folds.
@@ -125,7 +125,9 @@ def score_configuration(
     return float(per_fold["log_loss"].mean()), float(per_fold["accuracy"].mean()), per_fold
 
 
-def run_cumulative_deltas(train: pd.DataFrame, params: dict) -> pd.DataFrame:
+def run_cumulative_deltas(
+    train: pd.DataFrame, params: dict
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     Adds feature groups one at a time, in order, measuring the CV
     log loss after each addition.
@@ -285,7 +287,7 @@ if __name__ == "__main__":
     params = {**FIXED_PARAMS, **load_tuned_params()}
 
     print(f"train: {len(train)} rows, {train['bout_id'].nunique()} bouts")
-    print(f"hyperparameters held fixed at Monday's Optuna winner\n")
+    print("hyperparameters held fixed at Monday's Optuna winner\n")
 
     print("=== Cumulative additions ===")
     print("(negative delta = improvement; |delta| < 0.002 is noise)")

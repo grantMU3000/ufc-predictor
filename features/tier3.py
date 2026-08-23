@@ -36,9 +36,11 @@ to val (which is what style clustering WILL require, and the reason
 that's a different kind of problem).
 """
 
+import re
+from typing import cast
+
 import duckdb
 import pandas as pd
-import re
 
 # Window sizes to emit. Both get built; models/feature_deltas.py
 # decides which (if either) earns a place. n=5 is the plan's default
@@ -355,10 +357,10 @@ def build_recent_damage_by_bout(
         rows.append({
             "bout_id": bout.bout_id,
             "red_recent_damage_24mo": recent_damage_absorbed(
-                con, bout.fighter_red_id, bout.event_date
+                con, cast(int, bout.fighter_red_id), bout.event_date
             ),
             "blue_recent_damage_24mo": recent_damage_absorbed(
-                con, bout.fighter_blue_id, bout.event_date
+                con, cast(int, bout.fighter_blue_id), bout.event_date
             ),
         })
     return pd.DataFrame(rows)
@@ -536,10 +538,10 @@ def build_weight_class_change_by_bout(
         rows.append({
             "bout_id": bout.bout_id,
             "red_weight_class_change": weight_class_change(
-                con, bout.fighter_red_id, bout.event_date
+                con, cast(int, bout.fighter_red_id), bout.event_date
             ),
             "blue_weight_class_change": weight_class_change(
-                con, bout.fighter_blue_id, bout.event_date
+                con, cast(int, bout.fighter_blue_id), bout.event_date
             ),
         })
     return pd.DataFrame(rows)
