@@ -181,7 +181,7 @@ if __name__ == "__main__":
     # in docs/RESULTS.md (0.6224 / 0.6529 / 0.2304 / 0.0235 full val);
     # LightGBM is seed-fixed, so this reproduces rather than re-asks.
     train, val = build_train_val_with_elo()
-    y_val, p_raw, _, _ = train_lightgbm_baseline(
+    y_val, p_raw, _model, _feat_cols = train_lightgbm_baseline(
         train, val, params=load_tuned_params()
     )
 

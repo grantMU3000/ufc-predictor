@@ -38,12 +38,12 @@ inconsistent:
     "training set" for Elo to have peeked at.
 """
 
-from pathlib import Path
 from collections.abc import Callable, Iterator
+from pathlib import Path
 
-from sklearn.linear_model import LogisticRegression
 import numpy as np
 import pandas as pd
+from sklearn.linear_model import LogisticRegression
 
 from features.build_lgbm_matrix import build_train_val_with_elo
 from features.differential import to_differential
@@ -322,7 +322,7 @@ def oracle_ceiling(oof: pd.DataFrame, cols: list) -> dict:
     oracle_loss = float(losses.min(axis=1).mean())
 
     single_losses = {c: float(losses[:, i].mean()) for i, c in enumerate(cols)}
-    best_single = min(single_losses, key=single_losses.get)
+    best_single = min(single_losses, key=lambda c: single_losses[c])
 
     return {
         "oracle_log_loss": oracle_loss,
@@ -401,7 +401,7 @@ def _simplex_grid(n: int, step: float = WEIGHT_GRID_STEP) -> Iterator[np.ndarray
     to the simplex keeps the blend interpretable as "how much do I
     trust each model."
     """
-    ticks = int(round(1.0 / step))
+    ticks = round(1.0 / step)
     if n == 1:
         yield np.array([1.0])
         return
@@ -436,12 +436,14 @@ def fit_blend_weights(
     y = fit["y_true"].to_numpy()
     P = fit[cols].to_numpy()
 
-    best_w, best_loss = None, np.inf
+    best_w: np.ndarray | None = None
+    best_loss = np.inf
     for w in _simplex_grid(len(cols)):
         loss = float(per_row_log_loss(y, blend_fn(P, w)).mean())
         if loss < best_loss:
             best_w, best_loss = w, loss
 
+    assert best_w is not None, "_simplex_grid(len(cols)) yielded no candidates"
     return best_w
 
 
@@ -628,19 +630,19 @@ def select_blend(comparison: pd.DataFrame) -> str | None:
     stackers = cand[cand["method"].str.startswith("stacker")]
 
     if fixed.empty:
-        return stackers.loc[stackers["log_loss"].idxmin(), "method"]
+        return str(stackers.loc[stackers["log_loss"].idxmin(), "method"])
 
     best_fixed = fixed.loc[fixed["log_loss"].idxmin()]
     if not stackers.empty:
         best_stacker = stackers.loc[stackers["log_loss"].idxmin()]
         if best_stacker["log_loss"] < best_fixed["log_loss"] - STACKER_MARGIN:
-            return best_stacker["method"]
+            return str(best_stacker["method"])
         print(
             f"Gate B: stacker ({best_stacker['log_loss']:.6f}) did not beat "
             f"{best_fixed['method']} ({best_fixed['log_loss']:.6f}) by "
             f"{STACKER_MARGIN} -- simpler blend wins."
         )
-    return best_fixed["method"]
+    return str(best_fixed["method"])
 
 
 if __name__ == "__main__":

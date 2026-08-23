@@ -35,7 +35,7 @@ compares their scores and picks a winner. That is the entire point.
 import argparse
 import json
 import subprocess
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import duckdb
@@ -48,8 +48,13 @@ from features.build_lgbm_matrix import (
     build_train_val_with_elo,
 )
 from features.odds import get_closing_lines, get_closing_prices
-from features.split import TEST_START, VAL_START
-from models.backtest import EDGE_THRESHOLDS, kelly_simulation, run_backtest_sweep, select_bets
+from features.split import TEST_START
+from models.backtest import (
+    EDGE_THRESHOLDS,
+    kelly_simulation,
+    run_backtest_sweep,
+    select_bets,
+)
 from models.calibration import max_pair_deviation
 from models.lightgbm_model import load_tuned_params, train_lightgbm_baseline
 from models.metrics import evaluate, reliability_curve
@@ -98,7 +103,7 @@ def git_sha() -> str:
             ["git", "status", "--porcelain"], text=True
         ).strip()
         return f"{sha}-DIRTY" if dirty else sha
-    except Exception:
+    except (subprocess.CalledProcessError, OSError):
         return "UNKNOWN"
 
 
@@ -234,7 +239,7 @@ def split_integrity_check(
     return {
         "overlaps": overlaps,
         "n_test_bouts": int(test["bout_id"].nunique()),
-        "n_test_rows": int(len(test)),
+        "n_test_rows": len(test),
         "test_date_min": str(test_dates.min().date()),
         "test_date_max": str(test_dates.max().date()),
         "passed": True,
@@ -459,7 +464,7 @@ def run(dry_run: bool, force: bool) -> None:
     A harness validated on val is a harness you can trust on test.
     """
     params = load_tuned_params()
-    started = datetime.now(timezone.utc)
+    started = datetime.now(UTC)
     sha = git_sha()
 
     if dry_run:
@@ -491,7 +496,7 @@ def run(dry_run: bool, force: bool) -> None:
         sweep = run_backtest_sweep(
             frame[frame["is_odds_covered"]], label="A_val_dryrun"
         )
-        print(f"\n--- backtest sweep (val, sanity only) ---")
+        print("\n--- backtest sweep (val, sanity only) ---")
         print(sweep.to_string(index=False))
         print("\nDry run passed. Harness reproduces val exactly.")
         return
@@ -574,12 +579,13 @@ def run(dry_run: bool, force: bool) -> None:
     sweep.to_csv(RESULTS_DIR / f"test_unlock_backtest_{stamp}.csv", index=False)
 
     # Reliability curve for the README plot + the Kelly equity curve.
-    covered = ship_frame[ship_frame["is_odds_covered"]]
+    ship_covered = ship_frame[ship_frame["is_odds_covered"]]
     reliability_curve(
-        covered["self_won"].astype(int).to_numpy(), covered["model_prob"].to_numpy()
+        ship_covered["self_won"].astype(int).to_numpy(),
+        ship_covered["model_prob"].to_numpy(),
     ).to_csv(RESULTS_DIR / f"test_reliability_{stamp}.csv", index=False)
 
-    _, ledger = kelly_simulation(select_bets(covered, EDGE_THRESHOLDS[-1]))
+    _, ledger = kelly_simulation(select_bets(ship_covered, EDGE_THRESHOLDS[-1]))
     if not ledger.empty:
         ledger.to_csv(RESULTS_DIR / f"test_kelly_ledger_{stamp}.csv", index=False)
 

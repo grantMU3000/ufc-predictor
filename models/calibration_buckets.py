@@ -46,7 +46,7 @@ a decimal point. This threshold is fixed here, before running, so the
 outcome can't be rationalized after the fact.
 """
 
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -204,24 +204,28 @@ def gate_verdict(table: pd.DataFrame, gate_buckets: list[str]) -> tuple[bool, li
     opens = False
 
     for row in table.itertuples(index=False):
-        if row.bucket not in gate_buckets:
+        bucket = str(row.bucket)
+        if bucket not in gate_buckets:
             continue
+        n = cast(int, row.n)
+        ece = cast(float, row.ece)
         if not row.interpretable:
             reasons.append(
-                f"{row.bucket}: n={row.n} < {MIN_BUCKET_N} — too small to read "
-                f"(ece={row.ece:.4f}, not counted either way)"
+                f"{bucket}: n={n} < {MIN_BUCKET_N} — too small to read "
+                f"(ece={ece:.4f}, not counted either way)"
             )
             continue
-        if row.ece_ratio >= GATE_MULTIPLE:
+        ece_ratio = cast(float, row.ece_ratio)
+        if ece_ratio >= GATE_MULTIPLE:
             opens = True
             reasons.append(
-                f"{row.bucket}: ece={row.ece:.4f} = {row.ece_ratio:.2f}x baseline, "
-                f"n={row.n} — GATE TRIGGER"
+                f"{bucket}: ece={ece:.4f} = {ece_ratio:.2f}x baseline, "
+                f"n={n} — GATE TRIGGER"
             )
         else:
             reasons.append(
-                f"{row.bucket}: ece={row.ece:.4f} = {row.ece_ratio:.2f}x baseline, "
-                f"n={row.n} — below trigger"
+                f"{bucket}: ece={ece:.4f} = {ece_ratio:.2f}x baseline, "
+                f"n={n} — below trigger"
             )
 
     return opens, reasons
@@ -335,7 +339,7 @@ def check_buckets_against_null(
 
 if __name__ == "__main__":
     train, val = build_train_val_with_elo()
-    y_true, y_prob, _, _ = train_lightgbm_baseline(
+    y_true, y_prob, _model, _feat_cols = train_lightgbm_baseline(
         train, val, params=load_tuned_params()
     )
 

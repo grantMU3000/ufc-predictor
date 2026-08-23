@@ -246,3 +246,73 @@
   `method`/`method_detail`/`ending_round` are already in the schema.
   Explicitly out of scope for the current 6-week plan per §0.3's cut
   list; this is a v2/long-term entry, not a Week 4-6 item.
+
+  ### [2026-08-23] Investigate why test log loss beat val (unexpected-direction miss on ADR-020 Decision 5)
+
+**Context:** Shipping artifact (B) scored 0.6333 log loss on test
+(odds-covered), beating val's 0.6483 by 0.0150 — just outside the
+±0.01 generalization tolerance pre-registered in ADR-020. Per the
+project's standing "any 3+ point jump is a leak until proven
+otherwise" instinct, an unexpectedly *better* number deserves the same
+scrutiny as an unexpectedly worse one, not a pass.
+
+**What to check, for a hypothetical v2 only — never retroactively on
+v1 (ADR-020's hard no-further-tuning rule):**
+- Year-by-year and weight-class composition of test vs. val — does
+  test skew toward fight types (favorites, weight classes, veteran
+  fighters) the model already handles well?
+- Favorite/underdog mix — `docs/RESULTS.md`'s 2019/2013 fold-variance
+  note (worst/best CV folds despite similar training size) suggests
+  year-to-year composition swings are already a known source of
+  variance; worth confirming test isn't simply an easier year by that
+  same mechanism.
+- Re-run `train_val_distribution_check()` (the KS-drift tool from the
+  [2026-08-16] leakage entry) with test included, now that Preflight
+  2/2 confirms test's boundary is clean.
+
+**Priority:** low — the result is favorable, not alarming, and doesn't
+block anything. Logged so it isn't lost, not because it's urgent.
+
+---
+
+### [2026-08-23] Calibration retry (Platt/beta) — test result adds evidence, doesn't change the plan
+
+**Status:** Reinforces an idea already logged after ADR-017; not a new
+idea, but test provides the first out-of-sample confirmation.
+
+**What test showed:** shipping artifact's ECE moved from 0.0318 (val)
+to 0.0511 (test) — narrowly missing the 0.05 target for the first
+time, and moving in the same underconfident-past-tuning direction
+ADR-017 already documented at the val stage. The gap to the market's
+ECE also widened (market 0.0236 vs. model 0.0511, roughly 2.2x).
+
+**Still the right starting point, per the existing note:** Platt or
+beta calibration, NOT isotonic (isotonic already failed Gate C's
+symmetry check in ADR-017 — a structural incompatibility with this
+project's dual-row design, not a magnitude issue that more data would
+fix). Any refit should size its ECE gate to the calibration holdout's
+own baseline rather than reusing val's 0.0318, since ADR-017 already
+found ECE varies ~2x by bin count and context alone.
+
+**Scope:** applies only to a from-scratch, re-validated v2 — ADR-020
+forecloses any change to v1 regardless of this evidence.
+
+---
+
+### [2026-08-23] Kelly/backtest result as documented justification for the real-money betting gate
+
+**Context:** `docs/PLAN.md` §0.3 already cuts real-money betting until
+3+ months of logged out-of-sample results exist. Test's Kelly
+simulation (quarter-Kelly, 5% cap) turned $100 into ~$1.67–1.73 across
+all three edge thresholds — a ~98% drawdown — despite the model
+having only a moderate calibration gap versus the market (ECE 0.051
+vs 0.024).
+
+**Idea, not urgent:** this is strong, concrete evidence for the model
+card and README explaining *why* that rule exists, rather than
+treating it as a generic disclaimer. Worth a short "what this number
+means" callout — a small, real miscalibration compounding into
+near-total bankroll loss under compounding stakes is a more persuasive
+argument than the rule stated on its own.
+
+**Scope:** documentation only, no code or model change implied.

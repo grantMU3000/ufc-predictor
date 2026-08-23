@@ -24,7 +24,10 @@ import pandas as pd
 from features.elo import compute_elo_ratings, k_factor_by_experience
 from features.labels import get_completed_decided_bouts
 from features.split import TEST_START
-from features.tier3 import build_recent_damage_by_bout, build_weight_class_change_by_bout
+from features.tier3 import (
+    build_recent_damage_by_bout,
+    build_weight_class_change_by_bout,
+)
 
 # The locked test split, written by features/split.py's save_split at
 # chmod 000. Named here so exactly one string in the repo points at it.
