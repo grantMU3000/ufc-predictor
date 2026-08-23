@@ -8,9 +8,14 @@ Expected values computed 2026-08-20: career bout list via SQL against
 `bouts`/`events`/`fighters`, opponent pre-fight Elo pulled via a
 one-off script calling _load_labels_and_elo() and filtering to
 Khabib's 13 bout_ids. Full working shown in PR description.
+
+Requires a local Parquet snapshot at data/processed/ (see
+features/snapshot.py) — skipped automatically if it hasn't been
+generated, the same pattern tests/test_features.py uses.
 """
 
 from datetime import date
+from pathlib import Path
 
 import duckdb
 import pytest
@@ -23,6 +28,16 @@ from features.tier3 import (
 )
 
 KHABIB_ID = 68
+
+SNAPSHOT_DIR = Path("data/processed")
+REQUIRED_TABLES = ["fighters", "events", "bouts", "bout_stats"]
+
+
+def _snapshot_available() -> bool:
+    """True only if every table this file needs has a local Parquet file."""
+    return all(
+        (SNAPSHOT_DIR / f"{table}.parquet").exists() for table in REQUIRED_TABLES
+    )
 
 # fight #, bout_id, opponent — kept here as a comment for anyone
 # re-deriving these numbers later without re-running the SQL.
@@ -45,6 +60,11 @@ def khabib_history():
     suite for no reason. Every test in this file reads from the same
     frame; none of them mutate it.
     """
+    if not _snapshot_available():
+        pytest.skip(
+            "Local Parquet snapshot not found at data/processed/ — "
+            "run features/snapshot.py first."
+        )
     labels, elo_ratings = _load_labels_and_elo()
     return build_fighter_bout_history(labels, elo_ratings)
 
@@ -67,8 +87,13 @@ def con():
     Closed automatically by pytest at the end of the module's test
     run via the yield/teardown pattern.
     """
+    if not _snapshot_available():
+        pytest.skip(
+            "Local Parquet snapshot not found at data/processed/ — "
+            "run features/snapshot.py first."
+        )
     connection = duckdb.connect()
-    for table in ["fighters", "events", "bouts", "bout_stats"]:
+    for table in REQUIRED_TABLES:
         connection.execute(
             f"CREATE VIEW {table} AS SELECT * FROM read_parquet('data/processed/{table}.parquet')"
         )
