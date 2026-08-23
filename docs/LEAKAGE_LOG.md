@@ -52,6 +52,78 @@ Sanity checks to run whenever a metric looks too good:
 ---
 
 ## Entries
+### [2026-08-23] Split integrity check, test included — no contamination found
+
+- **Status:** 🟢 Resolved — not a leak
+- **Where noticed:** `models/test_eval.py`, `split_integrity_check()`, run as
+  Preflight 2/2 of the Week 3 Friday test-set unlock (ADR-020). This is the
+  rerun the [2026-08-16] entry explicitly deferred to this day.
+- **Investigation:**
+  - No `bout_id` appears in more than one of train/val/test (checked all
+    three pairwise overlaps: train∩val, train∩test, val∩test — all 0)
+  - Every test `bout_id` has exactly 2 rows (its symmetrized pair) — no
+    bout's two corner-perspective rows split across the train/val/test
+    boundary
+  - test: 835 bouts × 2 = 1,670 rows (matches); date range confirmed
+    2025-01-11 to 2026-08-08, entirely at or after `TEST_START`
+    (2025-01-01); val's max `event_date` confirmed below `TEST_START`
+  - `self_won` confirmed 50/50 within test, same structural guarantee
+    symmetrization already enforces in train/val
+- **Root cause:** N/A
+- **Fix:** N/A
+- **Verification:** all four sub-checks passed cleanly, same battery as
+  the original [2026-08-16] train/val check, now extended to test
+- **Lesson / guardrail added:** `split_integrity_check()` promoted from a
+  one-off notebook function to a standing function in `models/test_eval.py`,
+  run automatically as a preflight gate before any test-set scoring — not
+  just a manual step to remember. Confirms the temporal wall (train ≤2022,
+  val 2023–24, test 2025+) held all the way through the one-time unlock.
+
+---
+
+### [2026-08-23] Elo cutoff extension through test era — no train/val ratings changed
+
+- **Status:** 🟢 Resolved — not a leak
+- **Where noticed:** `models/test_eval.py`, `elo_regression_check()`, run as
+  Preflight 1/2 of the Week 3 Friday test-set unlock (ADR-020 Decision 2).
+- **Context:** `compute_elo_ratings` had only ever been called with bout
+  history filtered to `event_date < TEST_START` (features/elo.py's own
+  "caller decides what it's allowed to see" rule). Scoring the test set
+  requires each fighter's Elo to be current through 2025+, which means
+  extending that cutoff for the first time in the project — a legitimate
+  concern, since any unintended change to a train/val fighter's rating
+  would mean every previously-published val number no longer describes
+  the same model.
+- **Investigation:**
+  - Computed Elo ratings twice on the same underlying bout history: once
+    with the original cutoff (`< TEST_START`), once with no cutoff
+    (through 2025+ inclusive)
+  - Merged both outputs on `bout_id` for every train/val-era bout
+    (n=7,621) and compared `red_elo_pre` / `blue_elo_pre` row-for-row
+  - Max absolute difference: **0.00e+00** — every train/val rating is
+    byte-identical across both runs
+  - No train/val bout vanished or gained a mismatched row when the
+    cutoff was extended (checked via left-merge null count, not just
+    the diff)
+- **Root cause:** N/A — this is the expected outcome given how
+  `compute_elo_ratings` is structured, not a coincidence. Each bout's
+  PRE-fight rating is recorded before that bout's own result is applied
+  (`features/elo.py`'s module docstring), so a fighter's rating on a
+  given date depends only on strictly earlier bouts. Appending 2025+
+  fights to the end of the sequential walk cannot reach backward and
+  alter an already-recorded earlier value.
+- **Fix:** N/A
+- **Verification:** exact (0.0 tolerance, not "close enough") match
+  across all 7,621 compared bouts
+- **Lesson / guardrail added:** `elo_regression_check()` is now a hard
+  preflight gate in `models/test_eval.py` — the run halts with a
+  `SystemExit` before any test-set scoring occurs if this check ever
+  fails, rather than only being verified after the fact. Confirms the
+  reasoning in `features/elo.py`'s docstring holds in practice, not just
+  in theory, and that every previously-published val number still
+  describes the exact same model being scored on test today.
+
+---
 
 ### [2026-08-16] Shuffle-label test — Week 2 Saturday audit
 

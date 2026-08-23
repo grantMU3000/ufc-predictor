@@ -26,32 +26,40 @@ from features.labels import get_completed_decided_bouts
 from features.split import TEST_START
 from features.tier3 import build_recent_damage_by_bout, build_weight_class_change_by_bout
 
+# The locked test split, written by features/split.py's save_split at
+# chmod 000. Named here so exactly one string in the repo points at it.
+TEST_PARQUET_PATH = "data/test_locked/test.parquet"
 
 def _load_labels_and_elo(
     k_new: float = 80.0,
     k_veteran: float = 24.0,
     decay_scale: float = 3.0,
+    cutoff: pd.Timestamp | None = TEST_START,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Computes pre-fight Elo for every train+val-era bout, using the
+    Computes pre-fight Elo for every bout up to `cutoff`, using the
     tuned experience-based K from ADR-014 (defaults match
     models/baselines.py's elo_baseline — kept in sync deliberately,
     not re-tuned here).
 
-    Filtered to event_date < TEST_START before compute_elo_ratings
-    ever sees it — same "caller decides what it's allowed to see"
-    rule as features/elo.py's own module docstring. Friday is the
-    test-set unlock, not today.
+    CUTOFF, and why it's a parameter now (ADR-020 Decision 2): the
+    default remains TEST_START, so every existing caller behaves
+    identically to before. Passing cutoff=None computes Elo across
+    ALL bout history including the test era — needed only by
+    models/test_eval.py, only on unlock day.
+
+    Extending the cutoff cannot change any earlier bout's rating: a
+    bout's PRE-fight rating depends exclusively on strictly-earlier
+    bouts, so appending 2025+ fights to the end of the walk leaves
+    every train/val row byte-identical. That's not an assumption —
+    models/test_eval.py's elo_regression_check() verifies it and
+    halts the unlock if it's ever false.
 
     Returns
     -------
     (labels, elo_ratings)
         labels: the decided-bout frame Elo was computed from -
-            bout_id, event_date, fighter ids, winner_id. Returned
-            rather than discarded because features/tier3.py's SoS
-            needs the same population and the same date filtering,
-            and reloading it would mean a second DuckDB round-trip
-            for data already in hand.
+            bout_id, event_date, fighter ids, winner_id.
         elo_ratings: bout_id, red_elo_pre, blue_elo_pre.
     """
     con = duckdb.connect()
@@ -61,9 +69,10 @@ def _load_labels_and_elo(
         )
 
     labels = get_completed_decided_bouts(con)
-    labels = labels[
-        pd.to_datetime(labels["event_date"]) < TEST_START
-    ].reset_index(drop=True)
+    if cutoff is not None:
+        labels = labels[
+            pd.to_datetime(labels["event_date"]) < cutoff
+        ].reset_index(drop=True)
     con.close()
 
     def k_fn(fight_count: int) -> float:
@@ -225,6 +234,46 @@ def build_train_val_with_elo(
         val = attach_by_corner(val, wc, stems=["weight_class_change"])
 
     return train, val
+
+def build_all_splits_with_elo() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """
+    Loads train, val, AND test with Elo attached across the full bout
+    history — the test-unlock counterpart to build_train_val_with_elo.
+
+    A SEPARATE function rather than a flag on build_train_val_with_elo,
+    on purpose. Reading the locked test set should never be something
+    that happens because a default argument was left alone; it should
+    require calling a function whose name says exactly what it does.
+    Nothing in the repo calls this except models/test_eval.py.
+
+    32-feature baseline only — no Tier 3 toggles. ADR-016 cut all four
+    groups, and ADR-020 forbids any feature change on unlock day, so
+    exposing those flags here would only create a way to violate the
+    protocol by accident.
+
+    Elo is computed with cutoff=None (full history, 2025+ included).
+    Per ADR-020 Decision 2 this is not leakage — compute_elo_ratings
+    records each bout's rating BEFORE applying that bout's own result,
+    so a March 2025 bout's rating reflects January 2025 and nothing
+    later. models/test_eval.py verifies the train/val ratings are
+    unchanged before any scoring happens.
+
+    Returns
+    -------
+    (train, val, test) — symmetrized splits plus self_elo_pre /
+    opp_elo_pre, ready for features.differential.to_differential.
+    """
+    train = pd.read_parquet("data/processed/train.parquet")
+    val = pd.read_parquet("data/processed/val.parquet")
+    test = pd.read_parquet(TEST_PARQUET_PATH)
+
+    _, elo_ratings = _load_labels_and_elo(cutoff=None)
+
+    train = attach_by_corner(train, elo_ratings, stems=["elo_pre"])
+    val = attach_by_corner(val, elo_ratings, stems=["elo_pre"])
+    test = attach_by_corner(test, elo_ratings, stems=["elo_pre"])
+
+    return train, val, test
 
 def _load_weight_class_change(labels: pd.DataFrame) -> pd.DataFrame:
     """Same connection pattern as _load_recent_damage — only needs
