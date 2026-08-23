@@ -269,3 +269,84 @@ Tier 3 result — see ADR-018 for the distinction.
 loss — the first metric disagreement of the project between models.
 Not actionable under the project's log-loss-first hierarchy; noted
 for `docs/MODEL_CARD.md`.
+
+## Week 3 Friday — Test set unlock (ADR-020)
+
+One-time, pre-registered read of the locked test set (2025-01-11 to
+2026-08-08, 835 bouts). Full protocol, all five pre-registered
+decisions, and complete reasoning: **ADR-020**.
+
+### Preflight
+
+| check | result |
+|---|---|
+| Elo regression (7,621 train/val bouts, cutoff extended through 2025+) | max diff 0.00e+00 — no train/val rating changed |
+| Split integrity (train/val/test) | 0 overlap, all pairs intact, 50/50 balance, all test dates ≥ 2025-01-01 |
+
+### Metrics — odds-covered slice (n=1,512 rows / 756 bouts)
+
+| artifact | who | accuracy | log_loss | brier | ece | max_pair_dev |
+|---|---|---|---|---|---|---|
+| **B (ships)** — train+val ≤2024 | model | 0.6574 | 0.6333 | 0.2211 | 0.0511 | 0.0806 |
+| B — same slice | market | 0.7011 | 0.5757 | 0.1961 | 0.0236 | ~0 |
+| A (diagnostic) — train only ≤2022 | model | 0.6534 | 0.6380 | 0.2232 | 0.0512 | 0.0787 |
+
+### Metrics — full test (n=1,670 rows / 835 bouts)
+
+| artifact | accuracy | log_loss | brier | ece |
+|---|---|---|---|---|
+| B (ships) | 0.6623 | 0.6318 | 0.2204 | 0.0552 |
+| A (diagnostic) | 0.6569 | 0.6363 | 0.2224 | 0.0531 |
+
+### Metrics — close-fight slice, market-defined 0.40–0.60 (n=402 rows / 201 bouts)
+
+| artifact | who | accuracy | log_loss | ece |
+|---|---|---|---|---|
+| B (ships) | model | 0.5622 | 0.6867 | 0.0430 |
+| B — same slice | market | 0.5672 | 0.6819 | 0.0156 |
+
+n=402 clears the ADR-020 directional-only floor (150) — read as a
+real, if noisy, result rather than purely directional.
+
+**Market beats the model on every metric, every slice, without
+exception.** Consistent with the "near this feature set's ceiling"
+framing carried since ADR-016.
+
+### Backtest sweep (ADR-020 Decision 4)
+
+Shipping artifact (B), flat 1-unit stake:
+
+| edge threshold | n_bets | roi | hit_rate | roi 95% ci | kelly final ($100 start) | max drawdown |
+|---|---|---|---|---|---|---|
+| 0.00 | 744 | −13.86% | 33.06% | [−23.8%, −3.8%] | $1.67 | 98.7% |
+| 0.02 | 686 | −12.62% | 32.80% | [−22.7%, −1.9%] | $1.69 | 98.7% |
+| 0.05 | 585 | −14.19% | 30.94% | [−25.4%, −2.0%] | $1.73 | 98.7% |
+
+All six CIs (both artifacts, all three thresholds) sit entirely below
+zero — a decisive negative result, not the "spans zero, no signal
+either way" outcome the pre-run framing expected. Diagnostic artifact
+(A) shows the same pattern within ~2 points of ROI at every threshold.
+
+### Verdict against ADR-020 Decision 5
+
+| criterion | target | actual | met? |
+|---|---|---|---|
+| Primary: test log loss (odds-covered) within val ± 0.01 | 0.6483 ± 0.01 | 0.6333 (drift −0.0150) | **No** — better than val, outside tolerance |
+| Secondary: ECE ≤ 0.05 | ≤ 0.05 | 0.0511 | **No** — narrowly missed |
+| (Not a criterion) beat market | — | gap +0.0576 log loss | No |
+| (Not a criterion) positive ROI | — | −12.6% to −14.2% across thresholds | No |
+
+**Reading:** the primary miss is in the "too good" direction — worth
+a period-composition check in a future v2, not grounds to revisit v1
+per the hard no-further-tuning rule. The ECE miss is small in
+magnitude but consistent with the calibration tradeoff ADR-017 already
+identified, not a new finding. The backtest and Kelly results are the
+clearest evidence in the whole project for why real-money betting
+stays gated behind 3+ months of logged out-of-sample results.
+
+### Ships
+
+**v1 = artifact B**: tuned LightGBM (Monday's frozen hyperparameters),
+trained on train+val (≤2024), uncalibrated. No changes follow this
+result, per ADR-020's hard rule. Next: Week 3 Saturday — freeze,
+`model_registry`, `docs/MODEL_CARD.md` (training cutoff ≤2024).

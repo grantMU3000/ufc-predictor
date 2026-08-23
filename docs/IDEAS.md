@@ -198,3 +198,51 @@
   that can watch fight footage is the only version of this project
   that competes with that directly rather than approximating it
   secondhand through box-score-style stats.
+
+  - **Long-term v2: prop/stat prediction instead of (or alongside)
+  winner prediction.** Instead of "who wins," predict a distribution
+  over an individual fighter's stat (e.g. significant strikes landed)
+  for an upcoming bout, and compare it to the market's posted
+  over/under line — surfacing where they disagree meaningfully.
+  **Why this is promising:** props are priced by far fewer sharp
+  bettors than moneylines (the plausible-edge case `docs/PLAN.md` §7
+  already names), the project already has per-round `bout_stats`
+  currently thrown away by the winner model (strikes/TDs/control time
+  by round, by fighter), and a volume target is likely more learnable
+  than a binary outcome — strike counts accumulate roughly as a rate
+  process, while a fight outcome can flip on one exchange.
+  **The hard parts, not yet solved, in rough priority order:**
+  - *Censoring*: "over 60 strikes" is really rate x duration jointly —
+    a fight ending in round 2 isn't a failure to reach 60, it's a
+    truncated observation. Needs a duration model and a rate model
+    integrated together (survival-analysis framing), not a
+    direct regression.
+  - *No historical prop-odds data*: The Odds API's coverage (ADR-008)
+    is moneylines only. Without historical prop lines there's no
+    backtest, and without a backtest this can't be trusted with real
+    money. Needs its own data-source investigation before any modeling
+    starts.
+  - *No live stat feed for the in-play version*: knowing a live strike
+    count mid-round requires a real-time counting source that doesn't
+    currently exist and that ufcstats (ADR-006) won't provide.
+  - *The originally-imagined trigger was backwards*: alerting when a
+    line moves (e.g. -150 -> -200) is chasing a move the market already
+    priced, not finding an edge. A real signal compares the model's
+    own fair-value estimate against the CURRENT line, not against the
+    line's own recent movement.
+  - *Latency and regulatory scope*, for the live/alerting version
+    specifically — competing on speed against feeds this project won't
+    have, and "message the user to place a bet" is a different
+    liability surface than a passive prediction ledger.
+  **Recommended sequencing when this gets picked up:** start with the
+  PRE-FIGHT version only (predict the distribution, compare to the
+  posted line, no live infra) — reuses the existing ingestion
+  pipeline, point-in-time feature store, and prediction ledger
+  almost unchanged, and isolates the real technical problem
+  (censored-duration modeling) from the much harder live-data problem.
+  The in-play/alerting version is a deployment question to revisit
+  only once the pre-fight model is proven out. Method-of-victory props
+  are a related, similarly-lazy market worth a look at the same time —
+  `method`/`method_detail`/`ending_round` are already in the schema.
+  Explicitly out of scope for the current 6-week plan per §0.3's cut
+  list; this is a v2/long-term entry, not a Week 4-6 item.

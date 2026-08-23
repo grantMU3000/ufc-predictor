@@ -33,6 +33,33 @@ Daily log of what shipped, what's blocked, and what's next. Written at the end o
 
 ## Log
 
+## 2026-08-22 (Week 3, Day 3)
+
+**Planned today:** Commit the outstanding working-tree changes (script deletions + `joblib`/`matplotlib` deps) and confirm CI is green, then move to Thursday's plan deliverable — the LR + LightGBM + Elo ensemble blend — since the frozen-artifact decision (uncalibrated tuned LightGBM) is now made and Friday's test-set unlock is close behind. Then pull Greco information.
+
+**Shipped:**
+- Pre-registered four ensemble gates (`ADR-018`) before scoring any blend — Gate A (holdout log loss beats best single model by ≥0.002), Gate B (stacker must beat best fixed-weight blend by ≥0.002), Gate C (ADR-004 symmetry, ≤1.5x best single model's pair deviation), Gate D (calibration guard, ECE regression ≤0.005). Accuracy explicitly not a gate, per ADR-016.
+- Built `models/ensemble.py` and ran a pre-blend diagnostic (pairwise probability correlation: LightGBM/LR 0.845, LightGBM/Elo 0.490, LR/Elo 0.581; 42.3% disagreement rate), then scored seven blend candidates plus the three single models on the same fit/holdout split as ADR-017 (fit 2011–2020 n=8,620, holdout 2021–2022 n=2,006). Best candidate (`weighted_logit_3`, lgbm=0.75/lr=0.23/elo=0.02) reached -0.001985 log loss — **missed Gate A by 0.000015**. Gate D disqualified both equal-weight blends (ECE regression past limit); Gate C passed for everything, including the intercept stacker. **No candidate ships — v1 remains the tuned LightGBM alone**, logged as `ADR-019` (`cb3ed11`)
+- Distinguished this result from ADR-016's Tier 3 finding in the writeup: today's four blends were consistently signed (-0.0011 to -0.0020, all negative) vs. ADR-016's scattered/unsigned noise — a real, small, sub-threshold effect, not "nothing there"
+- Caught and deferred a diagnostic bug: raw residual correlation is structurally uninformative (dominated by the shared `y_true` term) and was initially misread as a warning sign — fix (split by outcome class) logged to `IDEAS.md`, never fed into a gate
+- Logged a secondary, non-actionable finding: `single_p_lr` beats `single_p_lgbm` on both accuracy (0.6162 vs 0.5972) and Brier (0.2351 vs 0.2355) while losing on log loss — first metric disagreement of the project between models, noted for `docs/MODEL_CARD.md`
+- Added a substantial market-parity roadmap to `IDEAS.md`, ranking what's already ruled out (algorithm swap, more data — both directly evidenced by this week's negative results) against what's still plausible (fighter embeddings/style representation as the biggest lever, short-notice flag, closing-line timing)
+
+**Blocked / open questions:**
+- The three script deletions (`scripts/load_first_ufc_stats.py`, `scripts/odds_api_small.py`, `scripts/wiki_api_test.py`) are still uncommitted — third day running
+- New untracked `.claude/skills/fix-ci/` directory in working tree, not part of today's ensemble work — unclear if intentional, needs a decision before next commit
+- "Pull Greco information" carried over from two days ago's tomorrow-task, still not addressed
+
+**Research (1hr):** —
+
+**Tomorrow's first task:** Clear the three-day-old uncommitted script deletions and decide on `.claude/skills/fix-ci/` (commit or discard), confirm CI is green, then move to Friday's plan deliverable — the one-shot test-set unlock (accuracy on close fights, ROI backtest at closing odds, Kelly-fraction simulation) — since Thursday's ensemble is now resolved and there's nothing left pre-registered to try before it per today's `IDEAS.md` roadmap.
+
+**Energy / notes:**
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
 ## 2026-08-21 (Week 3, Day 2)
 
 **Planned today:** None of yesterday's three new Tier 3 features (SoS, recent damage, weight-class-change) had a measured val-set delta yet — run each through the LightGBM val evaluation (individually and combined) and log accuracy/log loss/Brier/ECE deltas to `docs/RESULTS.md` before treating them as part of the leading feature set. Then commit the uncommitted script deletions and confirm CI is green.

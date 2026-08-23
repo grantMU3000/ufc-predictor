@@ -34,6 +34,177 @@ The actual reasoning. Be specific about tradeoffs accepted, not just benefits ga
 What this makes easier, what this makes harder, what it forecloses or defers.
 ```
 ---
+## [ADR-020] Test set unlock: pre-registered evaluation protocol
+
+**Date:** 2026-08-23
+**Status:** Accepted
+
+### Context
+
+`docs/PLAN.md` §3's Week 3 Friday entry calls for a one-time test-set
+run: accuracy/log loss/Brier/ECE, accuracy on close fights, an ROI
+backtest at closing odds, and a Kelly-fraction simulation. This is the
+project's only irreversible evaluation step — every prior number
+(baselines, tuning, calibration, ensemble) could be re-run after
+inspection; test cannot. Five decisions are fixed here, in writing,
+before `models/test_eval.py` is run.
+
+### Decisions
+
+**1. Shipping artifact:** Refit the tuned LightGBM on train+val
+(≤2024) using Monday's Optuna hyperparameters, frozen and unchanged —
+no re-tuning. This is the shipping artifact (v1). The original
+train-only artifact (≤2022) is also scored as a diagnostic comparison
+only. **The train-only score cannot become the shipping number under
+any outcome, including if it scores better on test.** Val is
+considered spent once this refit happens — no held-out set remains
+after today, consistent with "no further tuning after test unlock."
+
+**2. Elo through the test window:** `compute_elo_ratings` runs
+sequentially through 2025+ for scoring purposes, filtered at the
+caller to `event_date < bout_date` (same point-in-time rule as
+always, later boundary). This is not a new leakage risk — every
+input remains strictly prior fights — just a code path that hasn't
+been exercised yet. Elo within train+val requires no changes; those
+splits already compute correctly through their own histories.
+
+**3. Close-fight definition:** de-vigged market-implied probability
+in [0.40, 0.60]. Defined on the market's opinion, not the model's, to
+avoid circularity (a model-probability-based definition of "close"
+just measures the model's own uncertainty). Report n alongside the
+metric; if n < ~150, treat the result as directional only, per the
+small-n lesson from ADR-015's permutation-test correction.
+
+**4. Betting rule (ROI backtest):**
+- **Edge threshold:** model probability minus de-vigged market
+  probability. Report at 0.00, 0.02, and 0.05 — all three
+  pre-registered as a sensitivity sweep, not a search for the best-
+  looking one after the fact.
+- **Price paid:** the raw sportsbook (vigged) price, not the de-vigged
+  probability. De-vig is for comparing model vs. market belief only;
+  the vig is real money actually lost or won.
+- **Stake:** flat 1 unit per qualifying bet, chronologically ordered.
+- Bootstrap CI reported on ROI at each threshold.
+
+**5. Success criteria, set before any test result is seen:**
+- **Primary:** test log loss on the odds-covered slice within ~0.01
+  of val's 0.6483 — i.e., the validation estimate generalized. A
+  result matching prediction is treated as a stronger outcome than an
+  unexplained improvement.
+- **Secondary:** ECE ≤ 0.05 (standing project target).
+- **Explicitly not a success criterion:** beating the market
+  (0.5897 log loss) or a positive ROI backtest. Neither is expected,
+  given three straight sub-threshold Week 3 sessions (ADR-016/017/018)
+  and the val gap already on record.
+- **Hard rule:** no hyperparameter, feature, or calibration change
+  follows this run. Any idea the test result suggests goes to
+  `IDEAS.md` for a from-scratch, re-validated v2 — never back into v1.
+
+### Results
+
+**Preflight (both passed before any scoring occurred):**
+- Elo regression check: 7,621 train/val bouts compared before vs.
+  after extending the Elo cutoff through 2025+ — max diff 0.00e+00.
+  Confirms extending the cutoff did not silently change any published
+  val number.
+- Split integrity: 835 test bouts, 2025-01-11 to 2026-08-08, zero
+  overlap with train/val, every bout paired 2 rows, 50/50 label
+  balance intact.
+
+**Metrics — shipping artifact (B: train+val ≤2024), odds-covered
+(n=1,512 rows / 756 bouts):**
+
+| | model | market |
+|---|---|---|
+| accuracy | 0.6574 | 0.7011 |
+| log loss | 0.6333 | 0.5757 |
+| brier | 0.2211 | 0.1961 |
+| ece | 0.0511 | 0.0236 |
+
+**Close-fight slice (market-defined, 0.40–0.60, n=402 rows / 201
+bouts — above the n≥150 directional-only floor):**
+
+| | model | market |
+|---|---|---|
+| accuracy | 0.5622 | 0.5672 |
+| log loss | 0.6867 | 0.6819 |
+| ece | 0.0430 | 0.0156 |
+
+**Market wins every metric, on every slice, without exception.**
+Consistent with — not contradicted by — three straight weeks of
+sub-threshold findings (ADR-016/017/018) that flagged the tuned
+LightGBM as likely near this feature set's ceiling.
+
+**Primary criterion: NOT MET, in the unexpected direction.** Test log
+loss (0.6333) beat val (0.6483) by 0.0150, just outside the ±0.01
+tolerance. Per the project's own "any 3+ point jump is a leak until
+proven otherwise" instinct, an unexpectedly *better* number is a
+reason to check test-period composition before trusting it, not a
+reason to treat it as a win — flagged in Consequences below, not
+investigated further today per the hard no-further-tuning rule.
+
+**Secondary criterion: NOT MET.** Test ECE (0.0511) narrowly exceeds
+the 0.05 target and moved further from val's 0.0318 — consistent with
+the underconfidence-to-log-loss tradeoff ADR-017 already documented,
+not a new failure mode.
+
+**Backtest sweep — all six cells (2 artifacts × 3 thresholds)
+decisive and negative**, ROI 95% CI entirely below zero at every
+threshold for both artifacts (e.g. shipping artifact B at 0.02 edge:
+ROI −12.6%, CI [−22.7%, −1.9%]). This is a stronger signal than
+anticipated going in ("CI spans zero" was the expected outcome) — the
+honest read is a measured loss, not merely "no demonstrated edge."
+
+**Kelly simulation: catastrophic.** Quarter-Kelly, 5%-capped,
+chronological, on shipping artifact B: $100 → ~$1.67–1.73 across
+thresholds (97–98% drawdown). A small, real calibration gap compounds
+severely once bet sizing assumes the model's probabilities are exact.
+
+**Diagnostic artifact (A: train-only ≤2022) tracked B closely on
+every metric** (odds-covered log loss 0.6380 vs. B's 0.6333) — the
+extra two years of training data moved the needle by roughly the same
+small margin ADR-016 already found for added training volume.
+
+### Consequences
+
+**v1 ships as the shipping artifact (B):** tuned LightGBM,
+hyperparameters frozen from Monday's Optuna search, trained on
+train+val (≤2024), uncalibrated. Saturday's `model_registry` entry and
+model card must record training cutoff as **≤2024**, not the earlier
+≤2022 — the value most likely to be left stale by copy-paste.
+
+**Project framing going forward is market efficiency, not market
+beating.** The pitch is a validated, leakage-free, disciplined
+pipeline that lands short of a highly efficient market — a legitimate,
+publishable outcome per `docs/PLAN.md`'s own risk register, not a
+failure to explain away.
+
+**Real-money betting stays cut, with evidence now attached.** The
+Kelly drawdown is concrete support for the plan's existing rule (no
+real-money betting until 3+ months of logged out-of-sample results) —
+worth citing directly in the model card as the reason that rule
+exists, not just an assumption.
+
+**Logged to `IDEAS.md`:** (1) the test-period composition check
+implied by the unexpected val→test log-loss improvement — a look at
+year/weight-class/favorite-mix distribution in test vs. val, for a
+hypothetical v2, never for v1; (2) test's ECE result adds weight to
+the standing Platt/beta calibration idea (fit to the calibration
+holdout's own baseline, not isotonic) as the first thing to retry in
+any v2.
+
+**Forecloses:** any further tuning, feature, or calibration change to
+v1 — per Decision 5's hard rule, honored regardless of today's
+outcome. `data/test_locked/test.parquet` returns to chmod 000 after
+documentation is complete.
+
+**Not undermined:** the pipeline's leakage-safety claims. Both
+preflight checks passed cleanly, extending the project's clean audit
+record (`LEAKAGE_LOG.md`) through the test boundary for the first
+time.
+
+---
+
 ## [ADR-019] Ensemble (LR + LightGBM + Elo): Gate A missed by 0.000015 — v1 ships as tuned LightGBM alone
 
 **Date:** 2026-08-22
@@ -162,12 +333,6 @@ keep in sync with a retrained model.
 reuses the same pattern as `models/feature_deltas.py` (ADR-016) and
 `models/calibration.py` (ADR-017) — ready if revisited at test unlock
 with a larger holdout.
-
-**Logged to `IDEAS.md`:** revisit the ensemble with a larger
-population; fix the residual-correlation diagnostic; the LR-vs-LGBM
-accuracy/Brier disagreement; LR-carries-more-signal-than-Elo as a
-caution for any future Elo-adjacent feature (e.g. Glicko-2 RD, still
-gated closed per ADR-015).
 
 **Not foreclosed:** standalone Elo/LR numbers already in
 `docs/RESULTS.md` are unaffected — this ADR concerns only whether
