@@ -20,3 +20,25 @@ odds snapshots: 59972
 predictions: 0
 prediction results: 0
 
+Row Counts 08/23/26 (Post Greco Ingest)
+bouts: 8687
+bout_stats: 41082
+events: 795
+fighter aliases: 221
+fighters: 4606
+odds snapshots: 59972
+predictions: 0
+prediction results: 0
+
+08/23/26 (Post Wiki Ingest)
+bouts: 8707
+bout_stats: 41082
+events: 797 (Now 798 b/c I added a row for Fight Night on 10/31)
+fighter aliases: 243
+fighters: 4609
+odds snapshots: 59972
+predictions: 0
+prediction results: 0
+
+
+
