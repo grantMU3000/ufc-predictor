@@ -34,6 +34,84 @@ The actual reasoning. Be specific about tradeoffs accepted, not just benefits ga
 What this makes easier, what this makes harder, what it forecloses or defers.
 ```
 ---
+## [ADR-021] Wikitable parsing: expand row/col spans into a full grid, and raise on unreconstructable rows
+
+**Date:** 2026-08-24
+**Status:** Accepted
+
+### Context
+
+The 2026-08-24 upcoming-events ingest silently dropped UFC Fight Night 292
+and wrote the literal string `rowspan=2 | Meta Apex` as the venue for
+UFC Fight Night 293. Both cards run at the Apex a week apart, so Wikipedia's
+"Scheduled events" table merges the Venue and Location cells with
+`rowspan=2`. Two independent defects in `parse_scheduled_events`:
+
+1. Cell attributes were never separated from cell content. Wikitext cells
+   are `| attributes | content`; the parser took the whole line as content,
+   and `strip_code()` does not strip HTML attributes.
+2. The row below a merged cell physically contains only 3 cells, not 5.
+   The parser's `if len(cell_lines) < 4: continue` guard discarded it with
+   no error, no log line, and no count mismatch — the event simply never
+   existed downstream.
+
+Testing the pre-fix parser against a fixture with one rowspan pair and one
+inline-`||` row returned 2 of 4 events and raised nothing.
+
+### Options considered
+
+1. **Special-case the Apex** — detect consecutive same-venue rows and
+   backfill. Rejected: treats the symptom, not the cause; rowspan is used
+   anywhere the table has repeated values, and colspan/inline-`||` cells
+   have the same failure mode.
+2. **Replace hand parsing with mwparserfromhell's table Tag nodes** —
+   spans available via `.attributes`. Rejected for now: a larger rewrite of
+   working code, and span expansion still has to be implemented by hand
+   because Tag nodes expose attributes, not a resolved grid.
+3. **Expand spans into a rectangular grid before extracting fields, and
+   raise on rows that still don't reconstruct.** Chosen.
+
+### Decision
+
+Option 3. `parse_scheduled_events` now splits each cell into
+`(attributes, content)` using a nesting-aware pipe scanner (so pipes inside
+`[[a|b]]` and `{{dts|...}}` are not mistaken for cell boundaries), expands
+`rowspan`/`colspan` into a full grid keyed on column index, and raises
+`ValueError` — rather than `continue` — on any row that cannot be
+reconstructed to the expected column count.
+
+### Why
+
+The parser already fails loud on an unexpected *header* set. Failing quiet
+on an unexpected *row* was inconsistent, and it's the more dangerous of the
+two: a wrong header raises immediately, while a dropped row produces a
+database that looks fine and just has a card missing from it. For a project
+whose output is a prediction logged before a fight happens, a missing
+scheduled bout is a silent miss with nothing downstream to catch it.
+
+Tracking column index during span expansion (rather than "last non-empty
+value") is what makes the carried cell land in the Venue slot rather than
+being appended after Ref.
+
+### Consequences
+
+- Wikipedia editors reformatting the table now break the ingest loudly on
+  the first affected row instead of quietly shrinking the event list.
+- Accepts that one genuinely malformed row aborts the whole scheduled-events
+  pass. Deliberate: the table has ~10-20 rows and is hand-maintained, so a
+  structural change is a real signal, not noise. Per-*event-page* failures
+  (fight card fetches) remain caught and skipped in
+  `ingest_upcoming_events.py` — that loop touches dozens of independent
+  pages, where one bad page genuinely shouldn't kill the run.
+- Regression fixture in `tests/test_wiki_parsers.py` pins the 292/293 case,
+  inline-`||` rows, piped links inside spanned cells, and the raise-on-short-row
+  behavior.
+- Re-running the ingest is now the repair path for the corrupted 293 venue
+  string, provided the hand-inserted 292 row carries the correct
+  `wikipedia_pageid` — otherwise the upsert creates a duplicate event, the
+  same class of split-identity bug as ADR-013.
+---
+
 ## [ADR-020] Test set unlock: pre-registered evaluation protocol
 
 **Date:** 2026-08-23
