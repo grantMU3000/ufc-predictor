@@ -27,6 +27,33 @@ from data.scraping.wiki_parsers import parse_fight_card, parse_scheduled_events
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
+ROWSPAN_TABLE = """
+{| class="wikitable sortable"
+! scope="col" | Event
+! scope="col" | Date
+! scope="col" | Venue
+! scope="col" | Location
+! scope="col" | Ref.
+|-
+| [[UFC 325]]
+| {{dts|2026|Nov|14}}
+| [[T-Mobile Arena]]
+| [[Paradise, Nevada|Paradise]], [[Nevada]], U.S.
+| <ref name="r1"/>
+|-
+| [[UFC Fight Night 293]]
+| {{dts|2026|Nov|07}}
+| rowspan=2 | [[UFC Apex|Meta Apex]]
+| rowspan="2" | [[Las Vegas]], [[Nevada]], U.S.
+| <ref name="r2"/>
+|-
+| [[UFC Fight Night 292]]
+| {{dts|2026|Oct|31}}
+| <ref name="r3"/>
+|-
+| [[UFC 324]] || {{dts|2026|Oct|24}} || [[Etihad Arena]] || [[Abu Dhabi]], U.A.E. || <ref name="r4"/>
+|}
+"""
 
 @pytest.fixture
 def fight_card_wikitext() -> str:
@@ -161,3 +188,44 @@ class TestParseScheduledEvents:
         )
         with pytest.raises(ValueError, match="Unexpected table columns"):
             parse_scheduled_events(bad_wikitext)
+
+    def test_rowspan_venue_is_carried_to_the_following_row(self):
+        events = {e["event_display_name"]: e for e in parse_scheduled_events(ROWSPAN_TABLE)}
+
+        assert "UFC Fight Night 292" in events, "row sharing a merged venue cell was dropped"
+        assert events["UFC Fight Night 292"]["venue"] == "Meta Apex"
+        assert events["UFC Fight Night 292"]["location"] == "Las Vegas, Nevada, U.S."
+        assert events["UFC Fight Night 293"]["venue"] == "Meta Apex"
+
+
+    def test_cell_attributes_are_not_stored_as_content(self):
+        for event in parse_scheduled_events(ROWSPAN_TABLE):
+            for field in ("venue", "location"):
+                assert "span=" not in event[field].lower(), f"attribute leaked into {field}"
+
+
+    def test_inline_double_pipe_row_is_parsed(self):
+        events = {e["event_display_name"]: e for e in parse_scheduled_events(ROWSPAN_TABLE)}
+        assert events["UFC 324"]["venue"] == "Etihad Arena"
+
+
+    def test_piped_wikilinks_inside_cells_survive(self):
+        events = {e["event_display_name"]: e for e in parse_scheduled_events(ROWSPAN_TABLE)}
+        assert events["UFC 325"]["location"] == "Paradise, Nevada, U.S."
+
+
+    def test_unreconstructable_row_raises_instead_of_skipping(self):
+        broken = """
+{| class="wikitable"
+! Event
+! Date
+! Venue
+! Location
+! Ref.
+|-
+| [[UFC 328]]
+| {{dts|2027|Mar|06}}
+|}
+"""
+        with pytest.raises(ValueError, match="reconstructed to"):
+            parse_scheduled_events(broken)

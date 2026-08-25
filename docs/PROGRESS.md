@@ -33,6 +33,35 @@ Daily log of what shipped, what's blocked, and what's next. Written at the end o
 
 ## Log
 
+## 2026-08-23 (Week 3, Day 4)
+
+**Planned today:** Clear the three-day-old uncommitted script deletions and decide on `.claude/skills/fix-ci/` (commit or discard), confirm CI is green, then move to Friday's plan deliverable — the one-shot test-set unlock (accuracy on close fights, ROI backtest at closing odds, Kelly-fraction simulation) — since Thursday's ensemble is now resolved and there's nothing left pre-registered to try before it per today's `IDEAS.md` roadmap.
+
+**Shipped:**
+- Built the test-set evaluation harness: `models/test_eval.py` (preflight checks, scoring, backtest orchestration, results/lock-file persistence), `models/backtest.py` (Kelly simulation, ROI sweep, bootstrap CI), extended `build_lgbm_matrix.py` with a `cutoff` parameter for computing Elo through the test era, and `features/odds.py` additions — 15 new tests in `tests/test_backtest.py` (`5557247`)
+- Pre-registered the full test-set unlock protocol as **ADR-020** before running it: shipping artifact (train+val ≤2024, Monday's frozen hyperparameters, no re-tuning), Elo-through-test-era handling, a market-defined close-fight band (0.40–0.60), the ROI/Kelly betting rule, and success criteria fixed in advance — then ran it, once (`9c08a8c`)
+- **Test-set result: market beat the model on every metric, every slice, without exception.** Odds-covered (n=1,512/756 bouts): model 0.6574 acc / 0.6333 log loss / 0.0511 ECE vs. market 0.7011 / 0.5757 / 0.0236. Primary criterion (test log loss within val ±0.01) **missed in the unexpected direction** — test beat val by 0.0150, flagged for a v2 period-composition check but not investigated further per ADR-020's hard no-further-tuning rule. Secondary criterion (ECE ≤ 0.05) narrowly missed at 0.0511
+- Backtest sweep came back decisively negative rather than the expected "spans zero" result — all six cells (2 artifacts × 3 edge thresholds) had 95% ROI CIs entirely below zero (e.g. −12.6% to −14.2% ROI at the shipping artifact's thresholds). Kelly simulation (quarter-Kelly, 5% cap): $100 → ~$1.67–1.73 (97–98% drawdown) — concrete documented justification for the plan's existing real-money-betting gate
+- Both preflight leakage checks passed clean, extending `LEAKAGE_LOG.md`'s audit record through the test boundary for the first time: Elo cutoff extended through 2025+ changed zero train/val ratings (max diff 0.00e+00 across 7,621 bouts), and split integrity confirmed zero train/val/test overlap
+- **v1 ships**: tuned LightGBM, hyperparameters frozen from Monday's Optuna search, trained on train+val (≤2024, not ≤2022) — `data/test_locked/test.parquet` returned to chmod 000 after documentation
+- Logged three follow-up ideas to `IDEAS.md`, explicitly scoped to a from-scratch v2 only: test/val composition check, Platt/beta calibration retry (reinforced by test's ECE result), and the Kelly result as model-card documentation
+- Ran the weekly Greco + Wiki ingest per `docs/IngestWorkflow.md`: bouts 8,620 → 8,707, events → 798 (added a Fight Night 10/31 event), fighters → 4,609 (`f513480`)
+- Fixed CI: 14 mechanical ruff issues (import order, unused imports, redundant casts) and all 47 mypy errors across 8 files — stale/loose type annotations only, no logic changes (`b045552`)
+- Found and fixed a second, unrelated CI failure after the above: `tests/test_tier3.py` was missing the same "skip if no local Parquet snapshot" guard `tests/test_features.py` already has, so it was erroring (not skipping) in CI, which has no `data/processed/` snapshot. CI is now green end-to-end (`a946dab`)
+
+**Blocked / open questions:**
+-
+
+**Research (1hr):** —
+
+**Tomorrow's first task:** Fix the Wiki API ingest (resolving future bout conflicts, and resolve Apex event conflicts) never got finished today. Resolve those, then commit the outstanding working-tree changes (script deletions, `.claude/skills/fix-ci/`, today's ingestion log updates, `models/artifacts/test_unlock.lock`) and confirm CI is still green, before moving to Saturday's plan deliverable — freeze v1 and write `docs/MODEL_CARD.md`.
+
+**Energy / notes:**
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
 ## 2026-08-22 (Week 3, Day 3)
 
 **Planned today:** Commit the outstanding working-tree changes (script deletions + `joblib`/`matplotlib` deps) and confirm CI is green, then move to Thursday's plan deliverable — the LR + LightGBM + Elo ensemble blend — since the frozen-artifact decision (uncalibrated tuned LightGBM) is now made and Friday's test-set unlock is close behind. Then pull Greco information.

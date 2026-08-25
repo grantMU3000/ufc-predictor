@@ -40,5 +40,14 @@ odds snapshots: 59972
 predictions: 0
 prediction results: 0
 
+08/24/26 (Post Wiki Ingest fix)
+bouts: 8707
+bout_stats: 41082
+events: 798
+fighter aliases: 244 (Aline Pereira)
+fighters: 4609
+odds snapshots: 59972
+predictions: 0
+prediction results: 0
 
 
