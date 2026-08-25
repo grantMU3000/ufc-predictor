@@ -35,9 +35,74 @@ What this makes easier, what this makes harder, what it forecloses or defers.
 ```
 ---
 
+## [ADR-023] FastAPI: sync endpoints over async, engine + model loaded once at startup
+
+**Date:** 2026-08-25
+**Status:** Accepted
+
+### Context
+
+Week 4 Monday starts the FastAPI service. The existing DB layer
+(`loaders.py`, `registry.py`) is synchronous SQLAlchemy Core — no
+`asyncpg`, no async engine. FastAPI supports both `async def` and
+plain `def` route handlers, and picking wrong has a real cost: mixing
+`async def` with a blocking DB call freezes the entire server for
+every user, not just the one being served.
+
+### Options considered
+
+1. **Rewrite the DB layer on `asyncpg` + async SQLAlchemy** — lets
+   routes be genuinely `async def`. Cost: a second data-access pattern
+   living alongside the sync one used by training scripts, days of
+   rewrite, for a project with negligible concurrent traffic.
+2. **Plain `def` route handlers** — FastAPI automatically runs these
+   in a threadpool, so a blocking DB call doesn't stall the server.
+   Zero changes to the existing DB layer.
+
+### Decision
+
+Option 2. All routes are plain `def`. One synchronous `Engine`
+(`pool_pre_ping=True`, for Neon's idle-suspend behavior) and the
+loaded LightGBM `Booster` are both created once in a FastAPI
+`lifespan` block and reused across requests via app state — not
+recreated per-request.
+
+### Why
+
+`async def` only pays off when *everything* inside it is also async.
+Our DB calls are blocking, so an `async def` route would sit there
+doing nothing while one request finishes — blocking every other
+request in the meantime. `def` routes sidestep this entirely: FastAPI
+hands each one to a worker thread, so a slow query only blocks that
+one request. At this project's traffic, threadpool dispatch is free
+performance-wise, and it costs zero rewrite of code that already
+works and is unit-tested.
+
+Loading the engine and model once at startup (not per-request) avoids
+paying connection-setup and model-deserialization cost on every hit,
+and matches the pattern the DB layer already uses elsewhere
+(`registry.py`, `loaders.py`: one engine, reused).
+
+### Consequences
+
+**Easier:** no second DB access pattern to maintain; training scripts
+and the API share the exact same query code if ever useful; adding
+routes tomorrow (Tuesday's inference path) is just another `def`.
+
+**Requires care:** if a future endpoint calls something slow that
+*isn't* the DB (e.g. an outbound HTTP call), it should still be `def`
+unless it's written async end-to-end — mixing is what causes the
+freeze.
+
+**Forecloses:** nothing permanent. If traffic ever grows enough to
+matter, the async rewrite is still available later — this decision
+just says now isn't that time.
+
+---
+
 ## [ADR-022] Freeze v1: native LightGBM serialization, model_registry schema, single-active-version invariant
 
-**Date:** 2026-08-24
+**Date:** 2026-08-25
 **Status:** Accepted
 
 ### Context
