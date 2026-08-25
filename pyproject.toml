@@ -10,6 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.18.5",
     "duckdb>=1.5.5",
+    "fastapi>=0.141.1",
     "joblib>=1.5.3",
     "lightgbm>=4.7.0",
     "matplotlib>=3.11.1",
@@ -18,11 +19,13 @@ dependencies = [
     "pandas>=3.0.5",
     "psycopg2-binary>=2.9.12",
     "pyarrow>=25.0.1",
+    "pydantic-settings>=2.15.0",
     "python-dotenv>=1.2.2",
     "rapidfuzz>=3.14.5",
     "requests>=2.34.2",
     "scikit-learn>=1.9.0",
     "scipy>=1.18.0",
+    "uvicorn[standard]>=0.52.4",
 ]
 
 [project.scripts]
@@ -34,6 +37,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1",
     "mypy>=2.3.0",
     "pandas-stubs>=3.0.5.260730",
     "pytest>=9.1.1",
