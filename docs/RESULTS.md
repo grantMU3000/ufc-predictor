@@ -291,6 +291,13 @@ decisions, and complete reasoning: **ADR-020**.
 | B — same slice | market | 0.7011 | 0.5757 | 0.1961 | 0.0236 | ~0 |
 | A (diagnostic) — train only ≤2022 | model | 0.6534 | 0.6380 | 0.2232 | 0.0512 | 0.0787 |
 
+**Always-favorite baseline:** 0.7011 accuracy — identical to the
+market row above, by construction. "Pick the favorite" is the market's
+de-vigged probability thresholded at 0.5, so the two cannot differ on
+accuracy. Reported separately here only because `docs/PLAN.md`'s Week 3
+exit criterion names it explicitly; it is not an independent baseline.
+The model's 0.6574 trails it by 4.4 points.
+
 ### Metrics — full test (n=1,670 rows / 835 bouts)
 
 | artifact | accuracy | log_loss | brier | ece |
@@ -350,3 +357,35 @@ stays gated behind 3+ months of logged out-of-sample results.
 trained on train+val (≤2024), uncalibrated. No changes follow this
 result, per ADR-020's hard rule. Next: Week 3 Saturday — freeze,
 `model_registry`, `docs/MODEL_CARD.md` (training cutoff ≤2024).
+
+## Week 3 Saturday — Freeze v1 (ADR-022)
+
+`models/v1/model.txt` + `models/v1/metadata.json` frozen, chmod 444.
+No new metrics — this step packages Friday's numbers, it doesn't
+recompute them.
+
+| | |
+|---|---|
+| Artifact SHA-256 | `cf65091803b4ca8ed6f13fe39d6f76d3a30e5b5a25e2bc535fad9c10f37826b9` |
+| Training data | train+val, `event_date < 2025-01-01` — 15,242 rows / 7,621 bouts |
+| Determinism check | **Bit-identical** — two back-to-back refits on identical data/params produced byte-for-byte identical LightGBM text dumps |
+| `model_registry` | Row id=1, `version='v1'`, `is_active=true` — confirmed via `get_active_model()` |
+| Freeze commit | `9bd9b28-DIRTY` |
+| Test-eval commit | `5557247-DIRTY` (unresolved provenance gap — see ADR-022 Decision 5) |
+
+Full reasoning, schema design, and the serialization-format tradeoff:
+**ADR-022**. Full model documentation: **`docs/MODEL_CARD.md`**.
+
+**Always-favorite baseline note:** `docs/PLAN.md`'s exit criterion asks
+for this comparison explicitly. It is not a separate row — "pick the
+favorite" is the market's de-vigged probability thresholded at 0.5, so
+its accuracy is identical to the Market row already reported Friday
+(0.7011, odds-covered test slice) by construction. See the note under
+the Week 3 Friday odds-covered table.
+
+**Week 3 exit criteria status:**
+- `models/v1/` exists with a model card — ✅
+- Test-set metrics documented, including favorite-baseline comparison — ✅ (see above)
+- Reliability diagram rendered — referenced (`docs/images/reliability_v1_*.png`) ✅,
+
+**Week 3 is complete.** Next: Week 4 Monday — FastAPI skeleton.
