@@ -235,5 +235,5 @@
     "scikit-learn": "1.9.0"
   },
   "trained_at": "2026-08-25T14:49:35.935334+00:00",
-  "notes": "Test-day code state recorded as 55572472e38b9f1ae974c8ec37796769c7f3de68-DIRTY. The uncommitted diff active at that time is not recoverable from git history (commit 9c08a8c, immediately following, touched only docs/ and docs/results/, no code). See ADR-021 Decision 5."
+  "notes": "Test-day code state recorded as 55572472e38b9f1ae974c8ec37796769c7f3de68-DIRTY. The uncommitted diff active at that time is not recoverable from git history (commit 9c08a8c, immediately following, touched only docs/ and docs/results/, no code). See ADR-022 Decision 5."
 }
