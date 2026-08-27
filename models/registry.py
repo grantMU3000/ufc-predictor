@@ -1,5 +1,5 @@
 """
-Model registry — Week 3 Saturday (docs/PLAN.md Section 3, ADR-021).
+Model registry — Week 3 Saturday (docs/PLAN.md Section 3, ADR-022).
 
 Thin data-access layer over the model_registry table. Kept separate
 from models/freeze.py on purpose: freeze.py is a training script (it
