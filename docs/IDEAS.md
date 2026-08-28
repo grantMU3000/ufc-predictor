@@ -316,3 +316,6 @@ near-total bankroll loss under compounding stakes is a more persuasive
 argument than the rule stated on its own.
 
 **Scope:** documentation only, no code or model change implied.
+
+--- 
+**Make the test set bigger:** The test set has a limited amount of bouts, which could be causing ECE to not hit its goal target. Using a larger test set may help with this.

@@ -35,6 +35,80 @@ What this makes easier, what this makes harder, what it forecloses or defers.
 ```
 ---
 
+## [ADR-024] Inference path: feature reuse, symmetry averaging, raw SHAP attribution, data coverage
+
+**Date:** 2026-08-28
+**Status:** Accepted
+
+### Context
+
+Week 4 Tuesday closes the 501 stub in `GET /fights/{id}/prediction`
+(docs/PLAN.md §3). The Step 1 trace confirmed the training recipe
+end to end against `models/v1/metadata.json` — four decisions were
+needed before writing the inference feature module.
+
+### Decision 1 — Feature computation reuses features/* unchanged
+
+Reuse `features/*` unchanged, no reimplementation for Postgres — a
+second implementation of the same recipe is how skew gets
+introduced. `store.py`'s DuckDB signature doesn't meet the API's
+SQLAlchemy engine directly, so inference runs feature functions over
+a refreshed Parquet snapshot via DuckDB, identical code path to
+training.
+
+### Decision 2 — Symmetry: predict both corners, average
+
+Predict both corner orderings and average: `p_red = (p_A + (1 −
+p_B)) / 2`. Removes dependence on which corner Wikipedia lists first
+— near-free (one extra `predict()` call), and the gap `|p_A − (1 −
+p_B)|` is logged as a standing diagnostic, not discarded.
+
+### Decision 3 — Explanations: raw pred_contrib, reported honestly
+
+`pred_contrib=True` (exact TreeSHAP, zero new dependencies) —
+LightGBM gain is average, not per-fight. Values returned raw, in
+log-odds, with an explicit note they aren't probability points.
+Directional phrasing ("favors Red, strong") is the frontend's job in
+Week 5, not a percentage-point conversion done here.
+
+### Decision 4 — Missing history: data coverage field, no imputation
+
+Response gains a `data_coverage` field: n_features_present /
+n_features_total, plus each fighter's prior-bout count. NaN features
+pass through unimputed (LightGBM native handling) — coverage doesn't
+gate the prediction, it labels its reliability, feeding Week 5's
+confidence indicator honestly rather than hiding thin history.
+
+### Decision 5 — as_of_date is the bout's own event_date, not today
+
+`as_of_date` = the bout's scheduled `event_date`, not `today()` —
+`build_feature_row` computes age and layoff from `as_of_date`
+directly. Passing `today()` would systematically understate both
+relative to every training row. Not a preference call; forced by
+Stage A's existing arithmetic. Prediction timestamp, not
+`as_of_date`, is what the ledger records for audit.
+
+### Consequences
+
+**Enables:** Step 3's feature assembly module is a thin wrapper
+around `build_feature_row` plus a new `compute_current_ratings`
+Elo helper — no parallel recipe to maintain, no drift risk between
+train and serve.
+
+**Requires care:** `to_differential` needs a `require_label=False`
+path (leakage-defense file, Grant's to write) since scheduled bouts
+have no `self_won`. Symmetrized row construction must stay
+red-first, or `to_differential`'s column order silently diverges
+from `feature_order` (Stage F's positional reindex is the backstop,
+not decoration).
+
+**Forecloses:** a live, low-latency SQLAlchemy-native feature path.
+Acceptable because Wednesday's ledger makes inference a batch
+operation — each bout is predicted once and served from the ledger
+after, not recomputed per request.
+
+---
+
 ## [ADR-023] FastAPI: sync endpoints over async, engine + model loaded once at startup
 
 **Date:** 2026-08-25

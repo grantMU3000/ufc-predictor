@@ -33,6 +33,53 @@ Daily log of what shipped, what's blocked, and what's next. Written at the end o
 
 ## Log
 
+## 2026-08-27 (Week 4, Day 3)
+
+**Planned today:** Build the actual Week 4 Monday skeleton — wire the `lifespan` engine + Booster load per ADR-023, get `/health` and `/events/upcoming` returning real data, then move to Tuesday's inference path. Also clear the long-uncommitted script deletions, `.claude/skills/fix-ci/`, and ingestion log changes.
+
+**Shipped:**
+- **Built out the full API surface, not just the skeleton** (`38841c6`) — `GET /health`, `/events/upcoming`, `/fights/{id}/prediction`, `/predictions/history`, `/model/performance` all implemented and routed (`api/routers/*.py`), backed by a `services/queries.py` + `services/metrics.py` layer and Pydantic schemas (`api/schemas.py`, 175 lines). `lifespan` wiring for the engine + Booster landed per ADR-023. 18 integration/smoke tests added (`tests/integration/api/`) and passing, plus `tests/test_api_metrics.py`
+- Small fix to `models/registry.py` alongside the API work
+- Corrected a docs cross-reference so the diff note points at where it actually lives (`6e593f2`)
+- Logged FastAPI async/DI research and flagged it needs more depth (`e1c920d`, `docs/research/2026-08-25-FastAPI.md` + `docs/research/2026-08-27-Dependencies.md`)
+
+**Blocked / open questions:**
+-
+
+**Research (1hr):** FastAPI dependency injection — [docs/research/2026-08-27-Dependencies.md](research/2026-08-27-Dependencies.md). Self-flagged as needing a follow-up pass on async specifically.
+
+**Tomorrow's first task:** The Week 4 API is functionally ahead of plan (Monday *and* Tuesday's endpoints landed today), so pull forward to Wednesday's deliverable — but first, clear the now **five-plus-day-old** uncommitted housekeeping that's been rolling over in every "tomorrow" line since 08-23: the three script deletions (`load_first_ufc_stats.py`, `odds_api_small.py`, `wiki_api_test.py`), `.claude/skills/fix-ci/`, and the ingestion log changes (`unresolved_bout_fighters.csv` + new `unresolved_fighters.jsonl`). Confirm CI is green before moving on.
+
+**Energy / notes:**
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
+## 2026-08-25 (Week 4, Day 1)
+
+**Planned today:** Fix the Wiki API ingest (future bout conflicts, Apex event conflicts), then commit the outstanding working-tree changes (script deletions, `.claude/skills/fix-ci/`, ingestion log updates, `models/artifacts/test_unlock.lock`) and confirm CI is still green, before moving to Saturday's plan deliverable — freeze v1 and write `docs/MODEL_CARD.md`.
+
+**Shipped:**
+- **Froze v1 as the source of truth** (`08e7af1`, merged as PR #3 in `dc3509a`) — `models/freeze.py` (test-set-untouched preflight, refit determinism check, SHA-256 of the artifact, git SHA + library versions captured), `models/registry.py` (`register_model` / `get_active_model` / `get_model`), Alembic migration `a1c9f3d8e2b7_add_model_registry_table`, and the artifact itself at `models/v1/model.txt` + `models/v1/metadata.json`. Logged as **ADR-022**: native LightGBM serialization, `model_registry` schema, single-active-version invariant
+- Wrote `docs/MODEL_CARD.md` (242 lines, 8 sections) — summary, intended use, model details, provenance/reproducibility, full evaluation results, the Kelly/betting section documenting *why real-money betting stays gated*, limitations, and framing. Carries Friday's test-set numbers (market beat the model on every metric) as the honest headline rather than burying them. `docs/RESULTS.md` updated to match; `models/artifacts/test_unlock.lock` finally committed
+- **Started Week 4 backend.** Added FastAPI + client dependencies to `pyproject.toml`/`uv.lock` (`75f2afe`) and scaffolded the `api/` package (`main.py`, `config.py`, `dependencies.py`, `__init__.py` — all still empty, uncommitted)
+- **ADR-023: sync endpoints over async** (`0261a3c`) — all routes are plain `def` so FastAPI dispatches them to a threadpool, rather than rewriting the existing sync SQLAlchemy Core layer onto `asyncpg`. Engine (`pool_pre_ping=True` for Neon idle-suspend) and the LightGBM `Booster` both created once in a `lifespan` block and reused via app state
+- Yesterday's Wikitable work (`9bd9b28`), still unlogged: row/col-span expansion into a full grid with a raise on unreconstructable rows — **ADR-021**, 207 lines in `data/scraping/wiki_parsers.py`, 68 lines of new tests
+
+**Blocked / open questions:**
+-
+
+**Research (1hr):** FastAPI async & dependency injection (15 min) — [docs/research/2026-08-25-FastAPI.md](research/2026-08-25-FastAPI.md). Fed directly into ADR-023.
+
+**Tomorrow's first task:** Build the actual Week 4 Monday skeleton — `api/main.py` et al. are still empty files, so none of `GET /health`, `/events/upcoming?weeks=4`, `/fights/{id}/prediction`, `/predictions/history`, `/model/performance` exist yet. Wire the `lifespan` engine + Booster load per ADR-023, get `/health` and `/events/upcoming` returning real data, then move to Tuesday's inference path (features as-of today → model → probability + top feature contributions). Also: clear the script deletions (`load_first_ufc_stats.py`, `odds_api_small.py`, `wiki_api_test.py`) — uncommitted for **five days** now — plus `.claude/skills/fix-ci/` and the ingestion log changes, and confirm CI is green.
+
+**Energy / notes:**
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
 ## 2026-08-23 (Week 3, Day 4)
 
 **Planned today:** Clear the three-day-old uncommitted script deletions and decide on `.claude/skills/fix-ci/` (commit or discard), confirm CI is green, then move to Friday's plan deliverable — the one-shot test-set unlock (accuracy on close fights, ROI backtest at closing odds, Kelly-fraction simulation) — since Thursday's ensemble is now resolved and there's nothing left pre-registered to try before it per today's `IDEAS.md` roadmap.

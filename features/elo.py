@@ -35,6 +35,19 @@ from typing import cast, overload
 import numpy as np
 import pandas as pd
 
+# ADR-014's tuned K-factor parameters. Today these same three numbers
+# also live as signature defaults in build_lgbm_matrix
+# ._load_labels_and_elo. Named here so the inference path references
+# one source instead of becoming a third copy of three magic numbers
+# that must never silently disagree.
+TUNED_K_NEW = 80.0
+TUNED_K_VETERAN = 24.0
+TUNED_DECAY_SCALE = 3.0
+
+# The starting rating for a fighter's first-ever appearance. Named so
+# callers that look a fighter up in a ratings dict fall back to the
+# same value the walk itself would have used.
+DEFAULT_INITIAL_RATING = 1500.0
 
 @overload
 def expected_score(rating_a: float, rating_b: float) -> float: ...
@@ -57,10 +70,83 @@ def expected_score(rating_a, rating_b):
     return 1.0 / (1.0 + 10 ** ((rating_b - rating_a) / 400))
 
 
+def _walk_elo(
+    bouts: pd.DataFrame,
+    k_factor: float | Callable[[int], float],
+    initial_rating: float,
+) -> tuple[list[dict], dict[int, float]]:
+    """
+    The single Elo walk, shared by compute_elo_ratings (which wants
+    the per-bout PRE-fight ratings) and compute_current_ratings
+    (which wants the final standings after the last bout).
+
+    Extracted rather than duplicated: two copies of an order-dependent
+    sequential update is two chances for the training path and the
+    inference path to drift apart by a K-factor or an update rule,
+    and that drift would be invisible — both would still return
+    plausible ratings.
+
+    Returns
+    -------
+    (rows, ratings)
+        rows: one dict per input bout — bout_id, red_elo_pre,
+            blue_elo_pre. Exactly what compute_elo_ratings returned
+            before this refactor.
+        ratings: fighter_id -> rating AFTER every bout in `bouts` has
+            been applied. For a fight that hasn't happened yet, this
+            IS each fighter's pre-fight rating.
+    """
+    if not bouts["event_date"].is_monotonic_increasing:
+        raise ValueError(
+            "bouts must be sorted oldest-first by event_date — Elo "
+            "ratings are order-dependent, and an out-of-order input "
+            "would silently produce wrong pre-fight ratings."
+        )
+
+    ratings: dict[int, float] = {}
+    fight_counts: dict[int, int] = {}
+    rows = []
+
+    for bout in bouts.itertuples(index=False):
+        red_id = cast(int, bout.fighter_red_id)
+        blue_id = cast(int, bout.fighter_blue_id)
+
+        red_rating = ratings.get(red_id, initial_rating)
+        blue_rating = ratings.get(blue_id, initial_rating)
+        red_fight_count = fight_counts.get(red_id, 0)
+        blue_fight_count = fight_counts.get(blue_id, 0)
+
+        # Record BEFORE any update touches these numbers.
+        rows.append(
+            {
+                "bout_id": bout.bout_id,
+                "red_elo_pre": red_rating,
+                "blue_elo_pre": blue_rating,
+            }
+        )
+
+        red_expected = expected_score(red_rating, blue_rating)
+        blue_expected = 1.0 - red_expected
+
+        red_actual = 1.0 if bout.winner_id == red_id else 0.0
+        blue_actual = 1.0 - red_actual
+
+        k_red = _resolve_k(k_factor, red_fight_count)
+        k_blue = _resolve_k(k_factor, blue_fight_count)
+
+        ratings[red_id] = red_rating + k_red * (red_actual - red_expected)
+        ratings[blue_id] = blue_rating + k_blue * (blue_actual - blue_expected)
+
+        fight_counts[red_id] = red_fight_count + 1
+        fight_counts[blue_id] = blue_fight_count + 1
+
+    return rows, ratings
+
+
 def compute_elo_ratings(
-    bouts: pd.DataFrame, 
-    k_factor: float | Callable[[int], float] = 32.0, 
-    initial_rating: float = 1500.0
+    bouts: pd.DataFrame,
+    k_factor: float | Callable[[int], float] = 32.0,
+    initial_rating: float = DEFAULT_INITIAL_RATING,
 ) -> pd.DataFrame:
     """
     Walks every bout in `bouts`, oldest first, and records each
@@ -119,51 +205,61 @@ def compute_elo_ratings(
     would just silently compute wrong ratings for every bout after
     the first out-of-order one. Fails loudly here instead.
     """
-    if not bouts["event_date"].is_monotonic_increasing:
-        raise ValueError(
-            "bouts must be sorted oldest-first by event_date — Elo "
-            "ratings are order-dependent, and an out-of-order input "
-            "would silently produce wrong pre-fight ratings."
-        )
-
-    ratings: dict[int, float] = {}
-    fight_counts: dict[int, int] = {}
-    rows = []
-
-    for bout in bouts.itertuples(index=False):
-        red_id = cast(int, bout.fighter_red_id)
-        blue_id = cast(int, bout.fighter_blue_id)
-
-        red_rating = ratings.get(red_id, initial_rating)
-        blue_rating = ratings.get(blue_id, initial_rating)
-        red_fight_count = fight_counts.get(red_id, 0)
-        blue_fight_count = fight_counts.get(blue_id, 0)
-
-        # Record BEFORE any update touches these numbers.
-        rows.append(
-            {
-                "bout_id": bout.bout_id,
-                "red_elo_pre": red_rating,
-                "blue_elo_pre": blue_rating,
-            }
-        )
-
-        red_expected = expected_score(red_rating, blue_rating)
-        blue_expected = 1.0 - red_expected
-
-        red_actual = 1.0 if bout.winner_id == red_id else 0.0
-        blue_actual = 1.0 - red_actual
-
-        k_red = _resolve_k(k_factor, red_fight_count)
-        k_blue = _resolve_k(k_factor, blue_fight_count)
-
-        ratings[red_id] = red_rating + k_red * (red_actual - red_expected)
-        ratings[blue_id] = blue_rating + k_blue * (blue_actual - blue_expected)
-
-        fight_counts[red_id] = red_fight_count + 1
-        fight_counts[blue_id] = blue_fight_count + 1
-
+    rows, _ = _walk_elo(bouts, k_factor, initial_rating)
     return pd.DataFrame(rows)
+
+
+def compute_current_ratings(
+    bouts: pd.DataFrame,
+    k_factor: float | Callable[[int], float] = 32.0,
+    initial_rating: float = DEFAULT_INITIAL_RATING,
+) -> dict[int, float]:
+    """
+    Every fighter's rating AFTER the last bout in `bouts` — the thin
+    wrapper this module's original docstring anticipated ("Final /
+    'current' ratings after the last bout aren't returned here — a
+    different, smaller need").
+
+    Simple version: compute_elo_ratings hands back the league
+    standings as they stood before each game of the season. This
+    hands back the standings at the end. For predicting a game that
+    hasn't been played, the end-of-season table IS what both teams
+    carry into it.
+
+    THIS IS NOT AN APPROXIMATION. A bout's pre-fight rating depends
+    exclusively on strictly-earlier bouts, so for a fight that hasn't
+    happened, "rating after every completed bout" and "rating going
+    into this bout" are the same number by construction.
+
+    Feed this ONLY completed bouts that occurred strictly before the
+    fight being predicted — same caller-owns-the-cutoff rule as
+    compute_elo_ratings (see module docstring).
+
+    Returns
+    -------
+    dict[int, float] — fighter_id -> rating. A fighter absent from
+    the dict has no prior bouts in `bouts`; callers should fall back
+    to DEFAULT_INITIAL_RATING, matching what the walk itself would
+    have used on their debut.
+    """
+    _, ratings = _walk_elo(bouts, k_factor, initial_rating)
+    return ratings
+
+
+def tuned_k_factor(fight_count: int) -> float:
+    """
+    k_factor_by_experience pinned to ADR-014's tuned parameters —
+    the exact callable the training matrix was built with.
+
+    Exists so the inference path can't accidentally pass raw defaults
+    or a re-typed 80/24/3. One name, one meaning.
+    """
+    return k_factor_by_experience(
+        fight_count,
+        k_new=TUNED_K_NEW,
+        k_veteran=TUNED_K_VETERAN,
+        decay_scale=TUNED_DECAY_SCALE,
+    )
 
 def k_factor_by_experience(
     fight_count: int,

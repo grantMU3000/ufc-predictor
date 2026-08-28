@@ -27,8 +27,8 @@ _ID_SUFFIXES = {"fighter_id"}
 
 
 def to_differential(
-    df: pd.DataFrame, verbose: bool = True
-) -> tuple[pd.DataFrame, pd.Series]:
+    df: pd.DataFrame, verbose: bool = True, require_label: bool = True
+) -> tuple[pd.DataFrame, pd.Series | None]:
     """
     Builds diff_<feature> = self_<feature> - opp_<feature> for every
     numeric self_/opp_ column pair in a symmetrized dataframe.
@@ -79,6 +79,10 @@ def to_differential(
         Prints a short report of what was included/dropped and why —
         default True, since silently dropping columns is exactly the
         kind of thing worth eyeballing every run, not just the first.
+    require_label : bool
+        require_label=False is for the inference path, where a scheduled 
+        bout has no self_won yet — returns (X, None). Every existing caller 
+        is unaffected by the default.
 
     Returns
     -------
@@ -98,7 +102,7 @@ def to_differential(
     accuracy has to be compared against the market on the exact same
     odds-covered subset of rows.
     """
-    y = df["self_won"].astype(int)
+    y = df["self_won"].astype(int) if require_label else None
 
     diff_data = {}
     included, non_numeric_dropped, self_only_dropped, opp_only_dropped = [], [], [], []
