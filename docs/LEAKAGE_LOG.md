@@ -52,6 +52,26 @@ Sanity checks to run whenever a metric looks too good:
 ---
 
 ## Entries
+### [2026-08-29] Row-count-dependent dtype drop — diff_submission_success_rate missing at inference
+
+- **Status:** 🟢 Resolved — leak confirmed & fixed
+- **Where noticed:** `tests/integration/api/test_inference_parity.py::test_inference_matches_training_matrix`, bout 5756
+- **Symptom:** `build_bout_features` raised `ValueError: feature mismatch for bout 5756: missing=['diff_submission_success_rate']` — not a value mismatch, a missing column entirely.
+- **Suspected category:** other — training/serving skew via pandas dtype inference, not one of the six standard categories. No fabricated future data involved; flagged here anyway per the file's own rule to log any suspicious result.
+- **Hypothesis:** frame size changes how pandas infers a column's dtype.
+- **Investigation:**
+  - `submission_success_rate` returns `None` when a fighter has zero recorded submission attempts (`tier2.py`) — expected and common; `RESULTS.md` already notes ~65% of training rows are NaN here.
+  - Training frame: 15,242 rows. Even with 65% missing, enough real floats remain for pandas to type the column `float64`, with `None` -> `NaN`. `to_differential`'s `is_numeric_dtype` check passes; column is kept.
+  - Inference frame: 2 rows (red-perspective, blue-perspective). Bout 5756's two fighters were BOTH missing the stat, so the column was all-`None`. pandas typed it `object`. `to_differential` dropped it via the "non-numeric, can't subtract" branch — the same branch meant for `self_stance`.
+  - Confirmed: identical code (`build_feature_row` -> `_symmetrize_row` -> `to_differential`), identical underlying values (`None`/`NaN`), different output, driven purely by row count. No exception raised until Stage F's set-equality check caught the missing column.
+- **Root cause:** `to_differential`'s numeric-dtype check trusts pandas' inferred dtype, which is a function of how many rows are in the frame, not of what the feature actually is. Training frames (thousands of rows) and inference frames (2 rows) can infer different dtypes for the same feature under the same missingness pattern.
+- **Fix:** added `_coerce_model_features_to_float` in `api/services/features.py`, called before `to_differential` in `build_bout_features`. Explicitly casts every `self_/opp_` column named in `feature_order` to `float64` before differencing, so an all-`None` column stays a numeric NaN column regardless of row count. Only touches columns the model actually expects — `self_stance` etc. remain untouched and still correctly drop.
+- **Verification:** `test_inference_matches_training_matrix` passes for all 3 sampled bouts (8202, 5756, 3292) after the fix, including bout 5756. `test_column_order_matches_feature_order` and `test_rows_are_exact_negatives` unaffected (already passing).
+- **Metric impact:** N/A — no model retrain; this is an inference-path fix only. Would have caused a live 500 (or worse, a silently-wrong feature set if a future version doesn't hard-fail on mismatch) for any bout where both fighters lack a given stat, which per RESULTS.md's 65% missingness figure is common, not rare.
+- **Lesson / guardrail added:** the parity test (Step 5, Week 4 Tuesday) is now a standing regression check for this class of bug — any future feature whose missingness pattern differs between train-time frame sizes and inference's fixed 2-row frame would be caught the same way. General guardrail: never trust pandas' inferred dtype on a small frame to match a large frame's inferred dtype for the same logical column.
+
+---
+
 ### [2026-08-23] Split integrity check, test included — no contamination found
 
 - **Status:** 🟢 Resolved — not a leak

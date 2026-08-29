@@ -185,6 +185,40 @@ def compute_elo_as_of(
     ].reset_index(drop=True)
     return compute_current_ratings(labels, k_factor=tuned_k_factor)
 
+def _coerce_model_features_to_float(
+    df: pd.DataFrame, feature_order: tuple[str, ...]
+) -> pd.DataFrame:
+    """
+    Force every self_/opp_ column the model expects to float64 before
+    differencing.
+
+    WHY THIS EXISTS (caught by the Step 5 parity test, bout 5756):
+    pandas infers a column's dtype from its values. A training frame
+    has ~15,000 rows, so a mostly-missing feature like
+    submission_success_rate still holds real floats somewhere and
+    types as float64 with NaNs. An inference frame has TWO rows — if
+    both fighters are missing that stat, the column is all-None,
+    pandas types it `object`, and to_differential drops it through
+    the "non-numeric, can't subtract" branch meant for stance.
+
+    Same code, same inputs, different output, purely as a function of
+    row count. No exception, no warning — the exact silent-skew class
+    this whole day exists to prevent.
+
+    Only columns named in feature_order are touched, so genuinely
+    non-numeric ones (self_stance, self_stance_matchup_descriptive)
+    stay object and keep getting dropped, exactly as training did.
+    A real string in a numeric slot raises here rather than being
+    quietly swallowed.
+    """
+    coerced = df.copy()
+    for name in feature_order:
+        suffix = name[len("diff_"):]
+        for side in ("self", "opp"):
+            column = f"{side}_{suffix}"
+            if column in coerced.columns:
+                coerced[column] = coerced[column].astype("float64")
+    return coerced
 
 def build_bout_features(
     con: duckdb.DuckDBPyConnection,
@@ -267,6 +301,11 @@ def build_bout_features(
     symmetrized = pd.DataFrame(self_rows)
 
     # --- Stage E: difference ---
+    # Coerce FIRST. On a 2-row frame, an all-None column types as
+    # object and gets silently dropped downstream — see
+    # _coerce_model_features_to_float.
+    symmetrized = _coerce_model_features_to_float(symmetrized, feature_order)
+
     # require_label=False: a scheduled bout has no self_won. The
     # alternative — attaching a fake label — would put a counterfeit
     # answer key inside the inference path, the exact thing
