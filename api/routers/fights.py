@@ -11,12 +11,14 @@ The three-way behaviour below is deliberate:
   a ledger entry exists          -> 200, return it verbatim
   bout exists, no prediction yet -> 501 Not Implemented
 
-The last one is the important one. The tempting shortcut is to return a
-placeholder like 0.5 so the frontend has something to render. Do not.
-Placeholder probabilities have a way of surviving into production, and
-this project's entire pitch is that the published numbers are
-trustworthy. A 501 is annoying for one day; a silent fake number is a
-credibility problem forever.
+The 501 is deliberate and permanent, not a placeholder. The tempting
+shortcut is returning something like 0.5 so the frontend has a number
+to render — do not. This endpoint serves the ledger and only the
+ledger: a published probability must always be the one recorded before
+the fight, never one recomputed afterward from data that has since
+changed. Computing on demand is what would break that guarantee, so
+this route never does it (ADR-024 Decision 1). Predictions arrive via
+scripts/score_upcoming.py.
 """
 
 from fastapi import APIRouter, HTTPException, Path
@@ -50,9 +52,10 @@ def fight_prediction(
         raise HTTPException(
             status_code=501,
             detail=(
-                "No prediction logged for this bout yet. Live inference "
-                "lands in Week 4 Tuesday; this endpoint currently serves "
-                "the prediction ledger only."
+                "No prediction logged for this bout yet. Predictions are "
+                "computed in batch and recorded to the ledger before the "
+                "event; this endpoint serves recorded predictions only "
+                "and never computes one on demand."
             ),
         )
 
