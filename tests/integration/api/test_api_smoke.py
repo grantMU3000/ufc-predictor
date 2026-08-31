@@ -101,10 +101,10 @@ class TestFightPrediction:
         assert response.status_code == 404
         assert "detail" in response.json()
 
-    def test_bout_with_no_prediction_returns_501(
+    def test_bout_with_no_prediction_returns_404(
         self, api_client, sample_event, sample_fighters
     ):
-        # A real bout that has never been predicted must return 501, not
+        # A real bout that has never been predicted must return 404, not
         # a placeholder probability. This is the guard against a fake
         # 0.5 quietly shipping to production.
         red_id, blue_id, _ = sample_fighters
@@ -123,7 +123,7 @@ class TestFightPrediction:
 
         response = api_client.get(f"/fights/{bout_id}/prediction")
 
-        assert response.status_code == 501
+        assert response.status_code == 404
 
 
 class TestOpenAPI:

@@ -46,6 +46,15 @@ def prediction_history(
             predicted_winner_id=row["predicted_winner_id"],
             predicted_winner_name=row["predicted_winner_name"],
             odds_at_prediction_time=row["odds_at_prediction_time"],
+            odds_fighter_id=row["odds_fighter_id"],
+            odds_collected_at=row["odds_collected_at"],
+            odds_n_books=row["odds_n_books"],
+            symmetry_gap=(
+                float(row["symmetry_gap"])
+                if row["symmetry_gap"] is not None
+                else None
+            ),
+            bout_status=row["bout_status"],
             created_at=row["created_at"],
             event_name=row["event_name"],
             event_date=row["event_date"],

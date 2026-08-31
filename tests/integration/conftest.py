@@ -34,7 +34,15 @@ Setup required to actually run these tests:
 import os
 
 import pytest
+from dotenv import load_dotenv
 from sqlalchemy import bindparam, create_engine, text
+
+# Picks up TEST_DATABASE_URL (and DATABASE_URL for `alembic upgrade
+# head` in append_only_trigger's instructions) from .env without
+# requiring it to be exported in the shell first. Never overrides a
+# value already set in the environment, so CI-provided secrets still
+# win over whatever's checked into .env locally.
+load_dotenv()
 
 
 @pytest.fixture(scope="session")
@@ -120,3 +128,36 @@ def sample_event(db_engine):
     with db_engine.begin() as conn:
         conn.execute(text("DELETE FROM bouts WHERE event_id = :id"), {"id": event_id})
         conn.execute(text("DELETE FROM events WHERE id = :id"), {"id": event_id})
+
+@pytest.fixture
+def sample_bout(db_engine, sample_event, sample_fighters):
+    """
+    A minimal, throwaway SCHEDULED bout linking sample_event and
+    sample_fighters. status defaults to 'scheduled' via the column's
+    server_default — no need to set it explicitly, and setting it
+    explicitly would let this fixture silently drift from what a real
+    bout row looks like on insert.
+
+    Needed by any test that writes an FK-constrained row against
+    bouts.id (odds_snapshots.bout_id, predictions.bout_id) without
+    touching real production bout data.
+    """
+    red_id, blue_id, _swap_id = sample_fighters
+    with db_engine.begin() as conn:
+        bout_id = conn.execute(
+            text(
+                """
+                INSERT INTO bouts
+                    (event_id, fighter_red_id, fighter_blue_id,
+                     weight_class, scheduled_rounds)
+                VALUES (:event_id, :red_id, :blue_id, 'Lightweight', 3)
+                RETURNING id
+                """
+            ),
+            {"event_id": sample_event, "red_id": red_id, "blue_id": blue_id},
+        ).scalar_one()
+
+    yield bout_id
+
+    with db_engine.begin() as conn:
+        conn.execute(text("DELETE FROM bouts WHERE id = :id"), {"id": bout_id})

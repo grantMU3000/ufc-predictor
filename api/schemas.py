@@ -74,6 +74,38 @@ class UpcomingEventsResponse(BaseModel):
     event_count: int
     events: list[UpcomingEvent]
 
+class CoverageDetail(BaseModel):
+    """
+    How much fighter history backed a prediction — ADR-024 Decision 4.
+
+    Surfaced in the API rather than kept internal because a 6-of-32
+    prediction and a 32-of-32 prediction look identical once they are
+    both a probability. The frontend needs this to caption one
+    honestly. It never gates anything.
+    """
+
+    n_features_present: int
+    n_features_total: int
+    fraction: float
+    red_prior_bouts: int
+    blue_prior_bouts: int
+
+
+class FeatureContributionDetail(BaseModel):
+    """
+    One feature's push on this prediction, from the RED corner's view.
+
+    log_odds is a RAW TreeSHAP value, not percentage points (ADR-024
+    Decision 3). The same +0.4 moves a coinflip a long way and a 90/10
+    barely at all, so it must not be rendered as "added 8% to his
+    chances." `favors` plus relative magnitude is enough to phrase it
+    directionally without lying.
+    """
+
+    feature: str
+    log_odds: float
+    feature_value: float | None = None
+    favors: str
 
 class PredictionResponse(BaseModel):
     """
@@ -93,10 +125,56 @@ class PredictionResponse(BaseModel):
     predicted_winner_id: int
     predicted_winner_name: str | None = None
     odds_at_prediction_time: int | None = None
+    odds_fighter_id: int | None = Field(
+        default=None,
+        description=(
+            "Which fighter odds_at_prediction_time refers to. Never assume "
+            "the red corner — a late replacement can flip corners (ADR-013)."
+        ),
+    )
+    odds_collected_at: datetime | None = None
+    odds_n_books: int | None = Field(
+        default=None,
+        description="Sportsbooks behind the consensus. Under 3 is a thin market.",
+    )
+    symmetry_gap: float | None = Field(
+        default=None,
+        description=(
+            "|p_A - (1 - p_B)| across both corner orderings. Near zero means "
+            "the model ignored corner position, as symmetrized training intended."
+        ),
+    )
+    bout_status: str | None = Field(
+        default=None,
+        description=(
+            "Live bouts.status, joined at read time. 'cancelled' means the "
+            "prediction stands but will never be settled (ADR-025 Decision 5)."
+        ),
+    )
     created_at: datetime
 
     model_config = ConfigDict(protected_namespaces=())
 
+
+class PredictionDetail(PredictionResponse):
+    """
+    A single ledger row with its full explanation attached.
+
+    Separate from PredictionResponse so the history endpoint stays
+    light: contributions is 32 entries per prediction, which is right
+    for one bout and wasteful for a 50-row page.
+    """
+
+    is_calibrated: bool = Field(
+        description=(
+            "v1 ships uncalibrated — both calibrators were rejected against "
+            "pre-registered gates (ADR-017). Read from the registry, so a "
+            "calibrated v2 flips this with no code change."
+        )
+    )
+    coverage: CoverageDetail | None = None
+    contributions: list[FeatureContributionDetail] = []
+    
 
 class PredictionHistoryItem(PredictionResponse):
     """A ledger row plus its settlement outcome, if it has been settled."""

@@ -119,6 +119,12 @@ def fetch_latest_prediction_for_bout(engine: Engine, bout_id: int) -> RowMapping
     The ledger is append-only — nothing here updates a prediction row.
     Re-predicting a bout writes a NEW row; the old one stays as the
     historical record of what was believed at that moment.
+
+    bouts.status is JOINED, never copied into the prediction row
+    (ADR-025 Decision 5). A bout cancelled after its prediction was
+    written keeps that prediction untouched — the row is immutable —
+    so cancellation has to be resolved here, at read time, from the
+    one place that actually tracks it.
     """
     stmt = text("""
         SELECT
@@ -127,18 +133,24 @@ def fetch_latest_prediction_for_bout(engine: Engine, bout_id: int) -> RowMapping
             p.model_version            AS model_version,
             p.predicted_prob_red       AS predicted_prob_red,
             p.predicted_winner_id      AS predicted_winner_id,
+            p.symmetry_gap             AS symmetry_gap,
+            p.feature_snapshot         AS feature_snapshot,
             p.odds_at_prediction_time  AS odds_at_prediction_time,
+            p.odds_fighter_id          AS odds_fighter_id,
+            p.odds_collected_at        AS odds_collected_at,
+            p.odds_n_books             AS odds_n_books,
             p.created_at               AS created_at,
+            b.status                   AS bout_status,
             w.real_name                AS predicted_winner_name
         FROM predictions p
-        LEFT JOIN fighters w ON w.id = p.predicted_winner_id
+        JOIN bouts b            ON b.id = p.bout_id
+        LEFT JOIN fighters w    ON w.id = p.predicted_winner_id
         WHERE p.bout_id = :bout_id
         ORDER BY p.created_at DESC, p.id DESC
         LIMIT 1
     """)
     with engine.connect() as conn:
         return conn.execute(stmt, {"bout_id": bout_id}).mappings().first()
-
 
 def fetch_prediction_history(
     engine: Engine, limit: int, offset: int
@@ -153,6 +165,11 @@ def fetch_prediction_history(
     proves the prediction was published BEFORE the result was known.
     An inner join would quietly hide every open prediction and make the
     ledger look retrospective.
+
+    feature_snapshot is deliberately NOT selected here. Each envelope
+    carries all 32 feature contributions (ADR-025 Decision 1); across a
+    50-row page that is a large payload nobody on a history view reads.
+    The detail route serves it per bout instead.
     """
     stmt = text("""
         SELECT
@@ -161,8 +178,13 @@ def fetch_prediction_history(
             p.model_version            AS model_version,
             p.predicted_prob_red       AS predicted_prob_red,
             p.predicted_winner_id      AS predicted_winner_id,
+            p.symmetry_gap             AS symmetry_gap,
             p.odds_at_prediction_time  AS odds_at_prediction_time,
+            p.odds_fighter_id          AS odds_fighter_id,
+            p.odds_collected_at        AS odds_collected_at,
+            p.odds_n_books             AS odds_n_books,
             p.created_at               AS created_at,
+            b.status                   AS bout_status,
             w.real_name                AS predicted_winner_name,
             fr.real_name               AS fighter_red_name,
             fb.real_name               AS fighter_blue_name,

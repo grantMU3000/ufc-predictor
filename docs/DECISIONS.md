@@ -35,6 +35,101 @@ What this makes easier, what this makes harder, what it forecloses or defers.
 ```
 ---
 
+## [ADR-025] Prediction ledger: self-sufficient JSONB envelope, DB-enforced immutability, point-in-time odds
+
+**Date:** 2026-08-31
+**Status:** Accepted
+
+### Context
+
+Week 4 Wednesday makes predictions permanent (docs/PLAN.md §3, project
+goal #6). `scripts/score_upcoming.py` already produced the number;
+this closes the loop with the write, the read path, and the API route
+that serves it.
+
+### Decision 1 — `feature_snapshot` stores the exact model input, not a pointer
+
+The JSONB envelope holds all 32 `diff_*` values (not a display top-5),
+plus coverage, contributions, both symmetry passes, and
+`artifact_sha256`. The Parquet snapshot regenerates constantly; a row
+storing only `bout_id` cannot answer "what did the model see" once it
+moves. Proven by a replay test that reconstructs the stored
+probability from JSONB alone — no DuckDB, no live pipeline.
+
+### Decision 2 — Odds columns gain a fighter, a timestamp, and a book count
+
+`odds_at_prediction_time` (existing) is joined by `odds_fighter_id`
+(FK `fighters.id`), `odds_collected_at`, and `odds_n_books`. A bare
+moneyline names no fighter; defaulting to red would key the ledger on
+corner position, which ADR-013 forbids.
+
+Resolution: per sportsbook, the latest snapshot with `collected_at <=`
+prediction time; consensus is the **median over implied probability**,
+converted back to a moneyline for storage — not a median over raw
+moneylines, which can interpolate to a price no book could legally
+post (nothing exists between -100 and +100). `odds_n_books` is
+recorded rather than gating on a minimum, same principle as ADR-024
+Decision 4: label the claim, don't suppress it.
+
+All 50 rows in the first write shipped with `NULL` odds —
+`odds_snapshots` has no coverage past 2026-08-01. Expected; the
+resolver is correct and dormant until the Friday odds refresh runs.
+
+### Decision 3 — Immutability is a database trigger, not a convention
+
+A trigger on `predictions` raises (SQLSTATE `restrict_violation`) on
+UPDATE and DELETE. Re-predicting inserts a new row; "current" is
+resolved at read time as the highest `created_at` per
+`(bout_id, model_version)` — no unique constraint, which would fight
+append-only. Verified by a test asserting the SQLSTATE, not message
+text.
+
+### Decision 4 — `symmetry_gap` is a typed column; everything else stays in JSONB
+
+Typed because it's an aggregated drift diagnostic (ADR-024 Decision
+2) — `SELECT max(symmetry_gap)` shouldn't require unpacking JSONB per
+row. All 50 rows landed under the 0.0806 reference ceiling from
+`metadata.json`.
+
+### Decision 5 — Cancelled bouts: `bouts.status` is the only source of truth, checked live
+
+No `voided` column on `predictions` — mutable state on a row the
+trigger just made immutable, duplicating a fact `bouts` already owns.
+
+`write_prediction()` refuses any bout not `status = 'scheduled'`,
+checked **against live Postgres, not the Parquet snapshot** the
+scorer reads features from. A bout cancelled since the last snapshot
+refresh still reads `scheduled` there, and fight-week withdrawals are
+exactly when that staleness is likely. The API joins live
+`bouts.status` at read time; a cancelled bout's prediction stands,
+unsettled, permanently — never deleted to clean up a denominator.
+
+### Decision 6 — `GET /fights/{id}/prediction`: 501 → 404
+
+The 501 was correct through Tuesday, when the ledger didn't exist and
+the server genuinely lacked the capability. It exists and is
+populated now, so a bout with no prediction row is a missing
+**resource** (cancelled, or outside the scoring window), not a
+missing feature. The "never computes on demand" guarantee (ADR-024
+Decision 1) is unchanged — only the status code describing an absent
+row changed.
+
+### Consequences
+
+**Enables Thursday:** settlement joins on `predicted_winner_id`
+(ADR-013), and every row already carries model version, full input
+vector, and a pre-fight timestamp.
+
+**Cost:** the odds columns are dead weight until Friday's refresh job
+populates `odds_snapshots` for upcoming bouts.
+
+**Open:** cancelled-bout predictions accumulate as permanently
+unsettled rows. `/predictions/history` already surfaces `bout_status`
+so the API layer can label these distinctly from a pending-but-live
+prediction.
+
+---
+
 ## [ADR-024] Inference path: feature reuse, symmetry averaging, raw SHAP attribution, data coverage
 
 **Date:** 2026-08-28

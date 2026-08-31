@@ -50,4 +50,34 @@ odds snapshots: 59972
 predictions: 0
 prediction results: 0
 
+---
 
+08/30/26 (Post-Greco Pull)
+bouts: 8708
+bout_stats: 41132
+events: 798
+fighter aliases: 244
+fighters: 4616
+odds snapshots: 59972
+predictions: 0
+prediction results: 0
+
+08/30/26 (Post-Fighter Conflict fix)
+bouts: 8708
+bout_stats: 41132
+events: 798
+fighter aliases: 245 
+fighters: 4613
+odds snapshots: 59972
+predictions: 0
+prediction results: 0
+
+08/30/26 (Wiki-API Pull & Resolution)
+bouts: 8723
+bout_stats: 41132
+events: 798
+fighter aliases: 260 
+fighters: 4613
+odds snapshots: 59972
+predictions: 0
+prediction results: 0
