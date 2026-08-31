@@ -14,7 +14,7 @@ app.dependency_overrides without the router knowing.
 """
 
 from dataclasses import dataclass
-from typing import Annotated, TypeAlias
+from typing import Annotated
 
 from fastapi import Depends, Request
 from lightgbm import Booster
@@ -114,6 +114,6 @@ def get_model(request: Request) -> ModelBundle:
 # FastAPI-recommended style; it also keeps ruff's bugbear rule happy,
 # since Depends() lives in the annotation rather than in a mutable
 # default argument.
-EngineDep: TypeAlias = Annotated[Engine, Depends(get_engine)]
-ModelDep: TypeAlias = Annotated[ModelBundle, Depends(get_model)]
-SettingsDep: TypeAlias = Annotated[Settings, Depends(get_settings)]
+type EngineDep = Annotated[Engine, Depends(get_engine)]
+type ModelDep = Annotated[ModelBundle, Depends(get_model)]
+type SettingsDep = Annotated[Settings, Depends(get_settings)]

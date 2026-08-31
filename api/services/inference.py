@@ -289,10 +289,8 @@ if __name__ == "__main__":
     # rather than asserts, same as features.py's block — the real
     # assertions live in tests/, and the parity test (Step 5) is what
     # actually proves this matches training.
-    import json
     import os
 
-    from lightgbm import Booster
     from sqlalchemy import create_engine
 
     from api.dependencies import load_model_bundle

@@ -28,13 +28,13 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from features.build_lgbm_matrix import build_train_val_with_elo
-from features.differential import to_differential
 from api.services.features import (
     build_bout_features,
     compute_elo_as_of,
     snapshot_connection,
 )
+from features.build_lgbm_matrix import build_train_val_with_elo
+from features.differential import to_differential
 
 # Floating-point tolerance. Both paths run the identical functions on
 # the identical data, so the only legitimate difference is float

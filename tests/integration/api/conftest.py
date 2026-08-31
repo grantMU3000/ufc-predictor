@@ -21,21 +21,22 @@ missing, so `uv run pytest` stays green on a fresh clone.
 """
 
 import os
+from datetime import date
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from sqlalchemy import text
 import pytest
 from fastapi.testclient import TestClient
-from datetime import date
+from sqlalchemy import text
 
 from api.config import Settings
-from api.main import create_app
-from models.registry import get_active_model
 from api.dependencies import load_model_bundle
+from api.main import create_app
 from api.services.features import BoutFeatureMatrix, DataCoverage
 from api.services.inference import predict_bout
 from api.services.ledger import write_prediction
+from models.registry import get_active_model
 
 # A feature that's genuinely NaN in real data often enough to matter —
 # ~65% of training rows per docs/RESULTS.md, and the exact column that

@@ -13,7 +13,7 @@ sample_fighters, cleaned up the same way every other integration test
 here cleans up.
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import text
@@ -25,7 +25,7 @@ from api.services.odds import (
     resolve_odds_at,
 )
 
-T0 = datetime(2026, 9, 1, 12, 0, 0)
+T0 = datetime(2026, 9, 1, 12, 0, 0, tzinfo=UTC)
 
 
 @pytest.fixture

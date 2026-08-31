@@ -40,6 +40,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import duckdb
+from dotenv import load_dotenv
 from sqlalchemy.engine import Engine
 
 from api.dependencies import ModelBundle, build_engine, load_model_bundle
@@ -51,8 +52,6 @@ from api.services.features import (
 from api.services.inference import BoutPrediction, predict_bout
 from api.services.ledger import BoutNotScheduledError, LedgerEntry, write_prediction
 from api.services.records import to_record
-
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -264,7 +263,7 @@ def main() -> int:
 
     names = {b[0]: (b[1], b[2]) for b in bouts}
     for p in sorted(predictions, key=lambda x: names[x.bout_id][0]):
-        event_date, event_name = names[p.bout_id]
+        event_date, _event_name = names[p.bout_id]
         flags = []
         if p.coverage.fraction < LOW_COVERAGE_WARN:
             flags.append(f"LOW COVERAGE {p.coverage.fraction:.0%}")

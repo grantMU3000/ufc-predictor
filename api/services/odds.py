@@ -24,7 +24,7 @@ the ledger writes NULL and says so.
 """
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from statistics import median
 
 from sqlalchemy import Connection, text
@@ -217,6 +217,6 @@ if __name__ == "__main__":
             conn,
             int(target.bout_id),
             int(target.fighter_id),
-            datetime(2020, 1, 1),
+            datetime(2020, 1, 1, tzinfo=UTC),
         )
     print(f"\npre-coverage cutoff returns None: {empty is None}")
