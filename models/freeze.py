@@ -175,6 +175,7 @@ def run() -> None:
     print(f"  {len(train_val)} rows / {n_bouts} bouts\n")
 
     X, y = to_differential(train_val, verbose=False)
+    assert y is not None  # require_label defaults True, so never None here
     tuned_params = load_tuned_params()
     model_params = {**DEFAULT_PARAMS, **tuned_params}
 

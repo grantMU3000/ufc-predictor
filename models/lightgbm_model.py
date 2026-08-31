@@ -86,6 +86,7 @@ def train_lightgbm_baseline(
     """
     X_train, y_train = to_differential(train, verbose=False)
     X_val, y_val = to_differential(val, verbose=False)
+    assert y_train is not None and y_val is not None  # require_label defaults True
 
     model_params = {**DEFAULT_PARAMS, **(params or {})}
     model = lgb.LGBMClassifier(**model_params)

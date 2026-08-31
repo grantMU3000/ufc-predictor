@@ -124,6 +124,7 @@ def objective(trial: optuna.Trial, train: pd.DataFrame) -> float:
     for train_fold, val_fold in expanding_year_folds(train):
         X_tr, y_tr = to_differential(train_fold, verbose=False)
         X_va, y_va = to_differential(val_fold, verbose=False)
+        assert y_tr is not None  # require_label defaults True, so never None here
 
         model = lgb.LGBMClassifier(**params)
         model.fit(X_tr, y_tr)

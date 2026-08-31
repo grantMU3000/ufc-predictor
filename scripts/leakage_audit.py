@@ -88,6 +88,7 @@ def shuffle_label_test(
     """
     X_train, y_train = to_differential(train, verbose=False)
     X_val, y_val = to_differential(val, verbose=False)
+    assert y_train is not None and y_val is not None  # require_label defaults True
 
     rng = np.random.default_rng(seed)
     y_train_shuffled = pd.Series(
@@ -155,6 +156,7 @@ def corner_symmetry_check(train: pd.DataFrame, val: pd.DataFrame) -> pd.DataFram
 
     X_train, y_train = to_differential(train, verbose=False)
     X_val, y_val = to_differential(val, verbose=False)
+    assert y_val is not None  # require_label defaults True, so never None here
 
     pipeline = build_logreg_pipeline()
     pipeline.fit(X_train, y_train)

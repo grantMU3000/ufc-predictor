@@ -163,6 +163,7 @@ def logistic_regression_baseline(
     """
     X_train, y_train = to_differential(train, verbose=False)
     X_val, y_val = to_differential(val, verbose=False)
+    assert y_val is not None  # require_label defaults True, so never None here
 
     pipeline = build_logreg_pipeline()
     pipeline.fit(X_train, y_train)
