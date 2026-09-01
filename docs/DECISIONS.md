@@ -35,6 +35,74 @@ What this makes easier, what this makes harder, what it forecloses or defers.
 ```
 ---
 
+---
+## [ADR-026] Settlement semantics — how a prediction becomes a scored result
+
+Date: 2026-08-31
+Status: Accepted
+
+Context
+
+The ledger holds 50 immutable predictions with no way to score them. Settlement
+walks unsettled predictions, finds the actual winner, and writes prediction_results.
+Several judgment calls have to be locked before code, because each one silently
+changes what the published accuracy number means.
+
+Motivating incident: bout 34419 (UFC FN 2026-08-29) sat at status='scheduled' on a
+card Greco had already completed — the Wikipedia pipeline never re-scraped between a
+booking change and the event, so load_bout()'s swap logic never ran. Nothing in the
+system noticed. A settlement job that only looks at completed bouts would have stayed
+silent about it forever.
+
+Decision
+
+1. Settlement keys on predicted_winner_id vs bouts.winner_id — never corner position.
+   ADR-013 flagged this as a hard requirement: a late replacement can flip red/blue
+   between the pre-fight and post-fight rows.
+
+2. Every prediction row settles; rolling metrics dedupe to the latest prediction per
+   bout with created_at < event_date. Each ledger row was a real claim, but a
+   re-predicted fight must not count twice in the accuracy denominator.
+
+3. Draws and no-contests are excluded, never settled. prediction_results.actual_winner_id
+   is NOT NULL, so a draw is structurally unstorable. Surfaced as a distinct
+   excluded_no_result count so "unsettled" doesn't ambiguously mean "hasn't happened."
+
+4. Cancelled bouts never settle. Permanently unsettled by design (ADR-025 Decision 5).
+   Deleting them to tidy the denominator is the retroactive editing the ledger exists
+   to prevent.
+
+5. Log-loss clipping epsilon is fixed at 1e-15 and must match the Week 3 offline
+   harness exactly. A different epsilon makes frozen-holdout and live log loss
+   non-comparable, which defeats the point of reporting both.
+
+6. Paper ROI is derived at read time, never stored. No column exists, correctly — ROI
+   depends on a stake policy, and freezing one policy's output into a row means a
+   later policy change silently invalidates history.
+
+7. Settlement does not chase duplicate rows. It reads bouts.winner_id on the bout the
+   prediction points at. Identity resolution is the ingestion pipeline's job (ADR-013).
+   Kept separate so a settlement bug and a linkage bug can't hide inside each other.
+
+8. Leftover scheduled bouts are detected, never auto-cancelled. Any bout still
+   'scheduled' on an event Greco has completed gets a warning. Auto-cancelling would
+   bury the dangerous case: if BOTH fighters appear in completed bouts on that event,
+   it's an unreconciled duplicate fighter, not a cancellation.
+
+Consequences
+
+Easier: the published track record has one unambiguous definition. n_predictions,
+n_settled, n_excluded_no_result, and n_cancelled are four separate integers, so the
+denominator is always visible.
+
+Requires care: decisions 3 and 4 mean unsettled predictions accumulate permanently.
+That's intended, but the /model/performance response must break them out by reason or
+the count looks like a backlog.
+
+Forecloses: storing per-row ROI without a schema change and a stake-policy ADR.
+
+---
+
 ## [ADR-025] Prediction ledger: self-sufficient JSONB envelope, DB-enforced immutability, point-in-time odds
 
 **Date:** 2026-08-31

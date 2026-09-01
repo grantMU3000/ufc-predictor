@@ -33,6 +33,31 @@ Daily log of what shipped, what's blocked, and what's next. Written at the end o
 
 ## Log
 
+## 2026-08-30 (Week 4, Day 4)
+
+**Planned today:** From 08-27's carryover — clear the now-week-old uncommitted housekeeping (three script deletions, `.claude/skills/fix-ci/`, ingestion log changes) and confirm CI is green, then pull forward to Wednesday's plan deliverable (prediction ledger).
+
+**Shipped:**
+- Finally committed the long-uncommitted script deletions (`scripts/load_first_ufc_stats.py`, `scripts/odds_api_small.py`, `scripts/wiki_api_test.py`) — uncommitted since 08-20, flagged as carryover in five straight "tomorrow" lines (`47f3ef3`)
+- Built Tuesday's inference-path deliverable: `scripts/score_upcoming.py` scores every upcoming bout on the next N weeks of cards as a batch job rather than a live route — deliberate per ADR-024, since a prediction is a replay of ~8,600 bouts of sequential Elo history, and per-request computation would let a published number drift. Tested via `tests/test_inference_unit.py` (193 lines) and `tests/integration/api/test_score_upcoming.py` (130 lines) (`47f3ef3`)
+- **Shipped the prediction ledger — Wednesday's deliverable, project goal #6.** Logged as **ADR-025**: `feature_snapshot` stores the full 32-feature JSONB envelope (not a pointer) for exact replay; odds resolution added `odds_fighter_id`/`odds_collected_at`/`odds_n_books` with consensus taken as the median over *implied probability* (not raw moneyline, which can interpolate to a price no book could post) and keyed by fighter rather than corner per ADR-013; immutability enforced by a DB trigger (SQLSTATE `restrict_violation` on UPDATE/DELETE) rather than an app-level convention, with "current" resolved at read time by latest `created_at`. `api/services/ledger.py` (207 lines) + `api/services/odds.py` (222 lines), migration `..._add_ledger_columns_and_immutability`, and three new integration test files covering immutability, replay, and odds resolution (`45522b2`)
+- Changed `GET /fights/{id}/prediction` from `501` → `404` for cancelled/nonexistent bouts (ADR-025 Decision 6) — now that the ledger exists, an absent row is a missing resource, not a missing capability
+- Cancelled-bout handling checks live `bouts.status` at read time rather than the Parquet snapshot the scorer reads from, so a fight-week withdrawal can't leave a stale prediction reading as active (ADR-025 Decision 5)
+- Updated `docs/IngestWorkflow.md` and refreshed the database with upcoming future bouts
+
+**Blocked / open questions:**
+-
+
+**Research (1hr):** —
+
+**Tomorrow's first task:** Run ruff checks/fixes and confirm CI is green, then move to Thursday's plan deliverable — the settlement job (join event results, compute rolling accuracy/log loss/paper ROI, write to `prediction_results`) — now unblocked since every ledger row carries `predicted_winner_id` per ADR-013's settlement-key rule. Also clear what's still uncommitted: `.claude/skills/fix-ci/` and the ingestion log changes (`unresolved_bout_fighters.csv`, new `unresolved_fighters.jsonl`) are still outstanding from before, now joined by the new untracked `data/predictions/` directory — decide what's meant to be tracked before it compounds further.
+
+**Energy / notes:**
+
+**Metrics check (weekly only, Fridays):** —
+
+---
+
 ## 2026-08-27 (Week 4, Day 3)
 
 **Planned today:** Build the actual Week 4 Monday skeleton — wire the `lifespan` engine + Booster load per ADR-023, get `/health` and `/events/upcoming` returning real data, then move to Tuesday's inference path. Also clear the long-uncommitted script deletions, `.claude/skills/fix-ci/`, and ingestion log changes.

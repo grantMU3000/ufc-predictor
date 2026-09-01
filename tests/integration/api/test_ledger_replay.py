@@ -12,9 +12,9 @@ itself — that self-sufficiency is the entire audit-trail argument.
 WHY THIS DOESN'T CALL predict_bout(). predict_bout() takes a
 BoutFeatureMatrix, which normally only exists via build_bout_features()
 reading a live snapshot. Reusing it here would prove the ledger agrees
-with the pipeline that wrote it, not that the row stands alone. This
-rebuilds the input vector BY NAME from contributions[] and hands it
-straight to the frozen Booster — a second, independent path to the
+with the pipelin vector BY NAME from contributions[] and hands it
+straight to the frozen  that wrote it, not that the row stands alone. This
+rebuilds the input veBooster — a second, independent path to the
 same number.
 """
 

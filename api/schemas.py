@@ -174,7 +174,7 @@ class PredictionDetail(PredictionResponse):
     )
     coverage: CoverageDetail | None = None
     contributions: list[FeatureContributionDetail] = []
-    
+
 
 class PredictionHistoryItem(PredictionResponse):
     """A ledger row plus its settlement outcome, if it has been settled."""
@@ -222,14 +222,99 @@ class MetricRow(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
+class LiveMetricRow(BaseModel):
+    """
+    One scored population from the LIVE block — fights settled since
+    deployment, not the frozen 2025 holdout.
+
+    No `ece` field, unlike MetricRow. A reliability curve needs real bucket
+    sizes to mean anything, and this population starts at n=0 and grows one
+    card at a time (ADR-026). Shipping a calibration number computed on a
+    dozen fights would be noise wearing a decimal point.
+
+    accuracy_ci_low/high are a 95% Wilson interval. They are mandatory, not
+    decorative: 9-for-12 is "75% accurate" and also "somewhere between 47%
+    and 91%", and only the second one is a claim this project can defend.
+    """
+
+    who: str = Field(description="'model' or 'market'")
+    n: int = Field(description="Distinct BOUTS scored, deduped per ADR-026 Decision 2")
+    n_correct: int
+    accuracy: float
+    accuracy_ci_low: float
+    accuracy_ci_high: float
+    log_loss: float
+    brier: float
+
+
+class SettlementCounts(BaseModel):
+    """
+    The four states a committed prediction can be in, as distinct integers.
+
+    ADR-026 requires these separated. Collapsed into one "unsettled" number,
+    a fight that has not happened yet is indistinguishable from a cancelled
+    bout that will never settle and a draw that structurally cannot — and
+    the accuracy denominator becomes unauditable.
+    """
+
+    n_predictions: int = Field(description="Total ledger rows, undeduped")
+    n_settled: int
+    n_excluded_no_result: int = Field(
+        description="Completed bouts with no winner — draw or no-contest (ADR-026 Decision 3)"
+    )
+    n_cancelled: int = Field(
+        description="Permanently unsettled by design (ADR-026 Decision 4)"
+    )
+    n_pending: int = Field(description="Fight has not happened yet")
+
+
+class PaperRoi(BaseModel):
+    """
+    Flat 1-unit-per-bet paper ROI over settled, odds-covered predictions.
+
+    roi is None, never 0.0, at n=0 — a flat zero reads as "break-even" when
+    the truth is "no odds-covered settled bets exist yet". Odds coverage on
+    upcoming bouts is currently zero pending Friday's refresh job.
+    """
+
+    n: int
+    total_staked: float
+    total_return: float
+    roi: float | None = None
+
+
+class LivePerformanceBlock(BaseModel):
+    """
+    Since-deployment track record. Grows every time a card settles.
+
+    Deliberately a nested block rather than fields alongside test_metrics:
+    "how it scored on the frozen 2025 holdout" and "how it is doing on
+    fights since deployment" are different claims with different sample
+    sizes, and nothing should be able to average them by accident.
+
+    full and odds_covered are EMPTY until something settles. An empty list
+    is the honest representation of no track record; a zeroed row would
+    publish log_loss=0.0, which is a perfect score.
+    """
+
+    counts: SettlementCounts
+    full: list[LiveMetricRow] = []
+    odds_covered: list[LiveMetricRow] = []
+    paper_roi: PaperRoi
+
 
 class ModelPerformanceResponse(BaseModel):
     """
     Envelope for GET /model/performance.
 
-    Today this serves the frozen test-set metrics recorded at freeze
-    time. Week 4 Thursday's settlement job adds live rolling metrics
-    from prediction_results; this response grows a second block then.
+    TWO INDEPENDENT CLAIMS, kept structurally apart (ADR-026):
+      test_metrics — the frozen test-set unlock (ADR-020). Read once,
+                     final, never changes.
+      live         — fights settled since deployment. Starts empty and
+                     grows with every card.
+
+    The top-level fields (version, training_cutoff, ...) describe the model
+    itself and are common to both.
     """
 
     version: str
@@ -243,6 +328,7 @@ class ModelPerformanceResponse(BaseModel):
     trained_at: datetime | None = None
     shipping_artifact: str
     test_metrics: list[MetricRow]
+    live: LivePerformanceBlock
 
     model_config = ConfigDict(protected_namespaces=())
 

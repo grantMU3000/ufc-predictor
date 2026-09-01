@@ -27,12 +27,16 @@ import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import ROUND_HALF_UP, Decimal
+import os
+from dotenv import load_dotenv
 
 from sqlalchemy import Connection, text
 
 from api.services.inference import BoutPrediction
 from api.services.odds import resolve_odds_at
 from api.services.records import to_record
+
+load_dotenv()
 
 # predicted_prob_red is Numeric(5,4) in Postgres. Full float precision
 # still lives inside feature_snapshot's JSONB — this only bounds the

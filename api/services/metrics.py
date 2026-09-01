@@ -1,6 +1,8 @@
 """
 Reshaping frozen model metrics for the API — Week 4 Monday.
 
+Live, since-deployment metrics live in api/services/live_metrics.py (ADR-026).
+
 model_registry.metrics holds the raw JSON list written by
 models/freeze.py: one entry per (artifact, slice, who) combination.
 That includes artifact "A", which ADR-020 kept only as a DIAGNOSTIC and
